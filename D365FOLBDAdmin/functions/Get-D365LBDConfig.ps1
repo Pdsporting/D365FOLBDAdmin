@@ -23,21 +23,35 @@
             ValueFromPipelineByPropertyName = $True,
             Mandatory = $false,
             HelpMessage = 'D365FO Local Business Data Server Name')]
-        [PSFComputer]$ComputerName = "$env:COMPUTERNAME"
+        [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
+        [Parameter(Mandatory = $false)][string]$ConfigImportFromFile,
+        [Parameter(Mandatory = $false)][string]$ConfigExportToFile,
+        [Parameter(Mandatory = $false)][string]$CustomModuleName
+        
     )
-    ##Gather Infromation from the Dynamics 365 Orchestrator Server Config
+    ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
     }
     PROCESS {
+        if ($ConfigImportFromFile)
+        {
+        $ConfigImportFromFile = "C:\test2asd.xml"
+        if (-not (Test-Path $ConfigImportFromFile)){
+        Stop-PSFFunction -Message "Error: This config file doesn't exist. Stopping" -EnableException $true -Cmdlet $PSCmdlet
+        }
+        $Properties = Import-clixml -path $ConfigImportFromFile
+        [PSCustomObject]$Properties
+        }
+        else{
         if ($ComputerName.IsLocalhost) {
-            Write-PSFMessage -Level Warning -Message "Looking for the clusterconfig on the localmachine as no computername provided"
+            Write-PSFMessage -Message "Looking for the clusterconfig on the localmachine as no computername provided" -Level Warning 
             if ($(Test-Path "C:\ProgramData\SF\clusterManifest.xml") -eq $False) {
                 Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Stopping" -EnableException $true -Cmdlet $PSCmdlet
             }
             $ClusterManifestXMLFile = get-childitem "C:\ProgramData\SF\clusterManifest.xml" 
         }
         else {
-            Write-PSFMessage -Level Verbose "Connecting to admin share on $ComputerName for cluster config"
+            Write-PSFMessage -Message "Connecting to admin share on $ComputerName for cluster config" -Level Verbose
             if ($(Test-Path "\\$ComputerName\C$\ProgramData\SF\clusterManifest.xml") -eq $False) {
                 Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
             }
@@ -65,12 +79,12 @@
         }
         foreach ($OrchestratorServerName in $OrchestratorServerNames) {
             if (!$OrchServiceLocalAgentConfigXML) {
-                Write-PSFMessage -Level Verbose "Verbose: Connecting to $OrchestratorServerName for Orchestrator config" 
+                Write-PSFMessage -Message "Verbose: Connecting to $OrchestratorServerName for Orchestrator config" -Level Verbose
                 $OrchServiceLocalAgentConfigXML = get-childitem "\\$OrchestratorServerName\C$\ProgramData\SF\*\Fabric\work\Applications\LocalAgentType_App*\OrchestrationServicePkg.Package.Current.xml"
             }
         }
         if (!$OrchServiceLocalAgentConfigXML) {
-            Write-PSFMessage -Level Critical "Error: Can't find any Local Agent file on the Orchestrator Node"  -ErrorAction Continue
+            Stop-PSFFunction -Message "Error: Can't find any Local Agent file on the Orchestrator Node" -EnableException $true -Cmdlet $PSCmdlet
         }
     
         [xml]$xml = get-content $OrchServiceLocalAgentConfigXML
@@ -107,11 +121,11 @@
             }
         }
         $AXSFConfigServerName = $AXSFServerNames | Select-Object -First 1
-        Write-PSFMessage -Level Verbose "Verbose: Reaching out to $AXSFConfigServerName for AX config"
+        Write-PSFMessage -Message "Verbose: Reaching out to $AXSFConfigServerName for AX config" -Level Verbose
 
         $SFConfig = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Package.Current.xml"
         if (!$SFConfig) {
-            Write-PSFMessage -Level Verbose "Verbose: Cant find AX SF. App may not be installed"
+            Write-PSFMessage -Message "Verbose: Cant find AX SF. App may not be installed. All values won't be grabbed" -Level Warning
         }
         else {
             [xml]$xml = get-content $SFConfig 
@@ -139,11 +153,23 @@
             $LCSEnvironmentName = $($jsonconfig | ConvertFrom-Json).environmentName
         }
         else {
-            Write-PSFMessage -Level Warning -Message "WARNING: Can't Find Config in WP folder cant get Environment ID or TenantID"
+            Write-PSFMessage -Message "WARNING: Can't Find Config in WP folder can't get Environment ID or TenantID. All values won't be grabbed" -Level Warning
             $LCSEnvironmentId = ""
             $TenantID = ""
             $LCSEnvironmentName = ""
         }
+        $CustomModuleVersion=''
+        if (-not (Test-Path $CustomModuleName)){
+        $CustomModuleDll = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\Packages\$CustomModuleName\bin\Dynamics.AX.$CustomModuleName.dll"
+        if (-not (Test-Path $CustomModuleDll)){
+        Write-PSFMessage -Message "WARNING: Custom Module Not found version unable to be found" -Level Warning
+        }
+        else
+        {
+        $CustomModuleVersion = $CustomModuleDll.VersionInfo.FileVersion
+        }
+        }
+        
     
         # Collect information into a hashtable
         $Properties = @{
@@ -166,10 +192,15 @@
             "LCSEnvironmentName"      = $LCSEnvironmentName
             "TenantID"                = $TenantID
             "SourceComputerName"      = $ComputerName
+            "CustomModuleVersion"     = $CustomModuleVersion
         }
         ##Sends Custom Object to Pipeline
         [PSCustomObject]$Properties
+        }
     }
     END {
+        if ($ConfigExportToFile){
+            $Properties | Export-Clixml -Path $ConfigExportToFile
+        }
     }
 }
