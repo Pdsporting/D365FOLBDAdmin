@@ -34,27 +34,54 @@ function Start-D365FOLBDDBSync {
     )
     
     begin {
-        
     }
     
     process {
         if ($AXSFServer.IsLocalhost) {
             Write-PSFMessage -Message "Looking for the AX Process to find deployment exe and the packages folder to start the Database Synchronize" -Level Warning 
-            $AXSFCodeFolder = Split-Path $(Get-Process | Where-Object {$_.name -eq "AXService"}).Path -Parent
+            $AXSFCodeFolder = Split-Path $(Get-Process | Where-Object { $_.name -eq "AXService" }).Path -Parent
             $AXSFCodePackagesFolder = Join-Path $AXSFCodeFolder "\Packages"
             $AXSFCodeBinFolder = Join-Path $AXSFCodeFolder "\bin"
-            $D365DeploymentExe = Get-ChildItem $AXSFCodeBinFolder | Where-Object {$_.Name -eq "Microsoft.Dynamics.AX.Deployment.Setup.exe"}
+            $D365DeploymentExe = Get-ChildItem $AXSFCodeBinFolder | Where-Object { $_.Name -eq "Microsoft.Dynamics.AX.Deployment.Setup.exe" }
 
             ##Props to Microsoft for below technique in next few lines copied/learned from the 2012 deployment scripts https://gallery.technet.microsoft.com/scriptcenter/Build-and-deploy-for-b166c6e4
             $CommandLineArgs = '-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd {5} --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser, $SQLUserPassword
-            Start-Process $D365DeploymentExe -ArgumentList $CommandLineArgs
+            $DbSyncProcess = Start-Process $D365DeploymentExe -ArgumentList $CommandLineArgs
+
+            if ($DbSyncProcess.WaitForExit(60000 * $Timeout) -eq $false) {
+                $DbSyncProcess.Kill()
+                Stop-PSFFunction -Message "Error: Database Sync failed did not complete within $timeout minutes"  -EnableException $true -Cmdlet $PSCmdlet
+            }
+            else {
+                return $true;
+            }
         }
         else {
             Write-PSFMessage -Message "Connecting to admin share on $AXSFServer for cluster config" -Level Verbose
-            if ($(Test-Path "\\$AXSFServer\C$\ProgramData\SF\clusterManifest.xml") -eq $False) {
+            if ($(Test-Path "\\$AXSFServer\C$\ProgramData\SF\clusterManifest.xml") -eq $false) {
                 Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
             }
-            $ClusterManifestXMLFile = get-childitem "\\$AXSFServer\C$\ProgramData\SF\clusterManifest.xml"
+
+            $process = Invoke-PSFCommand -ComputerName $AXSFServer -ScriptBlock { 
+                Write-PSFMessage -Message "Looking for the AX Process to find deployment exe and the packages folder to start the Database Synchronize" -Level Warning 
+                $AXSFCodeFolder = Split-Path $(Get-Process | Where-Object { $_.name -eq "AXService" }).Path -Parent
+                $AXSFCodePackagesFolder = Join-Path $AXSFCodeFolder "\Packages"
+                $AXSFCodeBinFolder = Join-Path $AXSFCodeFolder "\bin"
+                $D365DeploymentExe = Get-ChildItem $AXSFCodeBinFolder | Where-Object { $_.Name -eq "Microsoft.Dynamics.AX.Deployment.Setup.exe" }
+    
+                ##Props to Microsoft for below technique in next few lines copied/learned from the 2012 deployment scripts https://gallery.technet.microsoft.com/scriptcenter/Build-and-deploy-for-b166c6e4
+                $CommandLineArgs = '-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd {5} --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser, $SQLUserPassword
+                $DbSyncProcess = Start-Process $D365DeploymentExe -ArgumentList $CommandLineArgs
+    
+                if ($DbSyncProcess.WaitForExit(60000 * $Timeout) -eq $false) {
+                    $DbSyncProcess.Kill()
+                    return $false;
+                    Stop-PSFFunction -Message "Error: Database Sync failed did not complete within $timeout minutes"  -EnableException $true -Cmdlet $PSCmdlet
+                }
+                else {
+                    return $true;
+                }
+            }
         }
         
     }
