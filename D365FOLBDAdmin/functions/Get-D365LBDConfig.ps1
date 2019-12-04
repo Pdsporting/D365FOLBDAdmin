@@ -12,11 +12,19 @@
     Get-D365LBDConfig -ComputerName "LBDServerName" -verbose
    Will get the Dynamics 365 Config from the LBD server
    .PARAMETER ComputerName
-   Parameter 
    optional string 
    The name of the Local Business Data Computer.
    If ignored will use local host.
-   
+   .PARAMETER ConfigImportFromFile
+   optional string 
+   The name of the config file to import (if you are choosing to import rather than pull dynamically)
+   .PARAMETER ConfigExportToFile
+   optional string 
+   The name of the config file to export 
+   .PARAMETER CustomModuleName
+   optional string 
+   The name of the custom module you will be using to caputre the version number
+
    #>
     [CmdletBinding()]
     param([Parameter(ValueFromPipeline = $True,

@@ -1,21 +1,40 @@
 function Start-D365FOLBDDBSync {
     <#
     .SYNOPSIS
-   Grabs the configuration of the local business data environment
+   Starts a Database Synchronization on a Dynamics 365 Finance and Operations Server
    .DESCRIPTION
-   Grabs the configuration of the local business data environment through logic using the Service Fabric Cluster XML,
-   AXSF.Package.Current.xml and OrchestrationServicePkg.Package.Current.xml
+   Starts a Database Synchronization on a Dynamics 365 Finance and Operations Server using the "Microsoft.Dynamics.AX.Deployment.Setup.exe" executable
    .EXAMPLE
-   Get-D365LBDConfig
-   Will get config from the local machine.
+   Start-D365FOLBDDBSync
+   
    .EXAMPLE
-    Get-D365LBDConfig -ComputerName "LBDServerName" -verbose
-   Will get the Dynamics 365 Config from the LBD server
-   .PARAMETER ComputerName
+    Start-D365FOLBDDBSync
+   
+   .PARAMETER AXSFServer
    Parameter 
-   optional string 
-   The name of the Local Business Data Computer.
+   string 
+   The name of the Local Business Data Computer that is runnign the AXSF role.
    If ignored will use local host.
+   .PARAMETER AXDatabaseServer
+   Parameter 
+   string 
+   The name of the Local Business Data SQL Database Computer
+   .PARAMETER AXDatabaseName
+   Parameter 
+   string 
+   The name of the Local Business Data SQL Database name.
+   .PARAMETER SQLUser
+   Parameter 
+   string 
+   The name of the user to login with SQL authentication
+   .PARAMETER SQLUserPassword
+   Parameter 
+   string 
+   The password of the user to login with SQL authentication
+   .PARAMETER Timeout
+   Parameter 
+   int 
+   The timeout period of the database synchronization
    
    #>
     [CmdletBinding()]
@@ -30,7 +49,7 @@ function Start-D365FOLBDDBSync {
         [string]$SQLUser,
         [Parameter(Mandatory = $true)]
         [securestring]$SQLUserPassword,
-        [int]$Timeout
+        [int]$Timeout=60
     )
     
     begin {
