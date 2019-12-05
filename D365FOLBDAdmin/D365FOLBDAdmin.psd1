@@ -39,8 +39,10 @@
 	# FormatsToProcess = @('xml\D365FOLBDAdmin.Format.ps1xml')
 	
 	# Functions to export from this module
-	FunctionsToExport = 'Get-D365LBDConfig'
-	
+	FunctionsToExport = @(
+		'Get-D365LBDConfig',
+		'Start-D365FOLBDDBSync'
+		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
 	
