@@ -41,7 +41,8 @@
 	# Functions to export from this module
 	FunctionsToExport = @(
 		'Get-D365LBDConfig',
-		'Start-D365FOLBDDBSync'
+		'Start-D365FOLBDDBSync',
+		'Export-D365FOLBDAssetModuleVersion'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''

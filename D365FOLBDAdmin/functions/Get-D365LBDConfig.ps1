@@ -132,6 +132,9 @@
 
             $SFConfig = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Package.Current.xml"
             if (!$SFConfig) {
+                $SFConfig = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Package.1.0.xml"
+            }
+            if (!$SFConfig) {
                 Write-PSFMessage -Message "Verbose: Cant find AX SF. App may not be installed. All values won't be grabbed" -Level Warning
             }
             else {
