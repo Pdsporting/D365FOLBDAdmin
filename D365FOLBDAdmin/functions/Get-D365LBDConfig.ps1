@@ -143,9 +143,17 @@
                 $DataAccess = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -EQ 'DataAccess' }
                 $AXDatabaseName = $($DataAccess.Parameter | Where-Object { $_.Name -eq 'Database' }).value
                 $AXDatabaseServer = $($DataAccess.Parameter | Where-Object { $_.Name -eq 'DbServer' }).value
+                $DataEncryptionCertificate = $($DataAccess.Parameter | Where-Object { $_.Name -eq 'DataEncryptionCertificateThumbprint' }).value
+                $DataSigningCertificate = $($DataAccess.Parameter | Where-Object { $_.Name -eq 'DataSigningCertificateThumbprint' }).value
 
-                $Infrastructure = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -EQ 'Aad' }
-                $ClientURL = $($Infrastructure.Parameter | Where-Object { $_.Name -eq 'AADValidAudience' }).value + "namespaces/AXSF/"
+                $AAD = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -EQ 'Aad' }
+                $ClientURL = $($AAD.Parameter | Where-Object { $_.Name -eq 'AADValidAudience' }).value + "namespaces/AXSF/"
+
+                $Infrastructure = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -EQ 'Infrastructure' }
+                $SessionAuthenticationCertificate = $($Infrastructure.Parameter | Where-Object { $_.Name -eq 'SessionAuthenticationCertificateThumbprint' }).value
+
+                $SMBStorage = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -EQ 'SmbStorage' }
+                $SharedAccessSMBCertificate = $($SMBStorage.Parameter | Where-Object { $_.Name -eq 'SharedAccessThumbprint' }).value
        
                 $sb = New-Object System.Data.Common.DbConnectionStringBuilder
                 $sb.set_ConnectionString($($OrchDBConnectionString.Value))
@@ -178,29 +186,37 @@
                     $CustomModuleVersion = $CustomModuleDll.VersionInfo.FileVersion
                 }
             }
+            $jsonClusterConfig = get-content "\\$AXSFConfigServerName\C$\ProgramData\SF\clusterconfig.json"
+            $SFClusterCertificate = ($jsonClusterConfig | ConvertFrom-Json).properties.security.certificateinformation.clustercertificate.Thumbprint
     
             # Collect information into a hashtable
             $Properties = @{
-                "AllAppServerList"        = $AllAppServerList
-                "OrchestratorServerNames" = $OrchestratorServerNames
-                "AXSFServerNames"         = $AXSFServerNames
-                "ReportServerServerName"  = $ReportServerServerName
-                "ReportServerServerip"    = $ReportServerServerip
-                "OrchDatabaseName"        = $OrchDatabase
-                "OrchDatabaseServer"      = $OrchdatabaseServer
-                "AgentShareLocation"      = $AgentShareLocation
-                "SFClientCertificate"     = $ClientCert
-                "SFClusterID"             = $ClusterID
-                "SFConnectionEndpoint"    = $ConnectionEndpoint
-                "SFServerCertificate"     = $ServerCertificate
-                "ClientURL"               = $ClientURL
-                "AXDatabaseServer"        = $AXDatabaseServer
-                "AXDatabaseName"          = $AXDatabaseName
-                "LCSEnvironmentID"        = $LCSEnvironmentId
-                "LCSEnvironmentName"      = $LCSEnvironmentName
-                "TenantID"                = $TenantID
-                "SourceComputerName"      = $ComputerName
-                "CustomModuleVersion"     = $CustomModuleVersion
+                "AllAppServerList"                 = $AllAppServerList
+                "OrchestratorServerNames"          = $OrchestratorServerNames
+                "AXSFServerNames"                  = $AXSFServerNames
+                "ReportServerServerName"           = $ReportServerServerName
+                "ReportServerServerip"             = $ReportServerServerip
+                "OrchDatabaseName"                 = $OrchDatabase
+                "OrchDatabaseServer"               = $OrchdatabaseServer
+                "AgentShareLocation"               = $AgentShareLocation
+                "SFClientCertificate"              = $ClientCert
+                "SFClusterID"                      = $ClusterID
+                "SFConnectionEndpoint"             = $ConnectionEndpoint
+                "SFServerCertificate"              = $ServerCertificate
+                "SFClusterCertificate"             = $SFClusterCertificate
+                "ClientURL"                        = $ClientURL
+                "AXDatabaseServer"                 = $AXDatabaseServer
+                "AXDatabaseName"                   = $AXDatabaseName
+                "LCSEnvironmentID"                 = $LCSEnvironmentId
+                "LCSEnvironmentName"               = $LCSEnvironmentName
+                "TenantID"                         = $TenantID
+                "SourceComputerName"               = $ComputerName
+                "CustomModuleVersion"              = $CustomModuleVersion
+                "DataEncryptionCertificate"        = $DataEncryptionCertificate 
+                "DataSigningCertificate"           = $DataSigningCertificate
+                "SessionAuthenticationCertificate" = $SessionAuthenticationCertificate
+                "SharedAccessSMBCertificate"       = $SharedAccessSMBCertificate
+
             }
             ##Sends Custom Object to Pipeline
             [PSCustomObject]$Properties
