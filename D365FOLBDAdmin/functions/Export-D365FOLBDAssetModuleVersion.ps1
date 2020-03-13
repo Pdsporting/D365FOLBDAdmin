@@ -44,7 +44,7 @@ function Export-D365FOLBDAssetModuleVersion {
             $count = $($zip.Entries | Where-Object { $_.FullName -like $Filter }).Count
 
             if ($count -eq 0) {
-                Write-Verbose -Message "Invalid Zip file or Module name $StandaloneSetupZip" -Verbose
+                Write-PSFMessage -Level Verbose -Message "Invalid Zip file or Module name $StandaloneSetupZip"
             }
             else {
                 $zip.Entries | 
@@ -54,11 +54,12 @@ function Export-D365FOLBDAssetModuleVersion {
                     # and copy them to the out folder
                     $FileName = $_.Name
                     [System.IO.Compression.ZipFileExtensions]::ExtractToFile($_, "$SpecificAssetFolder\$FileName")
+                    
                 }
                 ##Closes Zip
-    
                 $zip.Dispose()
                 $NewfileWithoutVersionPath = $SpecificAssetFolder + "\$ModuleName.xml"
+                Write-PSFMessage -Message "$SpecificAssetFolder\$FileName exported" -Level Verbose
 
                 $NewfileWithoutVersion = Get-ChildItem "$NewfileWithoutVersionPath"
                 if (!$NewfileWithoutVersion) {
@@ -67,6 +68,7 @@ function Export-D365FOLBDAssetModuleVersion {
                 [xml]$xml = Get-Content "$NewfileWithoutVersion"
                 $Version = $xml.MetadataModelInstallationInfo.Version
                 Rename-Item -Path $NewfileWithoutVersionPath -NewName "$ModuleName $Version.xml" -Verbose | Out-Null
+                Write-PSFMessage -Message "$ModuleName $Version.xml exported" -Level Verbose
                 Write-Output "$Version"
             }
         }

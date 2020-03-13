@@ -42,7 +42,10 @@
 	FunctionsToExport = @(
 		'Get-D365LBDConfig',
 		'Start-D365FOLBDDBSync',
-		'Export-D365FOLBDAssetModuleVersion'
+		'Export-D365FOLBDAssetModuleVersion',
+		'Get-D365OrchestrationLogs',
+		'Get-D365OrchestrationNodes',
+		'Remove-D365StuckApps'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
