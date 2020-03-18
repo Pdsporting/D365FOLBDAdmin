@@ -5,7 +5,7 @@ function Get-D365OrchestrationLogs {
         [int]$NumberofEvents = 5
     )
     $LatestEventInLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $ComputerName).TimeCreated
-    $primary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents $NumberofEventsToCheck -ComputerName $ComputerName | 
+    $primary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents $NumberofEvents -ComputerName $ComputerName | 
     ForEach-Object -Process { `
             New-Object -TypeName PSObject -Property `
         @{'MachineName'        = $_.Properties[0].value;
@@ -24,7 +24,7 @@ function Get-D365OrchestrationLogs {
         }
     }
     $LatestEventInLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $ActiveSecondary).TimeCreated
-    $secondary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents $NumberofEventsToCheck -ComputerName $ActiveSecondary | 
+    $secondary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents $NumberofEvents -ComputerName $ActiveSecondary | 
     ForEach-Object -Process { `
             New-Object -TypeName PSObject -Property `
         @{'MachineName'        = $_.Properties[0].value;

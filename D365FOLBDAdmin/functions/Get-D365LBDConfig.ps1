@@ -95,6 +95,10 @@
             }
     
             [xml]$xml = get-content $OrchServiceLocalAgentConfigXML
+
+            $RetrievedXMLData = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -eq 'AAD' } 
+            $LocalAgentCertificate = $RetrievedXMLData.Parameter.Value | Where-Object {$_.Name -eq "ServicePrincipalThumbprint"}
+
     
             $RetrievedXMLData = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -eq 'Data' } 
             $OrchDBConnectionString = $RetrievedXMLData.Parameter
@@ -216,7 +220,10 @@
                 "DataSigningCertificate"           = $DataSigningCertificate
                 "SessionAuthenticationCertificate" = $SessionAuthenticationCertificate
                 "SharedAccessSMBCertificate"       = $SharedAccessSMBCertificate
-
+                "LocalAgentCertificate"            = $LocalAgentCertificate
+                "DataEnciphermentCertificate"      = ""
+                "FinancialReportingCertificate"    = ""
+                "ReportingSSRSCertificate"         = ""
             }
             ##Sends Custom Object to Pipeline
             [PSCustomObject]$Properties

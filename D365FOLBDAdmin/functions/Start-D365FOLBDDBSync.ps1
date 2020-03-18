@@ -48,7 +48,7 @@ function Start-D365FOLBDDBSync {
         [Parameter(Mandatory = $true)]
         [string]$SQLUser,
         [Parameter(Mandatory = $true)]
-        [securestring]$SQLUserPassword,
+        [string]$SQLUserPassword,
         [int]$Timeout=60
     )
     
@@ -90,6 +90,7 @@ function Start-D365FOLBDDBSync {
     
                 ##Props to Microsoft for below technique in next few lines copied/learned from the 2012 deployment scripts https://gallery.technet.microsoft.com/scriptcenter/Build-and-deploy-for-b166c6e4
                 $CommandLineArgs = '-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd {5} --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser, $SQLUserPassword
+                Write-PSFMessage -Level Verbose -Message "$D365DeploymentExe  $CommandLineArgs"
                 $DbSyncProcess = Start-Process $D365DeploymentExe -ArgumentList $CommandLineArgs
     
                 if ($DbSyncProcess.WaitForExit(60000 * $Timeout) -eq $false) {
