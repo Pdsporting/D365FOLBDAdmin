@@ -97,9 +97,8 @@
             [xml]$xml = get-content $OrchServiceLocalAgentConfigXML
 
             $RetrievedXMLData = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -eq 'AAD' } 
-            $LocalAgentCertificate = $RetrievedXMLData.Parameter.Value | Where-Object {$_.Name -eq "ServicePrincipalThumbprint"}
+            $LocalAgentCertificate = ($RetrievedXMLData.Parameter | Where-Object { $_.Name -eq "ServicePrincipalThumbprint" }).value
 
-    
             $RetrievedXMLData = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -eq 'Data' } 
             $OrchDBConnectionString = $RetrievedXMLData.Parameter
     
@@ -180,6 +179,21 @@
                 $TenantID = ""
                 $LCSEnvironmentName = ""
             }
+            try {
+                $reportconfig = Get-ChildItem "\\$ReportServerServerName\C$\ProgramData\SF\*\Fabric\work\Applications\ReportingService_*\ReportingBootstrapperPkg.Package.current.xml"
+                [xml]$xml = Get-Content $reportconfig.FullName
+                $ReportingSSRSCertificate = ($xml.ServicePackage.ConfigOverride.Settings | Where-Object { $_.Name -EQ 'ReportingServices' }).value
+            }
+            catch {
+                try {
+                    $reportconfig = Get-ChildItem "\\$ReportServerServerName\C$\ProgramData\SF\*\Fabric\work\Applications\ReportingService_*\ReportingBootstrapperPkg.Package.1.0.xml"
+                    [xml]$xml = Get-Content $reportconfig.FullName
+                    $ReportingSSRSCertificate = ($xml.ServicePackage.ConfigOverride.Settings | Where-Object { $_.Name -EQ 'ReportingServices' }).value
+                }
+                catch {
+                    Write-PSFMessage -Level Warning -Message "WARNING: Can't gather information from the Reporting Server $ReportServerServerName"
+                }
+            }
             $CustomModuleVersion = ''
             if (($CustomModuleName)) {
                 $CustomModuleDll = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\Packages\$CustomModuleName\bin\Dynamics.AX.$CustomModuleName.dll"
@@ -223,7 +237,7 @@
                 "LocalAgentCertificate"            = $LocalAgentCertificate
                 "DataEnciphermentCertificate"      = ""
                 "FinancialReportingCertificate"    = ""
-                "ReportingSSRSCertificate"         = ""
+                "ReportingSSRSCertificate"         = "$ReportingSSRSCertificate"
             }
             ##Sends Custom Object to Pipeline
             [PSCustomObject]$Properties
