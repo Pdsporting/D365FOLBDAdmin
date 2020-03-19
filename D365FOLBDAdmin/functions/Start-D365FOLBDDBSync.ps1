@@ -57,6 +57,7 @@ function Start-D365FOLBDDBSync {
     
     process {
         if ($AXSFServer.IsLocalhost) {
+            Write-PSFMessage -Message "AXSF is local Server" -Level Verbose
             Write-PSFMessage -Message "Looking for the AX Process to find deployment exe and the packages folder to start the Database Synchronize" -Level Warning 
             $AXSFCodeFolder = Split-Path $(Get-Process | Where-Object { $_.name -eq "AXService" }).Path -Parent
             $AXSFCodePackagesFolder = Join-Path $AXSFCodeFolder "\Packages"
@@ -65,7 +66,7 @@ function Start-D365FOLBDDBSync {
 
             ##Props to Microsoft for below technique in next few lines copied/learned from the 2012 deployment scripts https://gallery.technet.microsoft.com/scriptcenter/Build-and-deploy-for-b166c6e4
             $CommandLineArgs = '-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd {5} --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser, $SQLUserPassword
-            $DbSyncProcess = Start-Process $D365DeploymentExe.FullName -ArgumentList $CommandLineArgs
+            $DbSyncProcess = Start-Process -filepath $D365DeploymentExe.FullName -ArgumentList $CommandLineArgs -Verbose
 
             if ($DbSyncProcess.WaitForExit(60000 * $Timeout) -eq $false) {
                 $DbSyncProcess.Kill()
@@ -91,7 +92,7 @@ function Start-D365FOLBDDBSync {
                 ##Props to Microsoft for below technique in next few lines copied/learned from the 2012 deployment scripts https://gallery.technet.microsoft.com/scriptcenter/Build-and-deploy-for-b166c6e4
                 $CommandLineArgs = '-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd {5} --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser, $SQLUserPassword
                 Write-PSFMessage -Level Verbose -Message "$D365DeploymentExe  $CommandLineArgs"
-                $DbSyncProcess = Start-Process $D365DeploymentExe.FullName -ArgumentList $CommandLineArgs
+                $DbSyncProcess = Start-Process -filepath $D365DeploymentExe.FullName -ArgumentList $CommandLineArgs
     
                 if ($DbSyncProcess.WaitForExit(60000 * $Timeout) -eq $false) {
                     $DbSyncProcess.Kill()
