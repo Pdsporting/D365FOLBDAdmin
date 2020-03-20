@@ -182,13 +182,15 @@
             try {
                 $reportconfig = Get-ChildItem "\\$ReportServerServerName\C$\ProgramData\SF\*\Fabric\work\Applications\ReportingService_*\ReportingBootstrapperPkg.Package.current.xml"
                 [xml]$xml = Get-Content $reportconfig.FullName
-                $ReportingSSRSCertificate = ($xml.ServicePackage.ConfigOverride.Settings | Where-Object { $_.Name -EQ 'ReportingServices' }).value
+                $Reportingconfigdetails = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -EQ 'ReportingServices' }
+                $ReportingSSRSCertificate = ($Reportingconfigdetails.parameter | Where-Object {$_.Name -eq "ReportingClientCertificateThumbprint"}).value
             }
             catch {
                 try {
                     $reportconfig = Get-ChildItem "\\$ReportServerServerName\C$\ProgramData\SF\*\Fabric\work\Applications\ReportingService_*\ReportingBootstrapperPkg.Package.1.0.xml"
                     [xml]$xml = Get-Content $reportconfig.FullName
-                    $ReportingSSRSCertificate = ($xml.ServicePackage.ConfigOverride.Settings | Where-Object { $_.Name -EQ 'ReportingServices' }).value
+                    $Reportingconfigdetails = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -EQ 'ReportingServices' }
+                    $ReportingSSRSCertificate = ($Reportingconfigdetails.parameter | Where-Object {$_.Name -eq "ReportingClientCertificateThumbprint"}).value
                 }
                 catch {
                     Write-PSFMessage -Level Warning -Message "WARNING: Can't gather information from the Reporting Server $ReportServerServerName"

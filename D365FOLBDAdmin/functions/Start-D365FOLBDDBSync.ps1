@@ -56,7 +56,7 @@ function Start-D365FOLBDDBSync {
     }
     
     process {
-        if ($AXSFServer.IsLocalhost) {
+        if (($AXSFServer.IsLocalhost) -or ($AXSFServer -eq $env:COMPUTERNAME) -or ($AXSFServer -eq "$env:COMPUTERNAME.$env:UserDNSDOMAINNAME"))  {
             Write-PSFMessage -Message "AXSF is local Server" -Level Verbose
             Write-PSFMessage -Message "Looking for the AX Process to find deployment exe and the packages folder to start the Database Synchronize" -Level Warning 
             $AXSFCodeFolder = Split-Path $(Get-Process | Where-Object { $_.name -eq "AXService" }).Path -Parent
@@ -81,6 +81,7 @@ function Start-D365FOLBDDBSync {
             if ($(Test-Path "\\$AXSFServer\C$\ProgramData\SF\clusterManifest.xml") -eq $false) {
                 Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
             }
+            Write-PSFMessage -Message "Not running DB Sync Locally will trigger via WinRM" -Level Verbose
 
             $process = Invoke-PSFCommand -ComputerName $AXSFServer -ScriptBlock { 
                 Write-PSFMessage -Message "Looking for the AX Process to find deployment exe and the packages folder to start the Database Synchronize" -Level Warning 

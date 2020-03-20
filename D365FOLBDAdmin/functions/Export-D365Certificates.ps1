@@ -23,12 +23,16 @@ function Export-D365Certificates {
         [Parameter(Mandatory = $true)]
         [string]$CertThumbprint,
         [Parameter(Mandatory = $true)]
-        [string]$ExportLocation
+        [string]$ExportLocation,
+        [string]$Username
     )
     ##Export
     $cert = $CertThumbprint
     mkdir $ExportLocation
-
+if ($Username)
+{
+    $Username = whoami
+}
     try {
         Get-ChildItem "Cert:\localmachine\my" | Where-Object { $_.Thumbprint -eq $cert } | ForEach-Object -Process { Export-PfxCertificate -Cert $_ -FilePath $("$ExportLocation\" + $_.FriendlyName + ".pfx") -ProtectTo "$Username" }
     }
