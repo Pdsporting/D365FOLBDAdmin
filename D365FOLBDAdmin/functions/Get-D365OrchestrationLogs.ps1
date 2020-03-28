@@ -42,6 +42,6 @@ function Get-D365OrchestrationLogs {
             'LatestEventInLog' = $LatestEventInLog;
         }
     }
-    $all = $Primary + $secondary | Sort-Object { $_.TimeCreated } -Descending | Select-Object -First $NumberofEventsToCheck
+    $all = $Primary + $secondary | Sort-Object { $_.TimeCreated } -Descending | Select-Object -First $NumberofEvents
     return $all
 }
