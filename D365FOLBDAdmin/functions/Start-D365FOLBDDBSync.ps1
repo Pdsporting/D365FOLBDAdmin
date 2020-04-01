@@ -40,7 +40,7 @@ function Start-D365FOLBDDBSync {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $False)]
-        [string]$AXSFServer, ## Remote execution needs to be tested and worked on use localhost until then
+        [string[]]$AXSFServer, ## Remote execution needs to be tested and worked on use localhost until then
         [Parameter(Mandatory = $true)]
         [string]$AXDatabaseServer,
         [Parameter(Mandatory = $true)]
@@ -56,6 +56,7 @@ function Start-D365FOLBDDBSync {
     }
     
     process {
+        $AXSFServer = Select-Object -First 1 $AXSFServer
         if (($AXSFServer.IsLocalhost) -or ($AXSFServer -eq $env:COMPUTERNAME) -or ($AXSFServer -eq "$env:COMPUTERNAME.$env:UserDNSDOMAINNAME"))  {
             Write-PSFMessage -Message "AXSF is local Server" -Level Verbose
             Write-PSFMessage -Message "Looking for the AX Process to find deployment exe and the packages folder to start the Database Synchronize" -Level Warning 
@@ -66,7 +67,7 @@ function Start-D365FOLBDDBSync {
 
             ##Props to Microsoft for below technique in next few lines copied/learned from the 2012 deployment scripts https://gallery.technet.microsoft.com/scriptcenter/Build-and-deploy-for-b166c6e4
             $CommandLineArgs = '-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd {5} --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser, $SQLUserPassword
-            $DbSyncProcess = Start-Process -filepath $D365DeploymentExe.FullName -ArgumentList $CommandLineArgs -Verbose
+            $DbSyncProcess = Start-Process -filepath $D365DeploymentExe.FullName -ArgumentList $CommandLineArgs -Verbose -PassThru -OutVariable out
 
             if ($DbSyncProcess.WaitForExit(60000 * $Timeout) -eq $false) {
                 $DbSyncProcess.Kill()
