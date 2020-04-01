@@ -40,7 +40,7 @@ function Start-D365FOLBDDBSync {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $False)]
-        [string[]]$AXSFServer, ## Remote execution needs to be tested and worked on use localhost until then
+        [string]$AXSFServer, ## Remote execution needs to be tested and worked on use localhost until then
         [Parameter(Mandatory = $true)]
         [string]$AXDatabaseServer,
         [Parameter(Mandatory = $true)]
@@ -56,7 +56,7 @@ function Start-D365FOLBDDBSync {
     }
     
     process {
-        $AXSFServer = Select-Object -First 1 $AXSFServer
+        #$AXSFServer = Select-Object -First 1 $AXSFServer
         if (($AXSFServer.IsLocalhost) -or ($AXSFServer -eq $env:COMPUTERNAME) -or ($AXSFServer -eq "$env:COMPUTERNAME.$env:UserDNSDOMAINNAME"))  {
             Write-PSFMessage -Message "AXSF is local Server" -Level Verbose
             Write-PSFMessage -Message "Looking for the AX Process to find deployment exe and the packages folder to start the Database Synchronize" -Level Warning 
