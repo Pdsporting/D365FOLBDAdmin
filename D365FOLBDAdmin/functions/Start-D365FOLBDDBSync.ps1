@@ -65,8 +65,8 @@ function Start-D365FOLBDDBSync {
             $AXSFCodeBinFolder = Join-Path $AXSFCodeFolder "\bin"
             $D365DeploymentExe = Get-ChildItem $AXSFCodeBinFolder | Where-Object { $_.Name -eq "Microsoft.Dynamics.AX.Deployment.Setup.exe" }
 
-            ##Props to Microsoft for below technique in next few lines copied/learned from the 2012 deployment scripts https://gallery.technet.microsoft.com/scriptcenter/Build-and-deploy-for-b166c6e4
             $CommandLineArgs = '-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd {5} --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser, $SQLUserPassword
+            
             $DbSyncProcess = Start-Process -filepath $D365DeploymentExe.FullName -ArgumentList $CommandLineArgs -Verbose -PassThru -OutVariable out
 
             if ($DbSyncProcess.WaitForExit(60000 * $Timeout) -eq $false) {
@@ -78,11 +78,12 @@ function Start-D365FOLBDDBSync {
             }
         }
         else {
+
             Write-PSFMessage -Message "Connecting to admin share on $AXSFServer for cluster config" -Level Verbose
             if ($(Test-Path "\\$AXSFServer\C$\ProgramData\SF\clusterManifest.xml") -eq $false) {
                 Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
             }
-            Write-PSFMessage -Message "Not running DB Sync Locally will trigger via WinRM" -Level Verbose
+            Write-PSFMessage -Message "Not running DB Sync locally due to not AXSF server will trigger via WinRM" -Level Verbose
 
             $process = Invoke-PSFCommand -ComputerName $AXSFServer -ScriptBlock { 
                 Write-PSFMessage -Message "Looking for the AX Process to find deployment exe and the packages folder to start the Database Synchronize" -Level Warning 
@@ -104,8 +105,7 @@ function Start-D365FOLBDDBSync {
                 else {
                     return $true;
                 }
-            }
-        }
+            } -Verbose
         
     }
     
