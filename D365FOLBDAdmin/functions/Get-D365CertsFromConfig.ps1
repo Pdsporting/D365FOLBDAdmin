@@ -1,4 +1,4 @@
-function Get-D365CertFromConfig {
+function Get-D365CertsFromConfig {
     <#
        .SYNOPSIS
        Grabs the certificatedetails from the config for easier export/analysis
@@ -34,9 +34,10 @@ function Get-D365CertFromConfig {
      
         $allCerts = $Config.PSObject.Properties | Where-Object { $_.name -like '*Cert*' } | Select-Object Name, value
     
-        $admincerts = $allCerts | Where-Object { $_.name -eq "SessionAuthenticationCertificate" -or $_.name -eq "SFClientCertificate" }
+        $admincerts = $allCerts | Where-Object { $_.name -eq "SFServerCertificate" -or $_.name -eq "SFClientCertificate" }
     
         if ($OnlyAdminCerts) {
+            
             $admincerts
         }
         else {

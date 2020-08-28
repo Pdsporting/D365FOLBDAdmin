@@ -13,13 +13,13 @@ function Export-D365Certificates {
   .EXAMPLE
   Export-D365FOLBDAssetModuleVersion
 
-  .PARAMETER AgentShare
+  .PARAMETER ExportLocation
   optional string 
-  The location of the Agent Share
+  The location where the certificates will export to.
 
-  .PARAMETER CustomModuleName
+  .PARAMETER Username
   optional string 
-  The name of the custom module you will be using to capture the version number.
+  The username this will be protected to
 
   #>
     param
@@ -31,23 +31,20 @@ function Export-D365Certificates {
         [string]$Username
     )
     ##Export
-    $cert = $CertThumbprint
     mkdir $ExportLocation
-if ($Username)
-{
-    $Username = whoami
-}
+    if (!$Username) {
+        $Username = whoami
+    }
     try {
-        Get-ChildItem "Cert:\localmachine\my" | Where-Object { $_.Thumbprint -eq $cert } | ForEach-Object -Process { Export-PfxCertificate -Cert $_ -FilePath $("$ExportLocation\" + $_.FriendlyName + ".pfx") -ProtectTo "$Username" }
+        Get-ChildItem "Cert:\localmachine\my" | Where-Object { $_.Thumbprint -eq $CertThumbprint } | ForEach-Object -Process { Export-PfxCertificate -Cert $_ -FilePath $("$ExportLocation\" + $_.FriendlyName + ".pfx") -ProtectTo "$Username" }
     }
     catch {
         try {
-            Get-ChildItem "Cert:\CurrentUser\my" | Where-Object { $_.Thumbprint -eq $cert } | ForEach-Object -Process { Export-PfxCertificate -Cert $_ -FilePath $("$ExportLocation\" + $_.FriendlyName + ".pfx") -ProtectTo "$Username" }
+            Get-ChildItem "Cert:\CurrentUser\my" | Where-Object { $_.Thumbprint -eq $CertThumbprint } | ForEach-Object -Process { Export-PfxCertificate -Cert $_ -FilePath $("$ExportLocation\" + $_.FriendlyName + ".pfx") -ProtectTo "$Username" }
         }
         catch {
             Write-PSFMessage -Level Verbose "Can't Export Certificate"
-            $_
-            
+            $_ 
         }
     }
 }
