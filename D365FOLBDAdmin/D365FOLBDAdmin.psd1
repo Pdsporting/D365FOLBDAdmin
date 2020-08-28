@@ -45,7 +45,10 @@
 		'Export-D365FOLBDAssetModuleVersion',
 		'Get-D365OrchestrationLogs',
 		'Get-D365OrchestrationNodes',
-		'Remove-D365StuckApps'
+		'Remove-D365StuckApps',
+		'Export-D365Certificates',
+		'Import-D365Certificates',
+		'Get-D365CertsFromConfig'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
