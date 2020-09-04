@@ -5,7 +5,7 @@ function Export-D365FOLBDAssetModuleVersion {
    .DESCRIPTION
     Exports 
    .EXAMPLE
-   Export-D365FOLBDAssetModuleVersio
+   Export-D365FOLBDAssetModuleVersion
  
    .EXAMPLE
     Export-D365FOLBDAssetModuleVersion

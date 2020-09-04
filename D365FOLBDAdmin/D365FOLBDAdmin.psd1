@@ -48,7 +48,12 @@
 		'Remove-D365StuckApps',
 		'Export-D365Certificates',
 		'Import-D365Certificates',
-		'Get-D365CertsFromConfig'
+		'Get-D365CertsFromConfig',
+		'Connect-ServiceFabricAutomatic',
+		'Export-D365Certificates',
+		'Get-D365CertsFromConfig',
+		'Get-TestConfigData',
+		'Start-MonitorD365Deployment'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''

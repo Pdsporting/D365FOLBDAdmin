@@ -49,7 +49,7 @@ function Start-D365FOLBDDBSync {
         [string]$SQLUser,
         [Parameter(Mandatory = $true)]
         [string]$SQLUserPassword,
-        [int]$Timeout=60
+        [int]$Timeout = 60
     )
     
     begin {
@@ -57,7 +57,7 @@ function Start-D365FOLBDDBSync {
     
     process {
         #$AXSFServer = Select-Object -First 1 $AXSFServer
-        if (($AXSFServer.IsLocalhost) -or ($AXSFServer -eq $env:COMPUTERNAME) -or ($AXSFServer -eq "$env:COMPUTERNAME.$env:UserDNSDOMAINNAME"))  {
+        if (($AXSFServer.IsLocalhost) -or ($AXSFServer -eq $env:COMPUTERNAME) -or ($AXSFServer -eq "$env:COMPUTERNAME.$env:UserDNSDOMAINNAME")) {
             Write-PSFMessage -Message "AXSF is local Server" -Level Verbose
             Write-PSFMessage -Message "Looking for the AX Process to find deployment exe and the packages folder to start the Database Synchronize" -Level Warning 
             $AXSFCodeFolder = Split-Path $(Get-Process | Where-Object { $_.name -eq "AXService" }).Path -Parent
@@ -107,9 +107,10 @@ function Start-D365FOLBDDBSync {
                 }
             } -Verbose
         
-    }
+        }
     
-    end {
+        end {
         
+        }
     }
 }
