@@ -209,6 +209,12 @@
             $jsonClusterConfig = get-content "\\$AXSFConfigServerName\C$\ProgramData\SF\clusterconfig.json"
             $SFClusterCertificate = ($jsonClusterConfig | ConvertFrom-Json).properties.security.certificateinformation.clustercertificate.Thumbprint
     
+            try {
+              # get- Get-ChildItem -path 
+            }
+            catch {
+                
+            }
             # Collect information into a hashtable
             $Properties = @{
                 "AllAppServerList"                 = $AllAppServerList

@@ -47,6 +47,6 @@ function Get-TestConfigData {
         [PSCustomObject]$Properties
     }
 
-END {
-}
+    END {
+    }
 }

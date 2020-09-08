@@ -33,7 +33,6 @@ function Export-D365FOLBDAssetModuleVersion {
         $versionfile = $null
         $versionfilepath = $AssetFolder.FullName + "\$ModuleName*.xml"
         $versionfile = Get-ChildItem -Path $versionfilepath
-
         if (($null -eq $versionfile) -or !($versionfile)) {
             ##SpecificAssetFolder which will be output
             $SpecificAssetFolder = $AssetFolder.FullName

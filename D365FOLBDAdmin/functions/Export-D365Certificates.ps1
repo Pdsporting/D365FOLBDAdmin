@@ -31,7 +31,14 @@ function Export-D365Certificates {
         [string]$Username
     )
     ##Export
-    mkdir $ExportLocation
+    if (Test-Path -Path $ExportLocation -IsValid)
+    {
+
+    }
+    else{
+        mkdir $ExportLocation
+    }
+   
     if (!$Username) {
         $Username = whoami
     }

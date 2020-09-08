@@ -20,9 +20,9 @@ function Import-D365Certificates {
   #>
     param
     (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [string]$CertThumbprint,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [string]$CertFolder,
         [switch]$Exportable
 
