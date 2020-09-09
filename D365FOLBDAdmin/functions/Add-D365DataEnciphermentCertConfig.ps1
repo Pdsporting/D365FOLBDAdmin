@@ -1,4 +1,4 @@
-function Get-D365LBDConfig {
+function Add-D365DataEnciphermentCertConfig {
     <#
     .SYNOPSIS
    Grabs the configuration of the local business data environment
@@ -48,11 +48,7 @@ function Get-D365LBDConfig {
             $Thumbprint | Out-file \\$server\c$\ProgramData\SF\DataEnciphermentCert.txt
         }
     }
-
+    END {
       
-}
-}
-END {
-      
-}
+    }
 }

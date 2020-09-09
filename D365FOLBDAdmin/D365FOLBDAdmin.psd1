@@ -53,7 +53,8 @@
 		'Export-D365Certificates',
 		'Get-D365CertsFromConfig',
 		'Get-TestConfigData',
-		'Start-MonitorD365Deployment'
+		'Start-MonitorD365Deployment',
+		'Add-D365DataEnciphermentCertConfig'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
