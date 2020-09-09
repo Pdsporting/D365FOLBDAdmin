@@ -187,14 +187,14 @@
                 $reportconfig = Get-ChildItem "\\$ReportServerServerName\C$\ProgramData\SF\*\Fabric\work\Applications\ReportingService_*\ReportingBootstrapperPkg.Package.current.xml"
                 [xml]$xml = Get-Content $reportconfig.FullName
                 $Reportingconfigdetails = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -EQ 'ReportingServices' }
-                $ReportingSSRSCertificate = ($Reportingconfigdetails.parameter | Where-Object {$_.Name -eq "ReportingClientCertificateThumbprint"}).value
+                $ReportingSSRSCertificate = ($Reportingconfigdetails.parameter | Where-Object { $_.Name -eq "ReportingClientCertificateThumbprint" }).value
             }
             catch {
                 try {
                     $reportconfig = Get-ChildItem "\\$ReportServerServerName\C$\ProgramData\SF\*\Fabric\work\Applications\ReportingService_*\ReportingBootstrapperPkg.Package.1.0.xml"
                     [xml]$xml = Get-Content $reportconfig.FullName
                     $Reportingconfigdetails = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -EQ 'ReportingServices' }
-                    $ReportingSSRSCertificate = ($Reportingconfigdetails.parameter | Where-Object {$_.Name -eq "ReportingClientCertificateThumbprint"}).value
+                    $ReportingSSRSCertificate = ($Reportingconfigdetails.parameter | Where-Object { $_.Name -eq "ReportingClientCertificateThumbprint" }).value
                 }
                 catch {
                     Write-PSFMessage -Level Warning -Message "WARNING: Can't gather information from the Reporting Server $ReportServerServerName"
@@ -212,8 +212,14 @@
             }
             $jsonClusterConfig = get-content "\\$AXSFConfigServerName\C$\ProgramData\SF\clusterconfig.json"
             $SFClusterCertificate = ($jsonClusterConfig | ConvertFrom-Json).properties.security.certificateinformation.clustercertificate.Thumbprint
-            $FinancialReportingCertificate = $($AXServiceConfigXML.configuration.claimIssuerRestrictions.issuerrestrictions.add | Where-Object {$_.alloweduserids -eq "FRServiceUser"}).name
+            $FinancialReportingCertificate = $($AXServiceConfigXML.configuration.claimIssuerRestrictions.issuerrestrictions.add | Where-Object { $_.alloweduserids -eq "FRServiceUser" }).name
            
+            if (test-path \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt) {
+                $DataEnciphermentCertificate = Get-Content \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt
+            }
+            else {
+                Write-Warning "No Encipherment Cert Found run the Add-D365DataEncirphmentConfig to add"
+            }
             # Collect information into a hashtable
             $Properties = @{
                 "AllAppServerList"                 = $AllAppServerList
@@ -242,7 +248,7 @@
                 "SessionAuthenticationCertificate" = $SessionAuthenticationCertificate
                 "SharedAccessSMBCertificate"       = $SharedAccessSMBCertificate
                 "LocalAgentCertificate"            = $LocalAgentCertificate
-                "DataEnciphermentCertificate"      = ""
+                "DataEnciphermentCertificate"      = "$DataEnciphermentCertificate"
                 "FinancialReportingCertificate"    = $FinancialReportingCertificate
                 "ReportingSSRSCertificate"         = "$ReportingSSRSCertificate"
             }
