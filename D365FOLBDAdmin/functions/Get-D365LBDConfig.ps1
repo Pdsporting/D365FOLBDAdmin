@@ -215,10 +215,12 @@
             $FinancialReportingCertificate = $($AXServiceConfigXML.configuration.claimIssuerRestrictions.issuerrestrictions.add | Where-Object { $_.alloweduserids -eq "FRServiceUser" }).name
            
             if (test-path \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt) {
+                Write-PSFMessage -Level Verbose -Message "Found DataEncipherment config"
                 $DataEnciphermentCertificate = Get-Content \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt
             }
             else {
-                Write-Warning "No Encipherment Cert Found run the Add-D365DataEncirphmentConfig to add"
+                Write-PSFMessage -Level Warning -Message "No Encipherment Cert Found run the Add-D365DataEncirphmentConfig to add"
+                
             }
             # Collect information into a hashtable
             $Properties = @{

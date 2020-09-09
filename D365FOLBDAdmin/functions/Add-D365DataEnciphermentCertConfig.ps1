@@ -40,20 +40,19 @@ function Get-D365LBDConfig {
     BEGIN {
     }
     PROCESS {
-        if (!$Config){
+        if (!$Config) {
             $Config = Get-D365LBDConfig
         }
 
-foreach ($server in $Config.AllAppServerList)
-{
-    $Thumbprint | Out-file \\$server\c$\ProgramData\SF\DataEnciphermentCert.txt
-}
-}
-
-      
+        foreach ($server in $Config.AllAppServerList) {
+            $Thumbprint | Out-file \\$server\c$\ProgramData\SF\DataEnciphermentCert.txt
         }
     }
-    END {
+
       
-    }
+}
+}
+END {
+      
+}
 }
