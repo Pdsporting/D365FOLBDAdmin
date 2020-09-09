@@ -33,7 +33,6 @@ function Export-D365Certificates {
     ##Export
     if (Test-Path -Path $ExportLocation -IsValid)
     {
-
     }
     else{
         mkdir $ExportLocation

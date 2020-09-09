@@ -56,6 +56,8 @@
                     Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Stopping" -EnableException $true -Cmdlet $PSCmdlet
                 }
                 $ClusterManifestXMLFile = get-childitem "C:\ProgramData\SF\clusterManifest.xml" 
+                $AXServiceConfigXMLFile = get-childitem "C:\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config"
+
             }
             else {
                 Write-PSFMessage -Message "Connecting to admin share on $ComputerName for cluster config" -Level Verbose
@@ -63,15 +65,17 @@
                     Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
                 }
                 $ClusterManifestXMLFile = get-childitem "\\$ComputerName\C$\ProgramData\SF\clusterManifest.xml"
+                $AXServiceConfigXMLFile = get-childitem "\\$ComputerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config"
             }
             if (!($ClusterManifestXMLFile)) {
-                Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
+                Stop-PSFFunction -Message "Error: This is not an Local Business Data server or the application is not installed. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
             }
             
             if ($(test-path $ClusterManifestXMLFile) -eq $false) {
                 Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
             }
             [xml]$xml = get-content $ClusterManifestXMLFile
+            [xml]$AXServiceConfigXML = get-content $AXServiceConfigXMLFile
     
             $OrchestratorServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'OrchestratorType' }).NodeName
             $AXSFServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'AOSNodeType' }).NodeName
@@ -208,13 +212,8 @@
             }
             $jsonClusterConfig = get-content "\\$AXSFConfigServerName\C$\ProgramData\SF\clusterconfig.json"
             $SFClusterCertificate = ($jsonClusterConfig | ConvertFrom-Json).properties.security.certificateinformation.clustercertificate.Thumbprint
-    
-            try {
-              # get- Get-ChildItem -path 
-            }
-            catch {
-                
-            }
+            $FinancialReportingCertificate = $($AXServiceConfigXML.configuration.claimIssuerRestrictions.issuerrestrictions.add | Where-Object {$_.alloweduserids -eq "FRServiceUser"}).name
+           
             # Collect information into a hashtable
             $Properties = @{
                 "AllAppServerList"                 = $AllAppServerList
@@ -244,7 +243,7 @@
                 "SharedAccessSMBCertificate"       = $SharedAccessSMBCertificate
                 "LocalAgentCertificate"            = $LocalAgentCertificate
                 "DataEnciphermentCertificate"      = ""
-                "FinancialReportingCertificate"    = ""
+                "FinancialReportingCertificate"    = $FinancialReportingCertificate
                 "ReportingSSRSCertificate"         = "$ReportingSSRSCertificate"
             }
             ##Sends Custom Object to Pipeline

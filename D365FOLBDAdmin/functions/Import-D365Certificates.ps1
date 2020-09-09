@@ -27,7 +27,7 @@ function Import-D365Certificates {
         [switch]$Exportable
 
     )
-    ##Import
+    ##Import do to.. bythumbprint
     $certs = get-childitem "$CertFolder"
     foreach ($cert in $certs) {
         if ($Exportable){
