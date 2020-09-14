@@ -1,8 +1,9 @@
-function Get-TestConfigData {
+function Get-D365LBDTestConfigData {
     <#
     .SYNOPSIS
    Made to test D365 Config functions
    #>
+   [alias("Get-D365TestConfigData")]
     [CmdletBinding()]
     param(        
     )
@@ -10,7 +11,6 @@ function Get-TestConfigData {
     BEGIN {
     }
     PROCESS {
-
         # Collect information into a hashtable
         $Properties = @{
             "AllAppServerList"                 = ('Server1', 'Server2', 'Server3', 'Server4', 'Server5')

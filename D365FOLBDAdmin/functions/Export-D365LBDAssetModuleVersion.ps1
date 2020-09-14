@@ -1,5 +1,5 @@
 function Export-D365FOLBDAssetModuleVersion {
-     <#
+    <#
     .SYNOPSIS
    Looks inside the agent share extracts the version from the zip by using the custom module name. Puts an xml in root for easy idenitification
    .DESCRIPTION
@@ -18,6 +18,7 @@ function Export-D365FOLBDAssetModuleVersion {
    The name of the custom module you will be using to capture the version number
 
    #>
+    [alias("Add-D365DataEnciphermentCertConfig")]
     param
     (
         [Parameter(Mandatory = $true)]
@@ -52,8 +53,7 @@ function Export-D365FOLBDAssetModuleVersion {
                     # extract the selected items from the ZIP archive
                     # and copy them to the out folder
                     $FileName = $_.Name
-                    [System.IO.Compression.ZipFileExtensions]::ExtractToFile($_, "$SpecificAssetFolder\$FileName")
-                    
+                    [System.IO.Compression.ZipFileExtensions]::ExtractToFile($_, "$SpecificAssetFolder\$FileName") 
                 }
                 ##Closes Zip
                 $zip.Dispose()

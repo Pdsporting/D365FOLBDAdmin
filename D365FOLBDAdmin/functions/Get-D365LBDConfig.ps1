@@ -26,6 +26,7 @@
    The name of the custom module you will be using to caputre the version number
 
    #>
+    [alias("Get-D365Config")]
     [CmdletBinding()]
     param([Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,
@@ -92,6 +93,10 @@
                 if (!$OrchServiceLocalAgentConfigXML) {
                     Write-PSFMessage -Message "Verbose: Connecting to $OrchestratorServerName for Orchestrator config" -Level Verbose
                     $OrchServiceLocalAgentConfigXML = get-childitem "\\$OrchestratorServerName\C$\ProgramData\SF\*\Fabric\work\Applications\LocalAgentType_App*\OrchestrationServicePkg.Package.Current.xml"
+                }
+                if (!$OrchServiceLocalAgentVersionNumber) {
+                    Write-PSFMessage -Message "Verbose: Connecting to $OrchestratorServerName for Orchestrator Local Agent version" -Level Verbose
+                    $OrchServiceLocalAgentVersionNumber = $(get-childitem "\\$OrchestratorServerName\C$\ProgramData\SF\*\Fabric\work\Applications\LocalAgentType_App*\OrchestrationServicePkg.Code.*\OrchestrationService.exe").VersionInfo.Fileversion
                 }
             }
             if (!$OrchServiceLocalAgentConfigXML) {
@@ -220,39 +225,40 @@
             }
             else {
                 Write-PSFMessage -Level Warning -Message "No Encipherment Cert Found run the Add-D365DataEncirphmentConfig to add"
-                
             }
+
             # Collect information into a hashtable
             $Properties = @{
-                "AllAppServerList"                 = $AllAppServerList
-                "OrchestratorServerNames"          = $OrchestratorServerNames
-                "AXSFServerNames"                  = $AXSFServerNames
-                "ReportServerServerName"           = $ReportServerServerName
-                "ReportServerServerip"             = $ReportServerServerip
-                "OrchDatabaseName"                 = $OrchDatabase
-                "OrchDatabaseServer"               = $OrchdatabaseServer
-                "AgentShareLocation"               = $AgentShareLocation
-                "SFClientCertificate"              = $ClientCert
-                "SFClusterID"                      = $ClusterID
-                "SFConnectionEndpoint"             = $ConnectionEndpoint
-                "SFServerCertificate"              = $ServerCertificate
-                "SFClusterCertificate"             = $SFClusterCertificate
-                "ClientURL"                        = $ClientURL
-                "AXDatabaseServer"                 = $AXDatabaseServer
-                "AXDatabaseName"                   = $AXDatabaseName
-                "LCSEnvironmentID"                 = $LCSEnvironmentId
-                "LCSEnvironmentName"               = $LCSEnvironmentName
-                "TenantID"                         = $TenantID
-                "SourceComputerName"               = $ComputerName
-                "CustomModuleVersion"              = $CustomModuleVersion
-                "DataEncryptionCertificate"        = $DataEncryptionCertificate 
-                "DataSigningCertificate"           = $DataSigningCertificate
-                "SessionAuthenticationCertificate" = $SessionAuthenticationCertificate
-                "SharedAccessSMBCertificate"       = $SharedAccessSMBCertificate
-                "LocalAgentCertificate"            = $LocalAgentCertificate
-                "DataEnciphermentCertificate"      = "$DataEnciphermentCertificate"
-                "FinancialReportingCertificate"    = $FinancialReportingCertificate
-                "ReportingSSRSCertificate"         = "$ReportingSSRSCertificate"
+                "AllAppServerList"                   = $AllAppServerList
+                "OrchestratorServerNames"            = $OrchestratorServerNames
+                "AXSFServerNames"                    = $AXSFServerNames
+                "ReportServerServerName"             = $ReportServerServerName
+                "ReportServerServerip"               = $ReportServerServerip
+                "OrchDatabaseName"                   = $OrchDatabase
+                "OrchDatabaseServer"                 = $OrchdatabaseServer
+                "AgentShareLocation"                 = $AgentShareLocation
+                "SFClientCertificate"                = $ClientCert
+                "SFClusterID"                        = $ClusterID
+                "SFConnectionEndpoint"               = $ConnectionEndpoint
+                "SFServerCertificate"                = $ServerCertificate
+                "SFClusterCertificate"               = $SFClusterCertificate
+                "ClientURL"                          = $ClientURL
+                "AXDatabaseServer"                   = $AXDatabaseServer
+                "AXDatabaseName"                     = $AXDatabaseName
+                "LCSEnvironmentID"                   = $LCSEnvironmentId
+                "LCSEnvironmentName"                 = $LCSEnvironmentName
+                "TenantID"                           = $TenantID
+                "SourceComputerName"                 = $ComputerName
+                "CustomModuleVersion"                = $CustomModuleVersion
+                "DataEncryptionCertificate"          = $DataEncryptionCertificate 
+                "DataSigningCertificate"             = $DataSigningCertificate
+                "SessionAuthenticationCertificate"   = $SessionAuthenticationCertificate
+                "SharedAccessSMBCertificate"         = $SharedAccessSMBCertificate
+                "LocalAgentCertificate"              = $LocalAgentCertificate
+                "DataEnciphermentCertificate"        = "$DataEnciphermentCertificate"
+                "FinancialReportingCertificate"      = $FinancialReportingCertificate
+                "ReportingSSRSCertificate"           = "$ReportingSSRSCertificate"
+                "OrchServiceLocalAgentVersionNumber" = $OrchServiceLocalAgentVersionNumber
             }
             ##Sends Custom Object to Pipeline
             [PSCustomObject]$Properties

@@ -1,8 +1,7 @@
 function Connect-ServiceFabricAutomatic {
     <#
    .SYNOPSIS
-  Looks inside the agent share extracts the version from the zip by using the custom module name.
-  Puts an xml in root for easy idenitification.
+  todo not working yet
 
   .DESCRIPTION
    Connect-ServiceFabricAutomatic
@@ -13,21 +12,14 @@ function Connect-ServiceFabricAutomatic {
   .EXAMPLE
   Connect-ServiceFabricAutomatic
 
-  .PARAMETER AgentShare
-
-  optional string 
-  The location of the Agent Share
-
-  .PARAMETER CustomModuleName
-  optional string 
-  The name of the custom module you will be using to capture the version number.
+  .PARAMETER Config
+  optional custom object generated from Get-D365LBDConfig 
 
   #>
     param
     (
         [Parameter(Mandatory = $false)]
         [psobject]$Config
-        
     )
     {
         try {
@@ -40,12 +32,9 @@ function Connect-ServiceFabricAutomatic {
         catch {
             Write-PSFMessage -Level Error Message "Error: Service Fabric Powershell module not installed" 
         }
-        if (!$Config){
+        if (!$Config) {
             $Config = Get-D365LBDConfig
-        }
-        
-        
+        }  
+        Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate
     }
-
-     
 }

@@ -1,4 +1,5 @@
-function Get-D365OrchestrationLogs {
+function Get-D365LBDOrchestrationLogs {
+    [alias("Get-D365OrchestrationLogs")]
     param (
         [string]$ComputerName,
         [string]$ActiveSecondary,

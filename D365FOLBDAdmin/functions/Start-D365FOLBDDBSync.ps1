@@ -1,4 +1,4 @@
-function Start-D365FOLBDDBSync {
+function Start-D365LBDDBSync {
     <#
     .SYNOPSIS
    Starts a Database Synchronization on a Dynamics 365 Finance and Operations Server
@@ -37,6 +37,7 @@ function Start-D365FOLBDDBSync {
    The timeout period of the database synchronization
    
    #>
+    [alias("Start-D365DBSync","Start-D365FOLBDDBSync")]
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $False)]
@@ -78,7 +79,6 @@ function Start-D365FOLBDDBSync {
             }
         }
         else {
-
             Write-PSFMessage -Message "Connecting to admin share on $AXSFServer for cluster config" -Level Verbose
             if ($(Test-Path "\\$AXSFServer\C$\ProgramData\SF\clusterManifest.xml") -eq $false) {
                 Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
@@ -108,9 +108,7 @@ function Start-D365FOLBDDBSync {
             } -Verbose
         
         }
-    
         end {
-        
         }
     }
 }

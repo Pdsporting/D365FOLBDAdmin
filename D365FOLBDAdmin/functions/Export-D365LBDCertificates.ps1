@@ -1,4 +1,4 @@
-function Export-D365Certificates {
+function Export-D365LBDCertificates {
     <#
    .SYNOPSIS
   Looks inside the agent share extracts the version from the zip by using the custom module name.
@@ -22,6 +22,7 @@ function Export-D365Certificates {
   The username this will be protected to
 
   #>
+    [alias("Add-D365DataEnciphermentCertConfig")]
     param
     (
         [Parameter(Mandatory = $true)]
@@ -31,13 +32,11 @@ function Export-D365Certificates {
         [string]$Username
     )
     ##Export
-    if (Test-Path -Path $ExportLocation -IsValid)
-    {
+    if (Test-Path -Path $ExportLocation -IsValid) {
     }
-    else{
+    else {
         mkdir $ExportLocation
     }
-   
     if (!$Username) {
         $Username = whoami
     }
@@ -53,4 +52,4 @@ function Export-D365Certificates {
             $_ 
         }
     }
-}
+} 

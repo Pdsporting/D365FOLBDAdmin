@@ -1,4 +1,4 @@
-function Get-D365CertsFromConfig {
+function Get-D365LBDCertsFromConfig {
     <#
        .SYNOPSIS
        Grabs the certificatedetails from the config for easier export/analysis
@@ -17,6 +17,7 @@ function Get-D365CertsFromConfig {
     
     
        #>
+    [alias("Get-D365CertsFromConfig")]
     [CmdletBinding()]
     param([Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,
@@ -24,8 +25,7 @@ function Get-D365CertsFromConfig {
             HelpMessage = 'D365FO Local Business Data Server Name')]
         [string]$ComputerName = "$env:COMPUTERNAME",
         [Parameter(Mandatory = $false)][psobject]$Config,
-        [switch]$OnlyAdminCerts
-            
+        [switch]$OnlyAdminCerts    
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
@@ -36,16 +36,13 @@ function Get-D365CertsFromConfig {
     
         $admincerts = $allCerts | Where-Object { $_.name -eq "SFServerCertificate" -or $_.name -eq "SFClientCertificate" }
     
-        if ($OnlyAdminCerts) {
-            
+        if ($OnlyAdminCerts) {   
             $admincerts
         }
         else {
             $allcerts
         }
     }
-    END {
-    
-            
+    END {  
     }
 }

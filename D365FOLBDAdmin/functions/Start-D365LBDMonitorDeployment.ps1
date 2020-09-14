@@ -1,11 +1,11 @@
-function Start-MonitorD365Deployment {
+function Start-D365LBDMonitorDeployment {
     <#
    .SYNOPSIS
   Looks inside the agent share extracts the version from the zip by using the custom module name. Puts an xml in root for easy idenitification
   .DESCRIPTION
    Exports 
   .EXAMPLE
-  Export-D365FOLBDAssetModuleVersio
+    Start-D365LBDMonitorDeployment
 
   .EXAMPLE
    Export-D365FOLBDAssetModuleVersion
@@ -18,6 +18,7 @@ function Start-MonitorD365Deployment {
   The name of the custom module you will be using to capture the version number
 
   #>
+    [alias("Start-D365MonitorDeployment")]
     param
     (
         [Parameter(Mandatory = $true)]

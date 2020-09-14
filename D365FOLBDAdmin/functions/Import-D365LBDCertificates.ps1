@@ -1,4 +1,4 @@
-function Import-D365Certificates {
+function Import-D365LBDCertificates {
  <#
    .SYNOPSIS
   Looks inside the agent share extracts the version from the zip by using the custom module name. Puts an xml in root for easy idenitification
@@ -18,6 +18,7 @@ function Import-D365Certificates {
   The name of the custom module you will be using to capture the version number
 
   #>
+  [alias("Import-D365Certificates")]
     param
     (
         [Parameter(Mandatory = $false)]

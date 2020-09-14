@@ -1,5 +1,6 @@
 ##Get Primary and Secondary
-function Get-D365OrchestrationNodes {
+function Get-D365LBDOrchestrationNodes {
+    [alias("Get-D365OrchestrationNodes")]
     $config = Get-D365LBDConfig
     try {
         $connection = Connect-ServiceFabricCluster -connectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $Config.SFServerCertificate -ServerCertThumbprint $Config.SFServerCertificate | Out-Null

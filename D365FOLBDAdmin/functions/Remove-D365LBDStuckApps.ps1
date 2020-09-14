@@ -1,5 +1,6 @@
 
-function Remove-D365StuckApps {
+function Remove-D365LBDStuckApps {
+    [alias("Remove-D365StuckApps")]
     param (
         [string]$SFServerCertificate,
         [string]$SFConnectionEndpoint,
