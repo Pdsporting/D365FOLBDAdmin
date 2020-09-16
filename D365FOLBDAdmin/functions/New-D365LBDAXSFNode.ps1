@@ -3,7 +3,7 @@ function New-D365LBDAXSFNode {
     .SYNOPSIS
    Can only be ran on the local machine
    #>
-   [alias("New-D365AXSFNode")]
+    [alias("New-D365AXSFNode")]
     [CmdletBinding()]
     param
     (
@@ -20,8 +20,9 @@ function New-D365LBDAXSFNode {
     BEGIN {
     }
     PROCESS {
-    $ipaddress = (Get-NetIPAddress | Where-Object { ($_.AddressFamily -eq "IPv4") -and ($_.IPAddress -ne "127.0.0.1") }).IPAddress
-    Set-Location "$ServiceFabricInstallPath"
-    .\AddNode.ps1 -NodeName $env:COMPUTERNAME -NodeType AOSNodeType -NodeIPAddressorFQDN $ipaddress -ExistingClientConnectionEndpoint $SFConnectionEndpoint  -UpgradeDomain $UpdateDomain -FaultDomain $FaultDomain -AcceptEULA -X509Credential -ServerCertThumbprint $SFClusterCertificate -StoreLocation LocalMachine -StoreName My -FindValueThumbprint $SFClientCertificate
+        Write-PSFMessage -Message "Make sure pre reqs are installed including certificates" -Level Verbose
+        $ipaddress = (Get-NetIPAddress | Where-Object { ($_.AddressFamily -eq "IPv4") -and ($_.IPAddress -ne "127.0.0.1") }).IPAddress
+        Set-Location "$ServiceFabricInstallPath"
+        .\AddNode.ps1 -NodeName $env:COMPUTERNAME -NodeType AOSNodeType -NodeIPAddressorFQDN $ipaddress -ExistingClientConnectionEndpoint $SFConnectionEndpoint  -UpgradeDomain $UpdateDomain -FaultDomain $FaultDomain -AcceptEULA -X509Credential -ServerCertThumbprint $SFClusterCertificate -StoreLocation LocalMachine -StoreName My -FindValueThumbprint $SFClientCertificate
     }
 }

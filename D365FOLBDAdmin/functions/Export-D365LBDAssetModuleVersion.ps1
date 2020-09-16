@@ -1,14 +1,14 @@
-function Export-D365FOLBDAssetModuleVersion {
+function Export-D365LBDAssetModuleVersion {
     <#
     .SYNOPSIS
    Looks inside the agent share extracts the version from the zip by using the custom module name. Puts an xml in root for easy idenitification
    .DESCRIPTION
     Exports 
    .EXAMPLE
-   Export-D365FOLBDAssetModuleVersion
+   Export-D365LBDAssetModuleVersion
  
    .EXAMPLE
-    Export-D365FOLBDAssetModuleVersion
+    Export-D365LBDAssetModuleVersion
 
    .PARAMETER AgentShare
    optional string 
@@ -18,7 +18,8 @@ function Export-D365FOLBDAssetModuleVersion {
    The name of the custom module you will be using to capture the version number
 
    #>
-    [alias("Add-D365DataEnciphermentCertConfig")]
+    [alias("Export-D365AssetModuleVersion")]
+    [alias("Export-D365FOLBDAssetModuleVersion")]
     param
     (
         [Parameter(Mandatory = $true)]

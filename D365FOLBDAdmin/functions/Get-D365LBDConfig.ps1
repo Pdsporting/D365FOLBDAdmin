@@ -40,7 +40,7 @@
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
-    }
+    } 
     PROCESS {
         if ($ConfigImportFromFile) {
             Write-PSFMessage -Message "Importing config warning this data may not be the most up to date" -Level Warning
@@ -58,7 +58,6 @@
                 }
                 $ClusterManifestXMLFile = get-childitem "C:\ProgramData\SF\clusterManifest.xml" 
                 $AXServiceConfigXMLFile = get-childitem "C:\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config"
-
             }
             else {
                 Write-PSFMessage -Message "Connecting to admin share on $ComputerName for cluster config" -Level Verbose
@@ -71,7 +70,6 @@
             if (!($ClusterManifestXMLFile)) {
                 Stop-PSFFunction -Message "Error: This is not an Local Business Data server or the application is not installed. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
             }
-            
             if ($(test-path $ClusterManifestXMLFile) -eq $false) {
                 Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
             }
@@ -147,6 +145,19 @@
                 $SFConfig = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Package.1.0.xml"
             }
             if (!$SFConfig) {
+                $count = 1
+                do {
+                    $AXSFConfigServerName = $AXSFServerNames | Select-Object -First 1 -Skip $count
+                    Write-PSFMessage -Message "Verbose: Reaching out to $AXSFConfigServerName for AX config" -Level Verbose
+                    $SFConfig = get-childitem    "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Package.Current.xml"
+                    if (!$SFConfig) {
+                        $SFConfig = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Package.1.0.xml"
+                    }
+                    $count = $count + 1
+                } until ($SFConfig -or ($count -eq $AXSFServerNames.Count))
+            } 
+            
+            if (!$SFConfig) {
                 Write-PSFMessage -Message "Verbose: Cant find AX SF. App may not be installed. All values won't be grabbed" -Level Warning
             }
             else {
@@ -209,7 +220,7 @@
             if (($CustomModuleName)) {
                 $CustomModuleDll = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\Packages\$CustomModuleName\bin\Dynamics.AX.$CustomModuleName.dll"
                 if (-not (Test-Path $CustomModuleDll)) {
-                    Write-PSFMessage -Message "WARNING: Custom Module Not found version unable to be found" -Level Warning
+                    Write-PSFMessage -Message "WARNING: Custom Module not found; version unable to be found" -Level Warning
                 }
                 else {
                     $CustomModuleVersion = $CustomModuleDll.VersionInfo.FileVersion

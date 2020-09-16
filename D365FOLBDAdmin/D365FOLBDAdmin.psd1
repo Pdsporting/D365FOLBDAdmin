@@ -42,19 +42,20 @@
 	FunctionsToExport = @(
 		'Get-D365LBDConfig',
 		'Start-D365FOLBDDBSync',
-		'Export-D365FOLBDAssetModuleVersion',
-		'Get-D365OrchestrationLogs',
-		'Get-D365OrchestrationNodes',
-		'Remove-D365StuckApps',
-		'Export-D365Certificates',
-		'Import-D365Certificates',
+		'Export-D365LBDAssetModuleVersion',
+		'Get-D365LBDOrchestrationLogs',
+		'Get-D365LBDOrchestrationNodes',
+		'Remove-D365LBDStuckApps',
+		'Export-D365LBDCertificates',
+		'Import-D365LBDCertificates',
 		'Get-D365CertsFromConfig',
 		'Connect-ServiceFabricAutomatic',
 		'Export-D365Certificates',
 		'Get-D365CertsFromConfig',
-		'Get-TestConfigData',
+		'Get-D365LBDTestConfigData',
 		'Start-MonitorD365Deployment',
-		'Add-D365DataEnciphermentCertConfig'
+		'Add-D365LBDDataEnciphermentCertConfig',
+		"New-D365LBDAXSFNode"
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
@@ -63,7 +64,13 @@
 	VariablesToExport = ''
 	
 	# Aliases to export from this module
-	AliasesToExport = ''
+	AliasesToExport = @('Add-D365DataEnciphermentCertConfig',
+	"Export-D365AssetModuleVersion",
+	"Export-D365FOLBDAssetModuleVersion", 
+	"Get-D365CertsFromConfig","Get-D365Config","Get-D365OrchestrationLogs","Get-D365OrchestrationNodes","Get-D365TestConfigData",
+	"Import-D365LBDCertificates"
+	"New-D365AXSFNode","Remove-D365StuckApps",
+	"Start-D365DBSync","Start-D365FOLBDDBSync")
 	
 	# List of all modules packaged with this module
 	ModuleList = @()
