@@ -18,8 +18,7 @@ function Export-D365LBDAssetModuleVersion {
    The name of the custom module you will be using to capture the version number
 
    #>
-    [alias("Export-D365AssetModuleVersion")]
-    [alias("Export-D365FOLBDAssetModuleVersion")]
+    [alias("Export-D365FOLBDAssetModuleVersion","Export-D365AssetModuleVersion")]
     param
     (
         [Parameter(Mandatory = $true)]

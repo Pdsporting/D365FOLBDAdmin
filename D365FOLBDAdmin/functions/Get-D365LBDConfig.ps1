@@ -96,6 +96,15 @@
                     Write-PSFMessage -Message "Verbose: Connecting to $OrchestratorServerName for Orchestrator Local Agent version" -Level Verbose
                     $OrchServiceLocalAgentVersionNumber = $(get-childitem "\\$OrchestratorServerName\C$\ProgramData\SF\*\Fabric\work\Applications\LocalAgentType_App*\OrchestrationServicePkg.Code.*\OrchestrationService.exe").VersionInfo.Fileversion
                 }
+                If(!$SFVersionNumber)
+                {
+                    try{
+                    $SFVersionNumber= Invoke-Command -ScriptBlock {Get-ItemPropertyValue 'HKLM:\SOFTWARE\Microsoft\Service Fabric\' -Name FabricVersion} -ComputerName $OrchestratorServerName
+                    }
+                    Catch{
+                        Write-PSFMessage -Message  "Warning: Cant get Service Fabric Version" -Level Warning
+                    }
+                }
             }
             if (!$OrchServiceLocalAgentConfigXML) {
                 Stop-PSFFunction -Message "Error: Can't find any Local Agent file on the Orchestrator Node" -EnableException $true -Cmdlet $PSCmdlet

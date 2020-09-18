@@ -23,6 +23,7 @@ function Remove-D365LBDStuckApps {
     }
     else {
         Write-PSFMessage -Message "Archive folder already exists" -Level Verbose
+        Get-ChildItem $environmentwp.FullName -Recurse | Remove-Item 
     }
     Move-Item -Path $environmentwp.FullName -Destination $archivefolder -Force -Verbose
     Write-PSFMessage -Message "Deleting applications" -Level Verbose
