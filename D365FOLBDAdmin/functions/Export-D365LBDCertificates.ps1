@@ -22,7 +22,7 @@ function Export-D365LBDCertificates {
   The username this will be protected to
 
   #>
-    [alias("Add-D365DataEnciphermentCertConfig")]
+    [alias("Export-D365Certificates")]
     param
     (
         [Parameter(Mandatory = $true)]
@@ -41,10 +41,12 @@ function Export-D365LBDCertificates {
         $Username = whoami
     }
     try {
+        Write-PSFMessage -Message "Trying to pull  $CertThumbprint from LocalMachine My " -Level Verbose
         Get-ChildItem "Cert:\localmachine\my" | Where-Object { $_.Thumbprint -eq $CertThumbprint } | ForEach-Object -Process { Export-PfxCertificate -Cert $_ -FilePath $("$ExportLocation\" + $_.FriendlyName + ".pfx") -ProtectTo "$Username" }
     }
     catch {
         try {
+            Write-PSFMessage -Message "Trying to pull  $CertThumbprint from CurrentUser My " -Level Verbose
             Get-ChildItem "Cert:\CurrentUser\my" | Where-Object { $_.Thumbprint -eq $CertThumbprint } | ForEach-Object -Process { Export-PfxCertificate -Cert $_ -FilePath $("$ExportLocation\" + $_.FriendlyName + ".pfx") -ProtectTo "$Username" }
         }
         catch {
