@@ -42,6 +42,7 @@ function Get-D365LBDTestConfigData {
             "DataEnciphermentCertificate"      = 'J12312233E'
             "FinancialReportingCertificate"    = 'K123113233E'
             "ReportingSSRSCertificate"         = 'LASDSA233E'
+            "OrchServiceLocalAgentVersionNumber" = '2.3.0.0'
         }
         ##Sends Custom Object to Pipeline
         [PSCustomObject]$Properties

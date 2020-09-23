@@ -3,6 +3,7 @@ function Export-D365LBDCertificates {
    .SYNOPSIS
   Looks inside the agent share extracts the version from the zip by using the custom module name.
   Puts an xml in root for easy idenitification.
+  NOT working...
 
   .DESCRIPTION
    Exports 

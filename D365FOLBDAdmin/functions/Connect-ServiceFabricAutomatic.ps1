@@ -35,6 +35,13 @@ function Connect-ServiceFabricAutomatic {
         if (!$Config) {
             $Config = Get-D365LBDConfig
         }  
-        Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate
+        $SFServiceCert = Get-ChildItem "Cert:\localmachine\my" | Where-Object { $_.Thumbprint -eq $config.SFServerCertificate } 
+
+        if (!$SFServiceCert)
+        {
+            Stop-PSFFunction -Message "Error: Can't Find SFServerCertificate $($config.SFServerCertificate)" -EnableException $true -Cmdlet $PSCmdlet
+        }
+
+        Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
     }
 }

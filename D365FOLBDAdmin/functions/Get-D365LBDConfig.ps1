@@ -57,7 +57,7 @@
                     Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Stopping" -EnableException $true -Cmdlet $PSCmdlet
                 }
                 $ClusterManifestXMLFile = get-childitem "C:\ProgramData\SF\clusterManifest.xml" 
-                $AXServiceConfigXMLFile = get-childitem "C:\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config"
+                ##$AXServiceConfigXMLFile = get-childitem "C:\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config" Clean up
             }
             else {
                 Write-PSFMessage -Message "Connecting to admin share on $ComputerName for cluster config" -Level Verbose
@@ -65,7 +65,7 @@
                     Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
                 }
                 $ClusterManifestXMLFile = get-childitem "\\$ComputerName\C$\ProgramData\SF\clusterManifest.xml"
-                $AXServiceConfigXMLFile = get-childitem "\\$ComputerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config"
+                ## $AXServiceConfigXMLFile = get-childitem "\\$ComputerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config" Clean up
             }
             if (!($ClusterManifestXMLFile)) {
                 Stop-PSFFunction -Message "Error: This is not an Local Business Data server or the application is not installed. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
@@ -74,7 +74,7 @@
                 Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
             }
             [xml]$xml = get-content $ClusterManifestXMLFile
-            [xml]$AXServiceConfigXML = get-content $AXServiceConfigXMLFile
+          
     
             $OrchestratorServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'OrchestratorType' }).NodeName
             $AXSFServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'AOSNodeType' }).NodeName
@@ -96,12 +96,11 @@
                     Write-PSFMessage -Message "Verbose: Connecting to $OrchestratorServerName for Orchestrator Local Agent version" -Level Verbose
                     $OrchServiceLocalAgentVersionNumber = $(get-childitem "\\$OrchestratorServerName\C$\ProgramData\SF\*\Fabric\work\Applications\LocalAgentType_App*\OrchestrationServicePkg.Code.*\OrchestrationService.exe").VersionInfo.Fileversion
                 }
-                If(!$SFVersionNumber)
-                {
-                    try{
-                    $SFVersionNumber= Invoke-Command -ScriptBlock {Get-ItemPropertyValue 'HKLM:\SOFTWARE\Microsoft\Service Fabric\' -Name FabricVersion} -ComputerName $OrchestratorServerName
+                If (!$SFVersionNumber) {
+                    try {
+                        $SFVersionNumber = Invoke-Command -ScriptBlock { Get-ItemPropertyValue 'HKLM:\SOFTWARE\Microsoft\Service Fabric\' -Name FabricVersion } -ComputerName $OrchestratorServerName
                     }
-                    Catch{
+                    Catch {
                         Write-PSFMessage -Message  "Warning: Cant get Service Fabric Version" -Level Warning
                     }
                 }
@@ -235,6 +234,9 @@
                     $CustomModuleVersion = $CustomModuleDll.VersionInfo.FileVersion
                 }
             }
+            $AXServiceConfigXMLFile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config"
+            [xml]$AXServiceConfigXML = get-content $AXServiceConfigXMLFile
+
             $jsonClusterConfig = get-content "\\$AXSFConfigServerName\C$\ProgramData\SF\clusterconfig.json"
             $SFClusterCertificate = ($jsonClusterConfig | ConvertFrom-Json).properties.security.certificateinformation.clustercertificate.Thumbprint
             $FinancialReportingCertificate = $($AXServiceConfigXML.configuration.claimIssuerRestrictions.issuerrestrictions.add | Where-Object { $_.alloweduserids -eq "FRServiceUser" }).name
@@ -245,6 +247,12 @@
             }
             else {
                 Write-PSFMessage -Level Warning -Message "No Encipherment Cert Found run the Add-D365DataEncirphmentConfig to add"
+            }
+            try {
+                $sfconnection = Connect-ServiceFabricAutomatic -ErrorAction SilentlyContinue
+            }
+            catch {
+                Write-PSFMessage -message "$sfconnection status" -Level Verbose
             }
 
             # Collect information into a hashtable
