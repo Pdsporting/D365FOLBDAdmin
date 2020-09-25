@@ -23,14 +23,15 @@ function Connect-ServiceFabricAutomatic {
     )
     {
         try {
-            if (Get-Command Connect-ServiceFabric -ErrorAction Stop) {
+            if (Get-Command Connect-ServiceFabricCluster -ErrorAction Stop) {
             }
             else {
                 Write-PSFMessage -Level Error Message "Error: Service Fabric Powershell module not installed" 
             }
         }
         catch {
-            Write-PSFMessage -Level Error Message "Error: Service Fabric Powershell module not installed" 
+
+            Stop-PSFFunction -Message "Error: Service Fabric Powershell module not installed" -EnableException $true -Cmdlet $PSCmdlet
         }
         if (!$Config) {
             $Config = Get-D365LBDConfig
