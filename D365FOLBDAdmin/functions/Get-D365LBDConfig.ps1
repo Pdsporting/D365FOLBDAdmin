@@ -143,7 +143,7 @@
                     if (!$SFConfig) {
                         $SFConfig = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Package.1.0.xml"
                     }
-                    $count = $count + 1
+                    $count = $count ++
                     Write-PSFMessage -Message "Count of servers tried $count"
                 } until ($SFConfig -or ($count -eq $AXSFServerNames.Count))
             } 
