@@ -36,7 +36,6 @@
         [Parameter(Mandatory = $false)][string]$ConfigImportFromFile,
         [Parameter(Mandatory = $false)][string]$ConfigExportToFile,
         [Parameter(Mandatory = $false)][string]$CustomModuleName
-        
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
@@ -232,6 +231,7 @@
             else {
                 Write-PSFMessage -Level Warning -Message "No Encipherment Cert Found run the function Add-D365DataEncirphmentConfig to add"
             }
+            
             try {
                 ##todo
                 $connection = Connect-ServiceFabricAutomatic | Out-Null
@@ -243,6 +243,13 @@
             }
             catch {
                 Write-PSFMessage -message "Can't Connect to Service Fabric" -Level Verbose
+            }
+
+            foreach ($ComputerName in $appservers) {
+                if (($AXSFServerNames -ccontains $ComputerName) -eq $false) {
+                    Write-PSFMessage -Level Verbose -Message "Found an added after the fact appserver adding to list $ComputerName" 
+                    $AXSFServerNames += $ComputerName
+                }
             }
 
             $AllAppServerList = @()
@@ -261,6 +268,8 @@
                     $AllAppServerList += $ComputerName
                 }
             }
+            
+         
 
             # Collect information into a hashtable
             $Properties = @{

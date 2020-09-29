@@ -18,7 +18,10 @@ function Connect-ServiceFabricAutomatic {
     param
     (
         [Parameter(Mandatory = $false)]
-        [psobject]$Config
+        [psobject]$Config,
+        [string]$SFServerCertificate,
+        [string]$SFConnectionEndpoint
+
     )
     try {
         if (Get-Command Connect-ServiceFabricCluster -ErrorAction Stop) {
@@ -30,21 +33,37 @@ function Connect-ServiceFabricAutomatic {
     catch {
         Stop-PSFFunction -Message "Error: Service Fabric Powershell module not installed" -EnableException $true -Cmdlet $PSCmdlet
     }
-    if (!$Config) {
+    if (!$Config -and !$SFServerCertificate -and !$SFConnectionEndpoint) {
+        Write-PSFMessage -Message "No paramters selected will try and get config" -Level Verbose
         $Config = Get-D365LBDConfig
+        $SFConnectionEndpoint = $config.SFConnectionEndpoint
+        $SFServerCertificate = $config.SFServerCertificate
     }  
     $SFServiceCert = Get-ChildItem "Cert:\localmachine\my" | Where-Object { $_.Thumbprint -eq $config.SFServerCertificate } 
 
     if (!$SFServiceCert) {
-        Stop-PSFFunction -Message "Error: Can't Find SFServerCertificate $($config.SFServerCertificate)" -EnableException $true -Cmdlet $PSCmdlet
+        $SFServiceCert = Get-ChildItem "Cert:CurrentUser\my" | Where-Object { $_.Thumbprint -eq $config.SFServerCertificate } 
+
+        if ($SFServiceCert) {
+            $CurrentUser = 'true'
+        }
+    }
+
+    if (!$SFServiceCert) {
+        Stop-PSFFunction -Message "Error: Can't Find SFServerCertificate $SFServerCertificate" -EnableException $true -Cmdlet $PSCmdlet
     }
     else {
         Write-PSFMessage -Level Verbose -Message "$SFServiceCert"
     }
-    $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
-        
+
+    $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $SFServerCertificate -ServerCertThumbprint $SFServerCertificate -StoreLocation LocalMachine -StoreName My
+    if ($CurrentUser -eq 'true') {
+        Write-PSFMessage -Message "No paramters selected will try and get config" -Level Verbose
+        $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $SFServerCertificate -ServerCertThumbprint $SFServerCertificate -StoreLocation CurrentUser -StoreName My
+    }
+    
     if (!$connection) {
-        Connect-ServiceFabricCluster
+        $connection = Connect-ServiceFabricCluster
     }
     $connection
 }
