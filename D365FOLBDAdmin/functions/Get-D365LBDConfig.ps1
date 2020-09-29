@@ -246,11 +246,12 @@
             catch {
                 Write-PSFMessage -message "Can't Connect to Service Fabric $_" -Level Verbose
             }
-
-            foreach ($ComputerName in $appservers.ComputerName) {
+            $AllAppServerList = @()
+            foreach ($NodeName in $appservers) {
                 if (($AXSFServerNames -ccontains $ComputerName) -eq $false) {
-                    Write-PSFMessage -Level Verbose -Message "Found an added after the fact appserver adding to list $ComputerName" 
-                    $AXSFServerNames += $ComputerName
+                    Write-PSFMessage -Level Verbose -Message "Found an added after the fact appserver adding to list $NodeName" 
+                    $AXSFServerNames += $NodeName
+                    $NewlyAddedAXSFServers += $NodeName
                 }
             }
 
@@ -302,6 +303,7 @@
                 "FinancialReportingCertificate"      = $FinancialReportingCertificate
                 "ReportingSSRSCertificate"           = "$ReportingSSRSCertificate"
                 "OrchServiceLocalAgentVersionNumber" = $OrchServiceLocalAgentVersionNumber
+                "NewlyAddedAXSFServers"              = $NewlyAddedAXSFServers
             }
             ##Sends Custom Object to Pipeline
             [PSCustomObject]$Properties
