@@ -235,7 +235,7 @@
             try {
                 ##todo
                 Write-PSFMessage -Message "Trying to connect to $ConnectionEndpoint using $ServerCertificate" -Level Verbose
-                $connection = Connect-ServiceFabricAutomatic -SFServerCertificate $ServerCertificate -SFConnectionEndpoint $ConnectionEndpoint | Out-Null
+                $connection = Connect-ServiceFabricAutomatic -SFServerCertificate $ServerCertificate -SFConnectionEndpoint $ConnectionEndpoint 
                 $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") }
                 Write-PSFMessage -message "Service Fabric $nodes" -Level Verbose
                 $appservers = $nodes.NodeName
@@ -243,7 +243,7 @@
                 Write-PSFMessage -message "$appservers " -Level Verbose
             }
             catch {
-                Write-PSFMessage -message "Can't Connect to Service Fabric" -Level Verbose
+                Write-PSFMessage -message "Can't Connect to Service Fabric $_" -Level Verbose
             }
 
             foreach ($ComputerName in $appservers) {
