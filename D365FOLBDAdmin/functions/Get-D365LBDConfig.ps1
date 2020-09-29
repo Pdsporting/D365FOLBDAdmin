@@ -126,19 +126,18 @@
             $ServerCertificate = $($ServiceFabricConnectionDetails | Where-Object { $_.Name -eq "ServerCertificate" }).value
     
             ## With Orch Server config get more details for automation
-           
-            $AXSFConfigServerName = $AXSFServerNames | Select-Object -First 1
+            $count = 1
+            $AXSFConfigServerName = $AXSFServerNames | Select-Object -First $count
             Write-PSFMessage -Message "Verbose: Reaching out to $AXSFConfigServerName for AX config" -Level Verbose
-
+            
             $SFConfig = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Package.Current.xml"
             if (!$SFConfig) {
                 $SFConfig = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Package.1.0.xml"
             }
             if (!$SFConfig) {
-                $count = 1
                 do {
                     $AXSFConfigServerName = $AXSFServerNames | Select-Object -First 1 -Skip $count
-                    Write-PSFMessage -Message "Verbose: Reaching out to $AXSFConfigServerName for AX config" -Level Verbose
+                    Write-PSFMessage -Message "Verbose: Reaching out to $AXSFConfigServerName for AX config total servers $($AXSFServerNames.Count))" -Level Verbose
                     $SFConfig = get-childitem    "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Package.Current.xml"
                     if (!$SFConfig) {
                         $SFConfig = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Package.1.0.xml"
@@ -241,7 +240,8 @@
                 $connection = Connect-ServiceFabricAutomatic | Out-Null
                 $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") }
                 Write-PSFMessage -message "Service Fabric $nodes " -Level Verbose
-                $appservers = $AXSFServerNames.NodeName.ToString()
+                $appservers =  $nodes.NodeName
+                $appservers = $appservers.ToUpper()
                 Write-PSFMessage -message "$appservers " -Level Verbose
 
             }
