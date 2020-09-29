@@ -31,7 +31,8 @@ function Export-D365LBDCertificates {
         [Parameter(Mandatory = $true)]
         [string]$ExportLocation,
         [string]$Username
-    )    BEGIN {
+    )
+    BEGIN {
     }
     PROCESS {
    

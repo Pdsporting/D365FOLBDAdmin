@@ -127,7 +127,7 @@
             $ServerCertificate = $($ServiceFabricConnectionDetails | Where-Object { $_.Name -eq "ServerCertificate" }).value
     
             ## With Orch Server config get more details for automation
-            $count = 1
+            [int]$count = 1
             $AXSFConfigServerName = $AXSFServerNames | Select-Object -First $count
             Write-PSFMessage -Message "Verbose: Reaching out to $AXSFConfigServerName for AX config" -Level Verbose
             

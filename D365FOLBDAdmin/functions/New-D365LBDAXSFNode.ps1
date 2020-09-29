@@ -1,7 +1,7 @@
 function New-D365LBDAXSFNode {
     <#
     .SYNOPSIS
-   Can only be ran on the local machine not fully functional need to add fd and ud logic 
+   Can only be ran on the local machine not fully functional need to add fd and ud logic right now its just parameter 
    #>
     [alias("New-D365AXSFNode")]
     [CmdletBinding()]
