@@ -247,7 +247,7 @@
                 Write-PSFMessage -message "Can't Connect to Service Fabric $_" -Level Verbose
             }
 
-            foreach ($ComputerName in $appservers) {
+            foreach ($ComputerName in $appservers.ComputerName) {
                 if (($AXSFServerNames -ccontains $ComputerName) -eq $false) {
                     Write-PSFMessage -Level Verbose -Message "Found an added after the fact appserver adding to list $ComputerName" 
                     $AXSFServerNames += $ComputerName
