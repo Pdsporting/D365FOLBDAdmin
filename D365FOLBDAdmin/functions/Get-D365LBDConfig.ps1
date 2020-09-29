@@ -235,9 +235,9 @@
             try {
                 ##todo
                 Write-PSFMessage -Message "Trying to connect to $ConnectionEndpoint using $ServerCertificate" -Level Verbose
-              ##  $connection = Connect-ServiceFabricAutomatic -SFServerCertificate $ServerCertificate -SFConnectionEndpoint $ConnectionEndpoint 
-              $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint  -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
-                $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") }
+                ##  $connection = Connect-ServiceFabricAutomatic -SFServerCertificate $ServerCertificate -SFConnectionEndpoint $ConnectionEndpoint 
+                $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint  -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
+                $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") } | Select-Object NodeName
                 Write-PSFMessage -message "Service Fabric $nodes" -Level Verbose
                 $appservers = $nodes.NodeName
                 $appservers = $appservers.ToUpper()
@@ -270,9 +270,6 @@
                     $AllAppServerList += $ComputerName
                 }
             }
-            
-         
-
             # Collect information into a hashtable
             $Properties = @{
                 "AllAppServerList"                   = $AllAppServerList
