@@ -41,6 +41,12 @@ function Connect-ServiceFabricAutomatic {
         {
             Stop-PSFFunction -Message "Error: Can't Find SFServerCertificate $($config.SFServerCertificate)" -EnableException $true -Cmdlet $PSCmdlet
         }
-        Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+        $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+        
+        if (!$connection)
+        {
+            Connect-ServiceFabricCluster
+        }
+        $connection
     }
 }

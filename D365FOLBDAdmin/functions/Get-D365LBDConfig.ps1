@@ -241,7 +241,7 @@
                 $connection = Connect-ServiceFabricAutomatic | Out-Null
                 $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") }
                 Write-PSFMessage -message "Service Fabric $nodes " -Level Verbose
-                $appservers = $AXSFServerNames.NodeName
+                $appservers = $AXSFServerNames.NodeName.ToString()
                 Write-PSFMessage -message "$appservers " -Level Verbose
 
             }
