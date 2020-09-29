@@ -43,7 +43,7 @@
     } 
     PROCESS {
         if ($ConfigImportFromFile) {
-            Write-PSFMessage -Message "Importing config warning this data may not be the most up to date" -Level Warning
+            Write-PSFMessage -Message "Warning: Importing config this data may not be the most up to date" -Level Warning
             if (-not (Test-Path $ConfigImportFromFile)) {
                 Stop-PSFFunction -Message "Error: This config file doesn't exist. Stopping" -EnableException $true -Cmdlet $PSCmdlet
             }
@@ -52,9 +52,9 @@
         }
         else {
             if ($ComputerName.IsLocalhost) {
-                Write-PSFMessage -Message "Looking for the clusterconfig on the localmachine as no computername provided" -Level Warning 
+                Write-PSFMessage -Message "Looking for the clusterconfig (Cluster Manifest) on the localmachine as no ComputerName provided" -Level Warning 
                 if ($(Test-Path "C:\ProgramData\SF\clusterManifest.xml") -eq $False) {
-                    Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Stopping" -EnableException $true -Cmdlet $PSCmdlet
+                    Stop-PSFFunction -Message "Error: This is not an Local Business Data server or no config is found (import config if you have to). Stopping" -EnableException $true -Cmdlet $PSCmdlet
                 }
                 $ClusterManifestXMLFile = get-childitem "C:\ProgramData\SF\clusterManifest.xml" 
             }
@@ -71,8 +71,9 @@
             if ($(test-path $ClusterManifestXMLFile) -eq $false) {
                 Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
             }
+            Write-PSFMessage -Message "Reading $ClusterManifestXMLFile" -Level Verbose
             [xml]$xml = get-content $ClusterManifestXMLFile
-          
+
             $OrchestratorServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'OrchestratorType' }).NodeName
             $AXSFServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'AOSNodeType' }).NodeName
             $ReportServerServerName = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).NodeName 
@@ -105,7 +106,7 @@
             if (!$OrchServiceLocalAgentConfigXML) {
                 Stop-PSFFunction -Message "Error: Can't find any Local Agent file on the Orchestrator Node" -EnableException $true -Cmdlet $PSCmdlet
             }
-    
+            Write-PSFMessage -Message "Reading $OrchServiceLocalAgentConfigXML" -Level Verbose
             [xml]$xml = get-content $OrchServiceLocalAgentConfigXML
 
             $RetrievedXMLData = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -eq 'AAD' } 
@@ -138,11 +139,12 @@
                 do {
                     $AXSFConfigServerName = $AXSFServerNames | Select-Object -First 1 -Skip $count
                     Write-PSFMessage -Message "Verbose: Reaching out to $AXSFConfigServerName for AX config total servers $($AXSFServerNames.Count))" -Level Verbose
-                    $SFConfig = get-childitem    "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Package.Current.xml"
+                    $SFConfig = get-childitem  "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Package.Current.xml"
                     if (!$SFConfig) {
                         $SFConfig = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Package.1.0.xml"
                     }
                     $count = $count + 1
+                    Write-PSFMessage -Message "Count of servers tried $count"
                 } until ($SFConfig -or ($count -eq $AXSFServerNames.Count))
             } 
             
@@ -216,6 +218,7 @@
                 }
             }
             $AXServiceConfigXMLFile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config"
+            Write-PSFMessage -Message "Reading $AXServiceConfigXMLFile" -Level Verbose 
             [xml]$AXServiceConfigXML = get-content $AXServiceConfigXMLFile
 
             $jsonClusterConfig = get-content "\\$AXSFConfigServerName\C$\ProgramData\SF\clusterconfig.json"
@@ -227,23 +230,16 @@
                 $DataEnciphermentCertificate = Get-Content \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt
             }
             else {
-                Write-PSFMessage -Level Warning -Message "No Encipherment Cert Found run the Add-D365DataEncirphmentConfig to add"
-            }
-            try {
-                $sfconnection = Connect-ServiceFabricAutomatic -ErrorAction SilentlyContinue
-            }
-            catch {
-                Write-PSFMessage -message "$sfconnection status" -Level Verbose
+                Write-PSFMessage -Level Warning -Message "No Encipherment Cert Found run the function Add-D365DataEncirphmentConfig to add"
             }
             try {
                 ##todo
                 $connection = Connect-ServiceFabricAutomatic | Out-Null
                 $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") }
-                Write-PSFMessage -message "Service Fabric $nodes " -Level Verbose
-                $appservers =  $nodes.NodeName
+                Write-PSFMessage -message "Service Fabric $nodes" -Level Verbose
+                $appservers = $nodes.NodeName
                 $appservers = $appservers.ToUpper()
                 Write-PSFMessage -message "$appservers " -Level Verbose
-
             }
             catch {
                 Write-PSFMessage -message "Can't Connect to Service Fabric" -Level Verbose
