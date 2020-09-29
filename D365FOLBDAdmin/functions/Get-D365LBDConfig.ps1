@@ -234,6 +234,7 @@
             
             try {
                 ##todo
+                Write-PSFMessage -Message "Trying to connect to $ConnectionEndpoint using $ServerCertificate" -Level Verbose
                 $connection = Connect-ServiceFabricAutomatic -SFServerCertificate $ServerCertificate -SFConnectionEndpoint $ConnectionEndpoint | Out-Null
                 $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") }
                 Write-PSFMessage -message "Service Fabric $nodes" -Level Verbose

@@ -33,17 +33,16 @@ function Connect-ServiceFabricAutomatic {
     catch {
         Stop-PSFFunction -Message "Error: Service Fabric Powershell module not installed" -EnableException $true -Cmdlet $PSCmdlet
     }
-    if (!$Config -and !$SFServerCertificate -and !$SFConnectionEndpoint) {
+    if ((!$Config) -and (!$SFServerCertificate) -and (!$SFConnectionEndpoint)) {
         Write-PSFMessage -Message "No paramters selected will try and get config" -Level Verbose
         $Config = Get-D365LBDConfig
         $SFConnectionEndpoint = $config.SFConnectionEndpoint
         $SFServerCertificate = $config.SFServerCertificate
     }  
-    $SFServiceCert = Get-ChildItem "Cert:\localmachine\my" | Where-Object { $_.Thumbprint -eq $config.SFServerCertificate } 
+    $SFServiceCert = Get-ChildItem "Cert:\localmachine\my" | Where-Object { $_.Thumbprint -eq $SFServerCertificate } 
 
     if (!$SFServiceCert) {
-        $SFServiceCert = Get-ChildItem "Cert:CurrentUser\my" | Where-Object { $_.Thumbprint -eq $config.SFServerCertificate } 
-
+        $SFServiceCert = Get-ChildItem "Cert:CurrentUser\my" | Where-Object { $_.Thumbprint -eq $SFServerCertificate } 
         if ($SFServiceCert) {
             $CurrentUser = 'true'
         }
@@ -58,7 +57,7 @@ function Connect-ServiceFabricAutomatic {
 
     $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $SFServerCertificate -ServerCertThumbprint $SFServerCertificate -StoreLocation LocalMachine -StoreName My
     if ($CurrentUser -eq 'true') {
-        Write-PSFMessage -Message "No paramters selected will try and get config" -Level Verbose
+        Write-PSFMessage -Message "Using Current User Certificate Store" -Level Verbose
         $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $SFServerCertificate -ServerCertThumbprint $SFServerCertificate -StoreLocation CurrentUser -StoreName My
     }
     
