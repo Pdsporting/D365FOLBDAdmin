@@ -30,7 +30,6 @@ function Connect-ServiceFabricAutomatic {
             }
         }
         catch {
-
             Stop-PSFFunction -Message "Error: Service Fabric Powershell module not installed" -EnableException $true -Cmdlet $PSCmdlet
         }
         if (!$Config) {
@@ -42,7 +41,6 @@ function Connect-ServiceFabricAutomatic {
         {
             Stop-PSFFunction -Message "Error: Can't Find SFServerCertificate $($config.SFServerCertificate)" -EnableException $true -Cmdlet $PSCmdlet
         }
-
         Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
     }
 }

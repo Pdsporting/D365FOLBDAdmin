@@ -57,7 +57,6 @@
                     Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Stopping" -EnableException $true -Cmdlet $PSCmdlet
                 }
                 $ClusterManifestXMLFile = get-childitem "C:\ProgramData\SF\clusterManifest.xml" 
-                ##$AXServiceConfigXMLFile = get-childitem "C:\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config" Clean up
             }
             else {
                 Write-PSFMessage -Message "Connecting to admin share on $ComputerName for cluster config" -Level Verbose
@@ -65,7 +64,6 @@
                     Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
                 }
                 $ClusterManifestXMLFile = get-childitem "\\$ComputerName\C$\ProgramData\SF\clusterManifest.xml"
-                ## $AXServiceConfigXMLFile = get-childitem "\\$ComputerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config" Clean up
             }
             if (!($ClusterManifestXMLFile)) {
                 Stop-PSFFunction -Message "Error: This is not an Local Business Data server or the application is not installed. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
@@ -75,7 +73,6 @@
             }
             [xml]$xml = get-content $ClusterManifestXMLFile
           
-    
             $OrchestratorServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'OrchestratorType' }).NodeName
             $AXSFServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'AOSNodeType' }).NodeName
             $ReportServerServerName = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).NodeName 
@@ -129,22 +126,7 @@
             $ServerCertificate = $($ServiceFabricConnectionDetails | Where-Object { $_.Name -eq "ServerCertificate" }).value
     
             ## With Orch Server config get more details for automation
-            $AllAppServerList = @()
-            foreach ($ComputerName in $AXSFServerNames) {
-                if (($AllAppServerList -ccontains $ComputerName) -eq $false) {
-                    $AllAppServerList += $ComputerName
-                }
-            }
-            foreach ($ComputerName in $ReportServerServerName) {
-                if (($AllAppServerList -ccontains $ComputerName) -eq $false) {
-                    $AllAppServerList += $ComputerName
-                }
-            }
-            foreach ($ComputerName in $OrchestratorServerNames) {
-                if (($AllAppServerList -ccontains $ComputerName) -eq $false) {
-                    $AllAppServerList += $ComputerName
-                }
-            }
+           
             $AXSFConfigServerName = $AXSFServerNames | Select-Object -First 1
             Write-PSFMessage -Message "Verbose: Reaching out to $AXSFConfigServerName for AX config" -Level Verbose
 
@@ -253,6 +235,35 @@
             }
             catch {
                 Write-PSFMessage -message "$sfconnection status" -Level Verbose
+            }
+            try {
+                ##todo
+                $connection = Connect-ServiceFabricAutomatic | Out-Null
+                $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") }
+                Write-PSFMessage -message "Service Fabric $nodes " -Level Verbose
+                $appservers = $AXSFServerNames.NodeName
+                Write-PSFMessage -message "$appservers " -Level Verbose
+
+            }
+            catch {
+                Write-PSFMessage -message "Can't Connect to Service Fabric" -Level Verbose
+            }
+
+            $AllAppServerList = @()
+            foreach ($ComputerName in $AXSFServerNames) {
+                if (($AllAppServerList -ccontains $ComputerName) -eq $false) {
+                    $AllAppServerList += $ComputerName
+                }
+            }
+            foreach ($ComputerName in $ReportServerServerName) {
+                if (($AllAppServerList -ccontains $ComputerName) -eq $false) {
+                    $AllAppServerList += $ComputerName
+                }
+            }
+            foreach ($ComputerName in $OrchestratorServerNames) {
+                if (($AllAppServerList -ccontains $ComputerName) -eq $false) {
+                    $AllAppServerList += $ComputerName
+                }
             }
 
             # Collect information into a hashtable
