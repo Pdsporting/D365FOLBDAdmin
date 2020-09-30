@@ -246,14 +246,19 @@
             catch {
                 Write-PSFMessage -message "Can't Connect to Service Fabric $_" -Level Verbose
             }
-            $AXSFServersViaServiceFabricNodes  = @()
+            [string]$AXSFServersViaServiceFabricNodes  = @()
             foreach ($NodeName in $appservers) {
-                if (($AXSFServerNames -ccontains $NodeName) -eq $false) {
-                    Write-PSFMessage -Level Verbose -Message "Found an added after the fact appserver adding to list $NodeName" 
-                    $AXSFServersViaServiceFabricNodes += $NodeName
-                    $AXSFServerNames += $AXSFServersViaServiceFabricNodes
+                    $AXSFServersViaServiceFabricNodes += $NodeName  
+            }
+
+            foreach ($ComputerName in $AXSFServersViaServiceFabricNodes) {
+                if (($AXSFServerNames -ccontains $ComputerName) -eq $false) {
+                    Write-PSFMessage -Level Verbose -Message "Adding $ComputerName to AXSFServerList "
+                    $AXSFServerNames += $ComputerName
+                    $NewlyAddedAXSFServers += $ComputerName
                 }
             }
+            
 
             $AllAppServerList = @()
             foreach ($ComputerName in $AXSFServerNames) {
