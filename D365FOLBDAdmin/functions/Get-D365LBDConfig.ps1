@@ -237,7 +237,7 @@
                 Write-PSFMessage -Message "Trying to connect to $ConnectionEndpoint using $ServerCertificate" -Level Verbose
                 ##  $connection = Connect-ServiceFabricAutomatic -SFServerCertificate $ServerCertificate -SFConnectionEndpoint $ConnectionEndpoint
                 $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
-                Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
+                $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                 $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
                 $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") } #| Select-Object NodeName
                 Write-PSFMessage -message "Service Fabric Connected Nodes found $nodes" -Level Verbose
