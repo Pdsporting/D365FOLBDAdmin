@@ -237,8 +237,8 @@
                 Write-PSFMessage -Message "Trying to connect to $ConnectionEndpoint using $ServerCertificate" -Level Verbose
                 ##  $connection = Connect-ServiceFabricAutomatic -SFServerCertificate $ServerCertificate -SFConnectionEndpoint $ConnectionEndpoint 
                 $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint  -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
-                $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") } | Select-Object NodeName
-                Write-PSFMessage -message "Service Fabric $nodes" -Level Verbose
+                $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") } | Select-Object [string]NodeName
+                Write-PSFMessage -message "Service Fabric Connected Nodes found $nodes" -Level Verbose
                 $appservers = $nodes.NodeName
                 $appservers = $appservers.ToUpper()
                 Write-PSFMessage -message "$appservers " -Level Verbose
@@ -246,19 +246,18 @@
             catch {
                 Write-PSFMessage -message "Can't Connect to Service Fabric $_" -Level Verbose
             }
-            [string]$AXSFServersViaServiceFabricNodes  = @()
+            $AXSFServersViaServiceFabricNodes  = @()
             foreach ($NodeName in $appservers) {
                     $AXSFServersViaServiceFabricNodes += $NodeName  
             }
 
-            foreach ($ComputerName in $AXSFServersViaServiceFabricNodes) {
+            foreach ($Node in $AXSFServersViaServiceFabricNodes) {
                 if (($AXSFServerNames -ccontains $ComputerName) -eq $false) {
-                    Write-PSFMessage -Level Verbose -Message "Adding $ComputerName to AXSFServerList "
-                    $AXSFServerNames += $ComputerName
-                    $NewlyAddedAXSFServers += $ComputerName
+                    Write-PSFMessage -Level Verbose -Message "Adding $Node to AXSFServerList "
+                    $AXSFServerNames += $Node
+                    $NewlyAddedAXSFServers += $Node
                 }
             }
-            
 
             $AllAppServerList = @()
             foreach ($ComputerName in $AXSFServerNames) {
