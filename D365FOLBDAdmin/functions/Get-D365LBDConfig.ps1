@@ -250,7 +250,7 @@
             }
             $NewlyAddedAXSFServers  = @()
             foreach ($Node in $AXSFServersViaServiceFabricNodes) {
-                if (($AXSFServerNames -contains $ComputerName) -eq $false) {
+                if (($AXSFServerNames -contains $Node) -eq $false) {
                     Write-PSFMessage -Level Verbose -Message "Adding $Node to AXSFServerList "
                     $AXSFServerNames += $Node
                     $NewlyAddedAXSFServers += $Node
