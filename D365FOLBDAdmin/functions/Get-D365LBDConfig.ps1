@@ -269,7 +269,7 @@
                 }
             }
             foreach ($ComputerName in $OrchestratorServerNames) {
-                if (($AllAppServerList -ccontains $ComputerName) -eq $false) {
+                if (($AllAppServerList -contains $ComputerName) -eq $false) {
                     $AllAppServerList += $ComputerName
                 }
             }
