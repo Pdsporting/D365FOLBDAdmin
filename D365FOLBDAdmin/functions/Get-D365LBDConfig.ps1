@@ -242,20 +242,40 @@
                 $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") } #| Select-Object NodeName
                 Write-PSFMessage -message "Service Fabric Connected Nodes found $nodes" -Level Verbose
                 $appservers = $nodes.NodeName | Sort-Object
+                $invalidsfnodes = get-servicefabricnode | Where-Object { ($_.NodeStatus -eq "Invalid") } #| Select-Object NodeName
+                $disabledsfnodes = get-servicefabricnode | Where-Object { ($_.NodeStatus -eq "Disabled") } #| Select-Object NodeName
+                $invalidnodes = $invalidsfnodes.NodeName | Sort-Object
+                $disablednodes = $disabledsfnodes.NodeName | Sort-Object
             }
             catch {
                 Write-PSFMessage -message "Can't Connect to Service Fabric $_" -Level Verbose
             }
-            $AXSFServersViaServiceFabricNodes  = @()
+            $AXSFServersViaServiceFabricNodes = @()
             foreach ($NodeName in $appservers) {
-                    $AXSFServersViaServiceFabricNodes += $NodeName  
+                $AXSFServersViaServiceFabricNodes += $NodeName  
             }
-            $NewlyAddedAXSFServers  = @()
+            $NewlyAddedAXSFServers = @()
             foreach ($Node in $AXSFServersViaServiceFabricNodes) {
                 if (($AXSFServerNames -contains $Node) -eq $false) {
                     Write-PSFMessage -Level Verbose -Message "Adding $Node to AXSFServerList "
                     $AXSFServerNames += $Node
                     $NewlyAddedAXSFServers += $Node
+                }
+            }
+
+            $InvalidSFServers = @()
+            foreach ($Node in $invalidnodes) {
+                if (($AXSFServerNames -contains $Node) -eq $false) {
+                    Write-PSFMessage -Level Verbose -Message "Found Disabled or Invalid SF Node $Node to AXSFServerList "
+                    $InvalidSFServers += $Node
+                }
+            }
+
+            $DisabledSFServers = @()
+            foreach ($Node in $disablednodes) {
+                if (($AXSFServerNames -contains $Node) -eq $false) {
+                    Write-PSFMessage -Level Verbose -Message "Found Disabled or Invalid SF Node $Node to AXSFServerList "
+                    $DisabledSFServers += $Node
                 }
             }
 
@@ -275,7 +295,7 @@
                     $AllAppServerList += $ComputerName
                 }
             }
-            # Collect information into a hashtable
+            # Collect information into a hashtable Add any new field to Get-D365TestConfigData
             $Properties = @{
                 "AllAppServerList"                   = $AllAppServerList
                 "OrchestratorServerNames"            = $OrchestratorServerNames
@@ -308,6 +328,9 @@
                 "ReportingSSRSCertificate"           = "$ReportingSSRSCertificate"
                 "OrchServiceLocalAgentVersionNumber" = $OrchServiceLocalAgentVersionNumber
                 "NewlyAddedAXSFServers"              = $NewlyAddedAXSFServers
+                'SFVersionNumber'                    = $SFVersionNumber
+                'InvalidSFServers'                   = $InvalidSFServers
+                'DisabledSFServers'                  = $DisabledSFServers
             }
             ##Sends Custom Object to Pipeline
             [PSCustomObject]$Properties
