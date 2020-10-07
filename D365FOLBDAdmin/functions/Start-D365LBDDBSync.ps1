@@ -37,7 +37,7 @@ function Start-D365LBDDBSync {
    The timeout period of the database synchronization
    
    #>
-    [alias("Start-D365DBSync","Start-D365FOLBDDBSync")]
+    [alias("Start-D365DBSync", "Start-D365FOLBDDBSync")]
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $False)]
@@ -55,7 +55,6 @@ function Start-D365LBDDBSync {
     
     begin {
     }
-    
     process {
         #$AXSFServer = Select-Object -First 1 $AXSFServer
         if (($AXSFServer.IsLocalhost) -or ($AXSFServer -eq $env:COMPUTERNAME) -or ($AXSFServer -eq "$env:COMPUTERNAME.$env:UserDNSDOMAINNAME")) {
@@ -106,9 +105,8 @@ function Start-D365LBDDBSync {
                     return $true;
                 }
             } -Verbose
-        
         }
-        end {
-        }
+    }
+    end {
     }
 }

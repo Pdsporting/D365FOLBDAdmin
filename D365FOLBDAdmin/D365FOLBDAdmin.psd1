@@ -54,7 +54,8 @@
 		'Get-D365LBDTestConfigData',
 		'Start-MonitorD365Deployment',
 		'Add-D365LBDDataEnciphermentCertConfig',
-		"New-D365LBDAXSFNode"
+		"New-D365LBDAXSFNode",
+		"Update-ServiceFabricClusterConfig"
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
