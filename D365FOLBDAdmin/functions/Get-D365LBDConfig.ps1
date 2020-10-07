@@ -98,7 +98,7 @@
                         $SFVersionNumber = Invoke-Command -ScriptBlock { Get-ItemPropertyValue 'HKLM:\SOFTWARE\Microsoft\Service Fabric\' -Name FabricVersion } -ComputerName $OrchestratorServerName
                     }
                     Catch {
-                        Write-PSFMessage -Message  "Warning: Cant get Service Fabric Version" -Level Warning
+                        Write-PSFMessage -Message  "Warning: Can't get Service Fabric Version" -Level Warning
                     }
                 }
             }
@@ -143,12 +143,12 @@
                         $SFConfig = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Package.1.0.xml"
                     }
                     $count = $count ++
-                    Write-PSFMessage -Message "Count of servers tried $count"
+                    Write-PSFMessage -Message "Count of servers tried $count" -Verbose
                 } until ($SFConfig -or ($count -eq $AXSFServerNames.Count))
             } 
             
             if (!$SFConfig) {
-                Write-PSFMessage -Message "Verbose: Cant find AX SF. App may not be installed. All values won't be grabbed" -Level Warning
+                Write-PSFMessage -Message "Verbose: Can't find AX SF. App may not be installed. All values won't be grabbed" -Level Warning
             }
             else {
                 [xml]$xml = get-content $SFConfig 
@@ -184,7 +184,7 @@
                 $LCSEnvironmentName = $($jsonconfig | ConvertFrom-Json).environmentName
             }
             else {
-                Write-PSFMessage -Message "WARNING: Can't Find Config in WP folder can't get Environment ID or TenantID. All values won't be grabbed" -Level Warning
+                Write-PSFMessage -Message "Warning: Can't Find Config in WP folder can't get Environment ID or TenantID. All values won't be grabbed" -Level Warning
                 $LCSEnvironmentId = ""
                 $TenantID = ""
                 $LCSEnvironmentName = ""
@@ -203,14 +203,14 @@
                     $ReportingSSRSCertificate = ($Reportingconfigdetails.parameter | Where-Object { $_.Name -eq "ReportingClientCertificateThumbprint" }).value
                 }
                 catch {
-                    Write-PSFMessage -Level Warning -Message "WARNING: Can't gather information from the Reporting Server $ReportServerServerName"
+                    Write-PSFMessage -Level Warning -Message "Warning: Can't gather information from the Reporting Server $ReportServerServerName"
                 }
             }
             $CustomModuleVersion = ''
             if (($CustomModuleName)) {
                 $CustomModuleDll = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\Packages\$CustomModuleName\bin\Dynamics.AX.$CustomModuleName.dll"
                 if (-not (Test-Path $CustomModuleDll)) {
-                    Write-PSFMessage -Message "WARNING: Custom Module not found; version unable to be found" -Level Warning
+                    Write-PSFMessage -Message "Warning: Custom Module not found; version unable to be found" -Level Warning
                 }
                 else {
                     $CustomModuleVersion = $CustomModuleDll.VersionInfo.FileVersion
@@ -229,21 +229,19 @@
                 $DataEnciphermentCertificate = Get-Content \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt
             }
             else {
-                Write-PSFMessage -Level Warning -Message "No Encipherment Cert Found run the function Add-D365DataEncirphmentConfig to add"
+                Write-PSFMessage -Level Warning -Message "Warning: No Encipherment Cert found run the function Add-D365LBDDataEnciphermentCertConfig to add"
             }
             
             try {
-                ##todo
                 Write-PSFMessage -Message "Trying to connect to $ConnectionEndpoint using $ServerCertificate" -Level Verbose
-                ##  $connection = Connect-ServiceFabricAutomatic -SFServerCertificate $ServerCertificate -SFConnectionEndpoint $ConnectionEndpoint
                 $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
                 $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                 $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
-                $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") } #| Select-Object NodeName
+                $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") } 
                 Write-PSFMessage -message "Service Fabric Connected Nodes found $nodes" -Level Verbose
                 $appservers = $nodes.NodeName | Sort-Object
-                $invalidsfnodes = get-servicefabricnode | Where-Object { ($_.NodeStatus -eq "Invalid") } #| Select-Object NodeName
-                $disabledsfnodes = get-servicefabricnode | Where-Object { ($_.NodeStatus -eq "Disabled") } #| Select-Object NodeName
+                $invalidsfnodes = get-servicefabricnode | Where-Object { ($_.NodeStatus -eq "Invalid") } 
+                $disabledsfnodes = get-servicefabricnode | Where-Object { ($_.NodeStatus -eq "Disabled") } 
                 $invalidnodes = $invalidsfnodes.NodeName | Sort-Object
                 $disablednodes = $disabledsfnodes.NodeName | Sort-Object
             }
@@ -254,6 +252,7 @@
             foreach ($NodeName in $appservers) {
                 $AXSFServersViaServiceFabricNodes += $NodeName  
             }
+            
             $NewlyAddedAXSFServers = @()
             foreach ($Node in $AXSFServersViaServiceFabricNodes) {
                 if (($AXSFServerNames -contains $Node) -eq $false) {
@@ -263,22 +262,25 @@
                 }
             }
 
-            $InvalidSFServers = @()
+            [System.Collections.ArrayList]$AXSFActiveNodeList = $AXSFServerNames
+            [System.Collections.ArrayList]$AXOrchActiveNodeList = $OrchestratorServerNames
             foreach ($Node in $invalidnodes) {
-                if (($AXSFServerNames -contains $Node) -eq $false) {
-                    Write-PSFMessage -Level Verbose -Message "Found Disabled or Invalid SF Node $Node to AXSFServerList "
-                    $InvalidSFServers += $Node
+                if (($AXSFServerNames -contains $Node) -eq $true) {
+                    foreach ($AXSFNode in $AXSFServerNames) {
+                        Write-PSFMessage -Level Verbose -Message "Found the Invalid SF Node $Node in AXSFServerList. Removing from list"
+                        $AXSFActiveNodeList.Remove($node)
+                    }
+                }
+                if (($OrchestratorServerNames -contains $Node) -eq $true) {
+                    foreach ($AXSFNode in $OrchestratorServerNames) {
+                        Write-PSFMessage -Level Verbose -Message "Found the Invalid Orchestrator Node $Node in OrchestratorServerNames. Removing from list"
+                        $AXOrchActiveNodeList.Remove($node)
+                    }
                 }
             }
-
-            $DisabledSFServers = @()
-            foreach ($Node in $disablednodes) {
-                if (($AXSFServerNames -contains $Node) -eq $false) {
-                    Write-PSFMessage -Level Verbose -Message "Found Disabled or Invalid SF Node $Node to AXSFServerList "
-                    $DisabledSFServers += $Node
-                }
-            }
-
+            $AXSFServerNames = $AXSFActiveNodeList
+            $OrchestratorServerNames = $AXOrchActiveNodeList
+           
             $AllAppServerList = @()
             foreach ($ComputerName in $AXSFServerNames) {
                 if (($AllAppServerList -contains $ComputerName) -eq $false) {
@@ -329,8 +331,8 @@
                 "OrchServiceLocalAgentVersionNumber" = $OrchServiceLocalAgentVersionNumber
                 "NewlyAddedAXSFServers"              = $NewlyAddedAXSFServers
                 'SFVersionNumber'                    = $SFVersionNumber
-                'InvalidSFServers'                   = $InvalidSFServers
-                'DisabledSFServers'                  = $DisabledSFServers
+                'InvalidSFServers'                   = $invalidnodes
+                'DisabledSFServers'                  = $disablednodes
             }
             ##Sends Custom Object to Pipeline
             [PSCustomObject]$Properties
