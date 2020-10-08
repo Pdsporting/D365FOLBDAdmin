@@ -1,5 +1,5 @@
 
-function Remove-D365LBDStuckApps {
+function Remove-D365LBDStuckApps {##created for deployment bug when it cant clean properly
     [alias("Remove-D365StuckApps")]
     param (
         [string]$SFServerCertificate,
