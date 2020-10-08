@@ -78,6 +78,7 @@ function Update-ServiceFabricD365ClusterConfig {
     "value":"$invalidnode"
 }                
 "@
+                $JSON.ClusterConfigurationVersion = $versionincremented
                 $parameters = $JSON.Properties.FabricSettings.Parameters
                 $parametersnew = $parameters + (ConvertFrom-Json $RemoveNodeJSON)
                 $JSON.Properties.FabricSettings | Add-Member -type NoteProperty -name "Parameters" -Value $parametersnew -Force
