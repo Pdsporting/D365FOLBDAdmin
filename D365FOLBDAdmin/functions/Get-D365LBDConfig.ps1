@@ -244,6 +244,10 @@
                 $disabledsfnodes = get-servicefabricnode | Where-Object { ($_.NodeStatus -eq "Disabled") } 
                 $invalidnodes = $invalidsfnodes.NodeName | Sort-Object
                 $disablednodes = $disabledsfnodes.NodeName | Sort-Object
+                if (!$invalidnodes)
+                {
+                    Write-PSFMessage -Level Warning -Message "Warning: Invalid Node found. Suggest running Update-ServiceFabricD365ClusterConfig to help fix"
+                }
             }
             catch {
                 Write-PSFMessage -message "Can't Connect to Service Fabric $_" -Level Verbose

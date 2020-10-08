@@ -1,4 +1,4 @@
-function Update-ServiceFabricClusterConfig {
+function Update-ServiceFabricD365ClusterConfig {
     <#
    .SYNOPSIS
   todo not working yet
@@ -32,14 +32,14 @@ function Update-ServiceFabricClusterConfig {
         $SFNumber = $Config.SFVersionNumber
 
         [int]$count = 1
-        $OrchestratorServerName = $OrchestratorServerNames | Select-Object -First $count
+        $OrchestratorServerName = $config.OrchestratorServerNames | Select-Object -First $count
         Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName for service Fabric cab file version $SFNumber" -Level Verbose
         
         $SFFolder = get-childitem "\\$OrchestratorServerName\C$\ProgramData\SF\*\Fabric\work\Applications\__FabricSystem_App*\work\Store\*\$SFNumber"
       
         if (!$SFFolder) {
             do {
-                $OrchestratorServerName = $OrchestratorServerNames | Select-Object -First $count
+                $OrchestratorServerName = $config.OrchestratorServerNames | Select-Object -First $count
                 Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName for service Fabric cab file"  -Level Verbose
                 $SFFolder = get-childitem "\\$OrchestratorServerName\C$\ProgramData\SF\*\Fabric\work\Applications\__FabricSystem_App*\work\Store\*\$SFNumber"
                 $count = $count ++
@@ -71,7 +71,7 @@ function Update-ServiceFabricClusterConfig {
                 $version.Build + 1
             )
             Write-PSFMessage -Level Verbose -Message "Version updated to $Versionincremented"
-            foreach ($invalidnode in $invalidnodes) {
+            foreach ($invalidnode in $config.SFinvalidnodes) {
                 $RemoveNodeJSON = @"
 {
     "name":"NodesToBeRemoved",
