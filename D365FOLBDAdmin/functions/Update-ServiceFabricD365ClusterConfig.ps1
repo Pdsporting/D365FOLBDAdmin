@@ -57,8 +57,8 @@ function Update-ServiceFabricD365ClusterConfig {
             $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.sfServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
             Get-ServiceFabricClusterConfiguration -UseApiVersion -ApiVersion 10-2017 >$Workingfolder\ClusterConfig.json
             Write-PSFMessage -Level Verbose -Message "$Workingfolder\ClusterConfig.json Created Need to modify this JSON then run Start-ServiceFabricClusterConfigrationUpgrade"
-            if ($config.$invalidnodes) {
-                Write-PSFMessage -Message "Warning: Suggest removing invalid Node(s) $($config.invalidnodes)" -Level Warning
+            if ($config.InvalidSFServers) {
+                Write-PSFMessage -Message "Warning: Suggest removing invalid Node(s) $($config.InvalidSFServers)" -Level Warning
                 Write-PSFMessage -Message "Warning: Make sure to remove the ""WindowsIdentities"" $$id 3 area under security (if exists) " -Level Warning
             }
 
@@ -70,8 +70,8 @@ function Update-ServiceFabricD365ClusterConfig {
                 $version.Minor,
                 $version.Build + 1
             )
-            Write-PSFMessage -Level Verbose -Message "Version updated to $Versionincremented"
-            foreach ($invalidnode in $config.SFinvalidnodes) {
+            Write-PSFMessage -Level Verbose -Message "Version updated from $versiontostring to $Versionincremented"
+            foreach ($invalidnode in $config.InvalidSFServers) {
                 $RemoveNodeJSON = @"
 {
     "name":"NodesToBeRemoved",
@@ -83,7 +83,8 @@ function Update-ServiceFabricD365ClusterConfig {
                 $JSON.Properties.FabricSettings | Add-Member -type NoteProperty -name "Parameters" -Value $parametersnew -Force
                 Write-PSFMessage -Level Verbose -Message "NodesToBeRemoved $invalidnode added to JSON"
             }
-            $JSON | ConvertTo-Json -Depth 32 | Set-Content  $Workingfolder\ClusterConfig.json
+            $JSON | ConvertTo-Json -Depth 32 | Set-Content  $Workingfolder\ClusterConfig.json 
+            Write-PSFMessage -Level Verbose -Message "$Workingfolder\ClusterConfig.json created."
         }
         catch {
             Write-PSFMessage -message "Can't Connect to Service Fabric $_" -Level Verbose

@@ -271,7 +271,7 @@
             foreach ($Node in $invalidnodes) {
                 if (($AXSFServerNames -contains $Node) -eq $true) {
                     foreach ($AXSFNode in $AXSFServerNames) {
-                        Write-PSFMessage -Level Verbose -Message "Found the Invalid SF Node $Node in AXSFServerList. Removing from list"
+                        Write-PSFMessage -Level Verbose -Message "Found the Invalid SF Node $Node in AXSFServerList. Removing from list. Use Update-ServiceFabricD365ClusterConfig to get a headstart on fixing. "
                         $AXSFActiveNodeList.Remove($node)
                     }
                 }
