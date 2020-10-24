@@ -41,7 +41,7 @@
 	# Functions to export from this module
 	FunctionsToExport = @(
 		'Get-D365LBDConfig',
-		'Start-D365FOLBDDBSync',
+		'Start-D365LBDDBSync',
 		'Export-D365LBDAssetModuleVersion',
 		'Get-D365LBDOrchestrationLogs',
 		'Get-D365LBDOrchestrationNodes',

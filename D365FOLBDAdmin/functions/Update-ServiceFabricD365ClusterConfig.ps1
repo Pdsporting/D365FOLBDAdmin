@@ -85,7 +85,7 @@ function Update-ServiceFabricD365ClusterConfig {
                 Write-PSFMessage -Level Verbose -Message "NodesToBeRemoved $invalidnode added to JSON"
             }
             $JSON | ConvertTo-Json -Depth 32 | Set-Content  $Workingfolder\ClusterConfig.json 
-            Write-PSFMessage -Level VeryVerbose -Message "$Workingfolder\ClusterConfig.json created."
+            Write-PSFMessage -Level VeryVerbose -Message "$Workingfolder\ClusterConfig.json updated and ready to be used."
         }
         catch {
             Write-PSFMessage -message "Can't Connect to Service Fabric $_" -Level Verbose
