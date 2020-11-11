@@ -11,7 +11,7 @@ function Get-D365LBDDBEvents {
         try {
 
             ##todoadd logic to find if eventlog exists
-            $latestEventinlog = $(Get-EventLog -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents 1 -computername $AXSFServerName).TimeCreated
+            $latestEventinlog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents 1 -computername $AXSFServerName).TimeCreated
 
         }
         catch {
