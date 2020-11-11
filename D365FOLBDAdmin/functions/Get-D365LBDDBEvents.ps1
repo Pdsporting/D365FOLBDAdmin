@@ -6,13 +6,9 @@ function Get-D365LBDDBEvents {
 
     $config = Get-D365LBDConfig 
     
-
     Foreach ($AXSFServerName in $config.AXSFServerNames) {
         try {
-
-            ##todoadd logic to find if eventlog exists
             $latestEventinlog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents 1 -computername $AXSFServerName -ErrorAction Stop).TimeCreated
-
         }
         catch {
             Write-PSFMessage -Level VeryVerbose -Message "$AXSFServerName $_"
@@ -29,8 +25,10 @@ function Get-D365LBDDBEvents {
             if (($latestEventinlog -gt $latesteventinalllogs) -or (!$latesteventinalllogs)) {
                 $latesteventinalllogs = $latestEventinlog
                 $serverwithlatestlog = $AXSFServerName 
+                Write-PSFMessage -Level Verbose -Message "Server with latest log updated to $Serverwithlatestlog"
             }
         }
         Write-PSFMessage -Level Verbose -Message "Gathering from $serverwithlatestlog"
         Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents $NumberofEvents -computername $serverwithlatestlog
     }
+}
