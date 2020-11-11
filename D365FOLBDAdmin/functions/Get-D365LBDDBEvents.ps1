@@ -5,9 +5,9 @@ function Get-D365LBDDBEvents {
     )
 
     $config = Get-D365LBDConfig 
-    $AXSFServerNames = $config.AXSFServerNames
+    
 
-    Foreach ($AXSFServerName in $AXSFServerNames) {
+    Foreach ($AXSFServerName in $config.AXSFServerNames) {
         try {
 
             ##todoadd logic to find if eventlog exists
