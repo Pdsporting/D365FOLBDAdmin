@@ -29,7 +29,7 @@ function Get-D365LBDDBEvents {
         }
     }
     Write-PSFMessage -Level VeryVerbose -Message "Gathering from $ServerWithLatestLog"
-    $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents $NumberofEvents -computername $ServerWithLatestLog| 
+    $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents $NumberofEvents -computername $ServerWithLatestLog | 
     ForEach-Object -Process { `
             New-Object -TypeName PSObject -Property `
         @{'MachineName'        = $_.Properties[0].value;
@@ -38,13 +38,15 @@ function Get-D365LBDDBEvents {
             'Message'          = $_.Message;
             'LevelDisplayName' = $_.LevelDisplayName;
             'TimeCreated'      = $_.TimeCreated;
-            'TaskDisplayName' = $_.TaskDisplayName
+            'TaskDisplayName'  = $_.TaskDisplayName
             'UserId'           = $_.UserId;
             'LogName'          = $_.LogName;
             'ProcessId'        = $_.ProcessId;
             'ThreadId'         = $_.ThreadId;
             'Id'               = $_.Id;
         }
-        $events
+     
         ##if ($events.Message -eq 'Database Synchronize Succeeded.')
+    }
+    $events
 }
