@@ -1,4 +1,5 @@
 function Get-D365LBDDBEvents {
+    [CmdletBinding()]
     [alias("Get-D365DBEvents")]
     param (
         [int]$NumberofEvents = 20
@@ -32,9 +33,9 @@ function Get-D365LBDDBEvents {
     $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents $NumberofEvents -computername $ServerWithLatestLog | 
     ForEach-Object -Process { `
             New-Object -TypeName PSObject -Property `
-        @{'MachineName'        = $_.Properties[0].value;
-            'EventMessage'     = $_.Properties[1].value;
-            'EventDetails'     = $_.Properties[2].value; 
+        @{'MachineName'        = $ServerWithLatestLog ;
+            'EventMessage'     = $_.Properties[0].value;
+            'EventDetails'     = $_.Properties[1].value; 
             'Message'          = $_.Message;
             'LevelDisplayName' = $_.LevelDisplayName;
             'TimeCreated'      = $_.TimeCreated;
