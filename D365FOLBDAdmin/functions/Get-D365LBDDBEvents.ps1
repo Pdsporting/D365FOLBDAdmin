@@ -27,7 +27,24 @@ function Get-D365LBDDBEvents {
             $ServerWithLatestLog = $AXSFServerName 
             Write-PSFMessage -Level Verbose -Message "Server with latest log updated to $ServerWithLatestLog with a date time of $LatestEventinLog"
         }
-        Write-PSFMessage -Level VeryVerbose -Message "Gathering from $ServerWithLatestLog"
-        Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents $NumberofEvents -computername $ServerWithLatestLog
     }
+    Write-PSFMessage -Level VeryVerbose -Message "Gathering from $ServerWithLatestLog"
+    $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents $NumberofEvents -computername $ServerWithLatestLog| 
+    ForEach-Object -Process { `
+            New-Object -TypeName PSObject -Property `
+        @{'MachineName'        = $_.Properties[0].value;
+            'EventMessage'     = $_.Properties[1].value;
+            'EventDetails'     = $_.Properties[2].value; 
+            'Message'          = $_.Message;
+            'LevelDisplayName' = $_.LevelDisplayName;
+            'TimeCreated'      = $_.TimeCreated;
+            'TaskDisplayName' = $_.TaskDisplayName
+            'UserId'           = $_.UserId;
+            'LogName'          = $_.LogName;
+            'ProcessId'        = $_.ProcessId;
+            'ThreadId'         = $_.ThreadId;
+            'Id'               = $_.Id;
+        }
+        $events
+        ##if ($events.Message -eq 'Database Synchronize Succeeded.')
 }
