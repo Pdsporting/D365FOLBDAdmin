@@ -65,7 +65,8 @@ function Start-D365LBDDBSync {
             $D365DeploymentExe = Get-ChildItem $AXSFCodeBinFolder | Where-Object { $_.Name -eq "Microsoft.Dynamics.AX.Deployment.Setup.exe" }
 
             $CommandLineArgs = '-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd {5} --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser, $SQLUserPassword
-            
+            $exelocation = $D365DeploymentExe.FullName
+            Write-PSFMessage -Message "$exelocation $CommandLineArgs" -Level Verbose
             $DbSyncProcess = Start-Process -filepath $D365DeploymentExe.FullName -ArgumentList $CommandLineArgs -Verbose -PassThru -OutVariable out
 
             if ($DbSyncProcess.WaitForExit(60000 * $Timeout) -eq $false) {
