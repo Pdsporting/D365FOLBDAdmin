@@ -175,7 +175,7 @@
             }
 
             $AgentShareLocation = $downloadfolderLocation.Value
-            $AgentShareWPConfigJson = Get-ChildItem "$AgentShareLocation\wp\*\StandaloneSetup-*\config.json" | Sort-Object { $_.CreationTime }
+            $AgentShareWPConfigJson = Get-ChildItem "$AgentShareLocation\wp\*\StandaloneSetup-*\config.json" | Sort-Object { $_.CreationTime } | Select-Object -First 1
 
             if ($AgentShareWPConfigJson) {
                 $jsonconfig = get-content $AgentShareWPConfigJson
