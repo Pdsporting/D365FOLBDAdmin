@@ -208,17 +208,23 @@
             }
             $CustomModuleVersion = ''
             if (($CustomModuleName)) {
-                $CustomModuleDll = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\Packages\$CustomModuleName\bin\Dynamics.AX.$CustomModuleName.dll"
-                if (-not (Test-Path $CustomModuleDll)) {
-                    Write-PSFMessage -Message "Warning: Custom Module not found; version unable to be found" -Level Warning
+                try {
+                    $CustomModuleDll = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\Packages\$CustomModuleName\bin\Dynamics.AX.$CustomModuleName.dll"
+                    if (-not (Test-Path $CustomModuleDll)) {
+                        Write-PSFMessage -Message "Warning: Custom Module not found; version unable to be found" -Level Warning
+                    }
+                    else {
+                        $CustomModuleVersion = $CustomModuleDll.VersionInfo.FileVersion
+                    }
                 }
-                else {
-                    $CustomModuleVersion = $CustomModuleDll.VersionInfo.FileVersion
-                }
+                catch {}
             }
             $AXServiceConfigXMLFile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config"
             Write-PSFMessage -Message "Reading $AXServiceConfigXMLFile" -Level Verbose 
             [xml]$AXServiceConfigXML = get-content $AXServiceConfigXMLFile
+
+            $AOSKerneldll = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\bin\AOSKernel.dll"
+            $AOSKernelVersion = $AOSKerneldll.VersionInfo.ProductVersion
 
             $jsonClusterConfig = get-content "\\$AXSFConfigServerName\C$\ProgramData\SF\clusterconfig.json"
             $SFClusterCertificate = ($jsonClusterConfig | ConvertFrom-Json).properties.security.certificateinformation.clustercertificate.Thumbprint
@@ -244,8 +250,7 @@
                 $disabledsfnodes = get-servicefabricnode | Where-Object { ($_.NodeStatus -eq "Disabled") } 
                 $invalidnodes = $invalidsfnodes.NodeName | Sort-Object
                 $disablednodes = $disabledsfnodes.NodeName | Sort-Object
-                if (!$invalidnodes)
-                {
+                if (!$invalidnodes) {
                     Write-PSFMessage -Level Warning -Message "Warning: Invalid Node found. Suggest running Update-ServiceFabricD365ClusterConfig to help fix"
                 }
             }
@@ -337,6 +342,7 @@
                 'SFVersionNumber'                    = $SFVersionNumber
                 'InvalidSFServers'                   = $invalidnodes
                 'DisabledSFServers'                  = $disablednodes
+                'AOSKernelVersion' = $AOSKernelVersion
             }
             ##Sends Custom Object to Pipeline
             [PSCustomObject]$Properties
