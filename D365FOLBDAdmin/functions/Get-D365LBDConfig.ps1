@@ -142,7 +142,7 @@
                     if (!$SFConfig) {
                         $SFConfig = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Package.1.0.xml"
                     }
-                    $count = $count ++
+                    $count = $count + 1
                     Write-PSFMessage -Message "Count of servers tried $count" -Verbose
                 } until ($SFConfig -or ($count -eq $AXSFServerNames.Count))
             } 
@@ -221,8 +221,12 @@
             }
             $AXServiceConfigXMLFile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config"
             Write-PSFMessage -Message "Reading $AXServiceConfigXMLFile" -Level Verbose 
-            [xml]$AXServiceConfigXML = get-content $AXServiceConfigXMLFile
-
+            if (!$AXServiceConfigXMLFile) {
+                Write-PSFMessage -Message "Warning: AXSF doesnt seem installed; config cannot be found" -Level Warning
+            }
+            else {
+                [xml]$AXServiceConfigXML = get-content $AXServiceConfigXMLFile
+            }
             $AOSKerneldll = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\bin\AOSKernel.dll"
             $AOSKernelVersion = $AOSKerneldll.VersionInfo.ProductVersion
 
@@ -306,6 +310,8 @@
                     $AllAppServerList += $ComputerName
                 }
             }
+            ##
+            
             # Collect information into a hashtable Add any new field to Get-D365TestConfigData
             $Properties = @{
                 "AllAppServerList"                   = $AllAppServerList
@@ -342,7 +348,21 @@
                 'SFVersionNumber'                    = $SFVersionNumber
                 'InvalidSFServers'                   = $invalidnodes
                 'DisabledSFServers'                  = $disablednodes
-                'AOSKernelVersion' = $AOSKernelVersion
+                'AOSKernelVersion'                   = $AOSKernelVersion
+            }
+            $allCerts = $Properties | Where-Object { $_.name -like '*Cert*' } | Select-Object Name, value 
+            foreach ($cert in $allcerts) {
+                $certexpiration = $null
+                if ($cert.value) {
+                    $value = $cert.value
+                    try {
+                        $certexpiration = invoke-command -scriptblock { $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName
+                        Write-PSFMessage -Level Verbose "$value expires at $certexpiration"
+                    }
+                    catch {
+                        Write-PSFMessage -Level Warning "$value  $_"
+                    }
+                }
             }
             ##Sends Custom Object to Pipeline
             [PSCustomObject]$Properties

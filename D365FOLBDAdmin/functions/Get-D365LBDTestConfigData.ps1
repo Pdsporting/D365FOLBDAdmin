@@ -47,7 +47,7 @@ function Get-D365LBDTestConfigData {
             'SFVersionNumber'                    = '7.1.465.9590'
             'InvalidSFServers'                   = 'Server5'
             'DisabledSFServers'                  = 'Server4'
-            'AOSKernelVersion' = '7.0.6969.42069'
+            'AOSKernelVersion'                   = '7.0.6969.42069'
         }
         ##Sends Custom Object to Pipeline
         [PSCustomObject]$Properties
