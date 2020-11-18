@@ -40,8 +40,9 @@ function Add-D365LBDDatabaseDetailsandCert {
             else {
                 "NotClustered" | Out-file \\$server\c$\ProgramData\SF\DatabaseDetailsandCert.txt -Force
             }
-            $DatabaseServerNames | Out-file \\$server\c$\ProgramData\SF\DatabaseDetailsandCert.txt -append 
             $Thumbprint | Out-file \\$server\c$\ProgramData\SF\DatabaseDetailsandCert.txt -append 
+            $DatabaseServerNames | Out-file \\$server\c$\ProgramData\SF\DatabaseDetailsandCert.txt -append 
+            
             
         }
         Write-PSFMessage -Level Verbose "c:\ProgramData\SF\DatabaseDetailsandCert.txt created/updated"

@@ -248,7 +248,7 @@
                 Write-PSFMessage -Level Verbose -Message "Found DatabaseDetailsandCert config additional details added to config data"
                 $DatabaseEncryptionCertificate = $DatabaseDetailsandCertConfig[2]
                 $DatabaseClusteredStatus = $DatabaseDetailsandCertConfig[0]
-                $DatabaseClusterServerNames = $DatabaseDetailsandCertConfig[1]
+                $DatabaseClusterServerNames = $DatabaseDetailsandCertConfig[1].Split(",")
             }
             else {
                 Write-PSFMessage -Level Warning -Message "Warning: No additional Database config Details found use Add-D365LBDDatabaseDetailsandCert to add"
