@@ -274,7 +274,7 @@
                 $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                 $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
                 $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") } 
-                Write-PSFMessage -message "Service Fabric Connected Nodes found $nodes" -Level Verbose
+                Write-PSFMessage -message "Service Fabric connected. Grabbing nodes to validate status" -Level Verbose
                 $appservers = $nodes.NodeName | Sort-Object
                 $invalidsfnodes = get-servicefabricnode | Where-Object { ($_.NodeStatus -eq "Invalid") } 
                 $disabledsfnodes = get-servicefabricnode | Where-Object { ($_.NodeStatus -eq "Disabled") } 
@@ -395,9 +395,9 @@
                             if (!$certexpiration) {
                                 $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $OrchestratorServerName -ArgumentList $value
                             }
-                        }
+                        } if (!$certexpiration) {
                         $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value
-                        
+                        }
                         if (!$certexpiration) {
                             $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value
                         }
@@ -412,7 +412,6 @@
                             }
                         }
                         if ($certexpiration) {
-
                             Write-PSFMessage -Level Verbose -Message "$value expires at $certexpiration"
                         }
                         else {
@@ -432,7 +431,6 @@
                 }
                 $hash = $CertificateExpirationHash.Add($name, $certexpiration)
             }
-
             $FinalOutput = $Properties, $CertificateExpirationHash
             
             Write-PSFMessage -Level Verbose -Message "$FinalOutput"

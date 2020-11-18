@@ -27,7 +27,7 @@ function Add-D365LBDDataEnciphermentCertConfig {
     }
     PROCESS {
         if (!$Config) {
-            $Config = Get-D365LBDConfig
+            $Config = Get-D365LBDConfig -ComputerName $ComputerName 
         }
 
         foreach ($server in $Config.AllAppServerList) {

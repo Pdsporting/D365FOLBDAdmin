@@ -1,4 +1,14 @@
 function Update-ServiceFabricD365ClusterConfig {
+    [CmdletBinding()]
+    param([Parameter(ValueFromPipeline = $True,
+            ValueFromPipelineByPropertyName = $True,
+            Mandatory = $false,
+            HelpMessage = 'D365FO Local Business Data Server Name')]
+        [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
+        [Parameter(Mandatory = $false)]
+        [psobject]$Config,
+        [string]$Workingfolder = "C:\temp"
+    )
     <#
    .SYNOPSIS
   todo not working yet
@@ -15,17 +25,11 @@ function Update-ServiceFabricD365ClusterConfig {
   .PARAMETER Config
   optional custom object generated from Get-D365LBDConfig 
   #>
-    param
-    (
-        [Parameter(Mandatory = $false)]
-        [psobject]$Config,
-        [string]$Workingfolder = "C:\temp"
-
-    )
+        
     BEGIN {
         if ((!$Config)) {
             Write-PSFMessage -Message "No paramters selected will try and get config" -Level Verbose
-            $Config = Get-D365LBDConfig
+            $Config = Get-D365LBDConfig -ComputerName $ComputerName
         }  
     }
     PROCESS {

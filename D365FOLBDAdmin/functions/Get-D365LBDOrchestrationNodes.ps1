@@ -1,7 +1,19 @@
 ##Get Primary and Secondary
 function Get-D365LBDOrchestrationNodes {
     [alias("Get-D365OrchestrationNodes")]
-    $config = Get-D365LBDConfig
+    [CmdletBinding()]
+    param([Parameter(ValueFromPipeline = $True,
+            ValueFromPipelineByPropertyName = $True,
+            Mandatory = $false,
+            HelpMessage = 'D365FO Local Business Data Server Name')]
+        [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
+        [string]$Thumbprint,
+        [psobject]$Config)
+
+        if (!$Config) {
+            $Config = Get-D365LBDConfig -ComputerName $ComputerName 
+        }
+
     try {
         $connection = Connect-ServiceFabricCluster -connectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $Config.SFServerCertificate -ServerCertThumbprint $Config.SFServerCertificate | Out-Null
     }

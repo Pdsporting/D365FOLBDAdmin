@@ -29,7 +29,7 @@ function Add-D365LBDDatabaseDetailsandCert {
     }
     PROCESS {
         if (!$Config) {
-            $Config = Get-D365LBDConfig
+            $Config = Get-D365LBDConfig -ComputerName $ComputerName 
         }
 
         foreach ($server in $Config.AllAppServerList) {
@@ -42,7 +42,6 @@ function Add-D365LBDDatabaseDetailsandCert {
             }
             $Thumbprint | Out-file \\$server\c$\ProgramData\SF\DatabaseDetailsandCert.txt -append 
             $DatabaseServerNames | Out-file \\$server\c$\ProgramData\SF\DatabaseDetailsandCert.txt -append 
-            
             
         }
         Write-PSFMessage -Level Verbose "c:\ProgramData\SF\DatabaseDetailsandCert.txt created/updated"

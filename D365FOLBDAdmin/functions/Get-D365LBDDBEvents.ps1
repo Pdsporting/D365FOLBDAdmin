@@ -1,11 +1,15 @@
 function Get-D365LBDDBEvents {
     [CmdletBinding()]
     [alias("Get-D365DBEvents")]
-    param (
+    param ([Parameter(ValueFromPipeline = $True,
+            ValueFromPipelineByPropertyName = $True,
+            Mandatory = $false,
+            HelpMessage = 'D365FO Local Business Data Server Name')]
+        [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [int]$NumberofEvents = 20
     )
 
-    $config = Get-D365LBDConfig 
+    $config = Get-D365LBDConfig -ComputerName $ComputerName
     
     Foreach ($AXSFServerName in $config.AXSFServerNames) {
         try {
