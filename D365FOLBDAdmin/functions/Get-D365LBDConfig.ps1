@@ -220,7 +220,7 @@
                 }
                 catch {}
             }
-            $AXServiceConfigXMLFile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config"
+            $AXServiceConfigXMLFile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config" | Sort-Object { $_.CreationTime } | Select-Object -First 1
             Write-PSFMessage -Message "Reading $AXServiceConfigXMLFile" -Level Verbose 
             if (!$AXServiceConfigXMLFile) {
                 Write-PSFMessage -Message "Warning: AXSF doesnt seem installed; config cannot be found" -Level Warning
