@@ -246,9 +246,9 @@
             if (test-path \\$ComputerName\c$\ProgramData\SF\DatabaseDetailsandCert.txt) {
                 $DatabaseDetailsandCertConfig = Get-Content \\$ComputerName\c$\ProgramData\SF\DatabaseDetailsandCert.txt
                 Write-PSFMessage -Level Verbose -Message "Found DatabaseDetailsandCert config additional details added to config data"
-                $DatabaseEncryptionCertificate = $DatabaseDetailsandCertConfig[2]
+                $DatabaseEncryptionCertificate = $DatabaseDetailsandCertConfig[1]
                 $DatabaseClusteredStatus = $DatabaseDetailsandCertConfig[0]
-                $DatabaseClusterServerNames = $DatabaseDetailsandCertConfig[1].Split(",")
+                $DatabaseClusterServerNames = $DatabaseDetailsandCertConfig[2]
             }
             else {
                 Write-PSFMessage -Level Warning -Message "Warning: No additional Database config Details found use Add-D365LBDDatabaseDetailsandCert to add"
