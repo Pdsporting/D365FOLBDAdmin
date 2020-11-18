@@ -279,7 +279,8 @@
                 $disabledsfnodes = get-servicefabricnode | Where-Object { ($_.NodeStatus -eq "Disabled") } 
                 $invalidnodes = $invalidsfnodes.NodeName | Sort-Object
                 $disablednodes = $disabledsfnodes.NodeName | Sort-Object
-                if (!$invalidnodes) {
+                $invalidnodescount = $invalidnodes.count
+                if (!$invalidnodes -and $invalidnodescount -ne 0 ) {
                     Write-PSFMessage -Level Warning -Message "Warning: Invalid Node found. Suggest running Update-ServiceFabricD365ClusterConfig to help fix. $invalidnodes"
                 }
             }
@@ -379,29 +380,27 @@
                 'DatabaseClusteredStatus'            = $DatabaseClusteredStatus
                 'DatabaseClusterServerNames'         = $DatabaseClusterServerNames
             }
-            $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
+            $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
             $CertificateExpirationHash = @{}
             foreach ($cert in  $certlist) {
                 $certthumbprint = $null 
                 $certthumbprint = $Properties.$cert
                 $certexpiration = $null
-                #$certthumbprintindex = $null
                 if ($certthumbprint) {
-                    #$certthumbprintindex = $($properties.keys).indexof("$cert")
                     $value = $certthumbprint
                     try {
-                        $certexpiration = invoke-command -scriptblock { $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName
+                        $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value
                         if (!$certexpiration) {
-                            $certexpiration = invoke-command -scriptblock { $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName
+                            $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value
                         }
                         if (!$certexpiration) {
-                            $certexpiration = invoke-command -scriptblock { $(Get-ChildItem Cert:\LocalMachine\Trust | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName
+                            $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\Trust | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value
                         }
                         if ($cert -eq 'DatabaseEncryptionCertificate' -and !$certexpiration) {
                             $DatabaseClusterServerName = $DatabaseClusterServerNames | Select-Object -First 1
-                            $certexpiration = invoke-command -scriptblock { $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName
+                            $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value
                             if (!$certexpiration) {
-                                $certexpiration = invoke-command -scriptblock { $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName
+                                $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value
                             }
                         }
                         if ($certexpiration) {
@@ -409,25 +408,28 @@
                             Write-PSFMessage -Level Verbose -Message "$value expires at $certexpiration"
                         }
                         else {
-                            Write-PSFMessage -Level Verbose -Message "Could not find Certificate $cert $value "
+                            Write-PSFMessage -Level Verbose -Message "Could not find Certificate $cert $value"
                         }
-                        
                     }
                     catch {
                         Write-PSFMessage -Level Warning -Message "$value  $_ cant be found"
                     }
                 }
                 $name = $cert + "ExpiresAfter"
-                $value = $certexpiration
-                $CertificateExpirationHash.Add($name, $value)
+                
+                $currdate = get-date
+                if ($currdate -gt $certexpiration)
+                {
+                    Write-PSFMessage -Level Warning -Message "WARNING: Expired Certificate $name with an expiration of $certexpiration"
+                }
+                $CertificateExpirationHash.Add($name, $certexpiration)
             }
 
-            Write-PSFMessage -Level Verbose -Message "$CertificateExpirationHash" 
             $FinalOutput = $Properties, $CertificateExpirationHash
-            Write-PSFMessage -Level Verbose -Message "Test Final Output"
+            
             Write-PSFMessage -Level Verbose -Message "$FinalOutput"
             ##Sends Custom Object to Pipeline
-            [PSCustomObject]$Properties
+            [PSCustomObject]$FinalOutput
         }
     }
     END {
