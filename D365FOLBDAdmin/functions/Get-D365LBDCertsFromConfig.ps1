@@ -32,7 +32,7 @@ function Get-D365LBDCertsFromConfig {
     }
     PROCESS {
      
-        $allCerts = $Config.PSObject.Properties | Where-Object { $_.name -like '*Cert*' } | Select-Object Name, value
+        $allCerts = $Config.PSObject.Properties | Where-Object { $_.name -like '*Cert*' -and  $_.name -notlike '*ExpiresAfter*'  } | Select-Object Name, value
     
         $admincerts = $allCerts | Where-Object { $_.name -eq "SFServerCertificate" -or $_.name -eq "SFClientCertificate" }
     

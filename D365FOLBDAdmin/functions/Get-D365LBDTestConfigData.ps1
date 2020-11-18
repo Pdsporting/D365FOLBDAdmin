@@ -48,6 +48,9 @@ function Get-D365LBDTestConfigData {
             'InvalidSFServers'                   = 'Server5'
             'DisabledSFServers'                  = 'Server4'
             'AOSKernelVersion'                   = '7.0.6969.42069'
+            'DatabaseEncryptionCertificate'      =  'ASES123113233E'
+            'DatabaseClusteredStatus'            = 'Clustered'
+            'DatabaseClusterServerNames'         =  ('DatabaseServer1','DatabaseServer2')
         }
         ##Sends Custom Object to Pipeline
         [PSCustomObject]$Properties

@@ -56,7 +56,8 @@
 		'Add-D365LBDDataEnciphermentCertConfig',
 		"New-D365LBDAXSFNode",
 		"Update-ServiceFabricD365ClusterConfig",
-		"Get-D365LBDDBEvents"
+		"Get-D365LBDDBEvents",
+		'Add-D365LBDDatabaseDetailsandCert'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
@@ -71,7 +72,7 @@
 	"Get-D365CertsFromConfig","Get-D365Config","Get-D365OrchestrationLogs","Get-D365OrchestrationNodes","Get-D365TestConfigData",
 	"Import-D365LBDCertificates"
 	"New-D365AXSFNode","Remove-D365StuckApps",
-	"Start-D365DBSync","Start-D365FOLBDDBSync","Get-D365DBEvents")
+	"Start-D365DBSync","Start-D365FOLBDDBSync","Get-D365DBEvents",'Add-D365DatabaseDetailsandCert')
 	
 	# List of all modules packaged with this module
 	ModuleList = @()

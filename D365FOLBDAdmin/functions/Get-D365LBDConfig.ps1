@@ -239,7 +239,32 @@
                 $DataEnciphermentCertificate = Get-Content \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt
             }
             else {
-                Write-PSFMessage -Level Warning -Message "Warning: No Encipherment Cert found run the function Add-D365LBDDataEnciphermentCertConfig to add"
+                Write-PSFMessage -Level Warning -Message "Warning: No Encipherment Cert found run the function use Add-D365LBDDataEnciphermentCertConfig to add"
+            }
+
+            if (test-path \\$ComputerName\c$\ProgramData\SF\DatabaseDetailsandCert.txt) {
+                $DatabaseDetailsandCertConfig = Get-Content \\$ComputerName\c$\ProgramData\SF\DatabaseDetailsandCert.txt
+                Write-PSFMessage -Level Verbose -Message "Found DatabaseDetailsandCert config additional details added to config data"
+                $DatabaseEncryptionCertificate = $DatabaseDetailsandCertConfig[2]
+                $DatabaseClusteredStatus = $DatabaseDetailsandCertConfig[0]
+                $DatabaseClusterServerNames = $DatabaseDetailsandCertConfig[1]
+            }
+            else {
+                Write-PSFMessage -Level Warning -Message "Warning: No additional Database config Details found use Add-D365LBDDatabaseDetailsandCert to add"
+            }
+            ##checking for after deployment added servers
+            try {
+                $currentclustermanifestxmlfile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\clustermanifest.current.xml" | Sort-Object { $_.CreationTime } | Select-Object -First 1
+                [xml]$currentclustermanifestxml = Get-Content $currentclustermanifestxmlfile
+                $AXSFServerListToCompare = $currentclustermanifestxml.clusterManifest.Infrastructure.NodeList.Node | Where-Object { $_.NodeTypeRef -eq 'AOSNodeType' -or $_.NodeTypeRef -eq 'PrimaryNodeType' }
+                foreach ($Node in $AXSFServerListToCompare) {
+                    if (($AXSFServerNames -contains $Node) -eq $false) {
+                        $AXSFServerNames += $Node
+                    }
+                }
+            }
+            catch {
+                Write-PSFMessage -Level Warning -Message "Warning: $_"
             }
             
             try {
@@ -255,11 +280,11 @@
                 $invalidnodes = $invalidsfnodes.NodeName | Sort-Object
                 $disablednodes = $disabledsfnodes.NodeName | Sort-Object
                 if (!$invalidnodes) {
-                    Write-PSFMessage -Level Warning -Message "Warning: Invalid Node found. Suggest running Update-ServiceFabricD365ClusterConfig to help fix"
+                    Write-PSFMessage -Level Warning -Message "Warning: Invalid Node found. Suggest running Update-ServiceFabricD365ClusterConfig to help fix. $invalidnodes"
                 }
             }
             catch {
-                Write-PSFMessage -message "Can't Connect to Service Fabric $_" -Level Verbose
+                Write-PSFMessage -message "Can't connect to Service Fabric $_" -Level Verbose
             }
             $AXSFServersViaServiceFabricNodes = @()
             foreach ($NodeName in $appservers) {
@@ -286,7 +311,7 @@
                 }
                 if (($OrchestratorServerNames -contains $Node) -eq $true) {
                     foreach ($AXSFNode in $OrchestratorServerNames) {
-                        Write-PSFMessage -Level Verbose -Message "Found the Invalid Orchestrator Node $Node in OrchestratorServerNames. Removing from list"
+                        Write-PSFMessage -Level Verbose -Message "Found the Invalid Orchestrator Node $Node in OrchestratorServerNames. Removing from OrchestratorServerNames list"
                         $AXOrchActiveNodeList.Remove($node)
                     }
                 }
@@ -313,6 +338,7 @@
             ##
             
             # Collect information into a hashtable Add any new field to Get-D365TestConfigData
+            # Make sure to add Certification to Cert list below properties if adding cert
             $Properties = @{
                 "AllAppServerList"                   = $AllAppServerList
                 "OrchestratorServerNames"            = $OrchestratorServerNames
@@ -349,21 +375,57 @@
                 'InvalidSFServers'                   = $invalidnodes
                 'DisabledSFServers'                  = $disablednodes
                 'AOSKernelVersion'                   = $AOSKernelVersion
+                'DatabaseEncryptionCertificate'      = $DatabaseEncryptionCertificate 
+                'DatabaseClusteredStatus'            = $DatabaseClusteredStatus
+                'DatabaseClusterServerNames'         = $DatabaseClusterServerNames
             }
-            $allCerts = $Properties | Where-Object { $_.name -like '*Cert*' } | Select-Object Name, value 
-            foreach ($cert in $allcerts) {
+            $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
+            $CertificateExpirationHash = @{}
+            foreach ($cert in  $certlist) {
+                $certthumbprint = $null 
+                $certthumbprint = $Properties.$cert
                 $certexpiration = $null
-                if ($cert.value) {
-                    $value = $cert.value
+                #$certthumbprintindex = $null
+                if ($certthumbprint) {
+                    #$certthumbprintindex = $($properties.keys).indexof("$cert")
+                    $value = $certthumbprint
                     try {
                         $certexpiration = invoke-command -scriptblock { $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName
-                        Write-PSFMessage -Level Verbose "$value expires at $certexpiration"
+                        if (!$certexpiration) {
+                            $certexpiration = invoke-command -scriptblock { $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName
+                        }
+                        if (!$certexpiration) {
+                            $certexpiration = invoke-command -scriptblock { $(Get-ChildItem Cert:\LocalMachine\Trust | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName
+                        }
+                        if ($cert -eq 'DatabaseEncryptionCertificate' -and !$certexpiration) {
+                            $DatabaseClusterServerName = $DatabaseClusterServerNames | Select-Object -First 1
+                            $certexpiration = invoke-command -scriptblock { $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName
+                            if (!$certexpiration) {
+                                $certexpiration = invoke-command -scriptblock { $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName
+                            }
+                        }
+                        if ($certexpiration) {
+
+                            Write-PSFMessage -Level Verbose -Message "$value expires at $certexpiration"
+                        }
+                        else {
+                            Write-PSFMessage -Level Verbose -Message "Could not find Certificate $cert $value "
+                        }
+                        
                     }
                     catch {
-                        Write-PSFMessage -Level Warning "$value  $_"
+                        Write-PSFMessage -Level Warning -Message "$value  $_ cant be found"
                     }
                 }
+                $name = $cert + "ExpiresAfter"
+                $value = $certexpiration
+                $CertificateExpirationHash.Add($name, $value)
             }
+
+            Write-PSFMessage -Level Verbose -Message "$CertificateExpirationHash" 
+            $FinalOutput = $Properties, $CertificateExpirationHash
+            Write-PSFMessage -Level Verbose -Message "Test Final Output"
+            Write-PSFMessage -Level Verbose -Message "$FinalOutput"
             ##Sends Custom Object to Pipeline
             [PSCustomObject]$Properties
         }
