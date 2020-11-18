@@ -41,6 +41,7 @@
     BEGIN {
     } 
     PROCESS {
+        Set-Location C:\
         if ($ConfigImportFromFile) {
             Write-PSFMessage -Message "Warning: Importing config this data may not be the most up to date" -Level Warning
             if (-not (Test-Path $ConfigImportFromFile)) {
@@ -418,11 +419,11 @@
                 $name = $cert + "ExpiresAfter"
                 
                 $currdate = get-date
-                if ($currdate -gt $certexpiration)
+                if ($currdate -gt $certexpiration -and $certexpiration)
                 {
                     Write-PSFMessage -Level Warning -Message "WARNING: Expired Certificate $name with an expiration of $certexpiration"
                 }
-                $CertificateExpirationHash.Add($name, $certexpiration)
+                $hash = $CertificateExpirationHash.Add($name, $certexpiration)
             }
 
             $FinalOutput = $Properties, $CertificateExpirationHash
