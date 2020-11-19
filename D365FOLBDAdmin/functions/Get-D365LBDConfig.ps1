@@ -396,7 +396,7 @@
                                 $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $OrchestratorServerName -ArgumentList $value
                             }
                         } if (!$certexpiration) {
-                        $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value
+                            $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value
                         }
                         if (!$certexpiration) {
                             $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value
@@ -425,15 +425,23 @@
                 $name = $cert + "ExpiresAfter"
                 
                 $currdate = get-date
-                if ($currdate -gt $certexpiration -and $certexpiration)
-                {
+                if ($currdate -gt $certexpiration -and $certexpiration) {
                     Write-PSFMessage -Level Warning -Message "WARNING: Expired Certificate $name with an expiration of $certexpiration"
                 }
                 $hash = $CertificateExpirationHash.Add($name, $certexpiration)
             }
-            $FinalOutput = $Properties, $CertificateExpirationHash
-            
-            Write-PSFMessage -Level Verbose -Message "$FinalOutput"
+            Function Merge-Hashtables([ScriptBlock]$Operator) { ##probably will put in internal to test
+                $Output = @{}
+                ForEach ($Hashtable in $Input) {
+                    If ($Hashtable -is [Hashtable]) {
+                        ForEach ($Key in $Hashtable.Keys) {$Output.$Key = If ($Output.ContainsKey($Key)) {@($Output.$Key) + $Hashtable.$Key} Else  {$Hashtable.$Key}}
+                    }
+                }
+                If ($Operator) {ForEach ($Key in @($Output.Keys)) {$_ = @($Output.$Key); $Output.$Key = Invoke-Command $Operator}}
+                $Output
+            }
+            $FinalOutput = $hash, $Properties | Merge-hastables
+            #$FinalOutput = $Properties, $CertificateExpirationHash
             ##Sends Custom Object to Pipeline
             [PSCustomObject]$FinalOutput
         }

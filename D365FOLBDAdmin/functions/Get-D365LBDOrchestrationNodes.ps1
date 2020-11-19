@@ -10,9 +10,9 @@ function Get-D365LBDOrchestrationNodes {
         [string]$Thumbprint,
         [psobject]$Config)
 
-        if (!$Config) {
-            $Config = Get-D365LBDConfig -ComputerName $ComputerName 
-        }
+    if (!$Config) {
+        $Config = Get-D365LBDConfig -ComputerName $ComputerName 
+    }
 
     try {
         $connection = Connect-ServiceFabricCluster -connectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $Config.SFServerCertificate -ServerCertThumbprint $Config.SFServerCertificate | Out-Null
