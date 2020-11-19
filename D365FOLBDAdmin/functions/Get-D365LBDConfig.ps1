@@ -440,7 +440,7 @@
                 If ($Operator) {ForEach ($Key in @($Output.Keys)) {$_ = @($Output.$Key); $Output.$Key = Invoke-Command $Operator}}
                 $Output
             }
-            $FinalOutput = $hash, $Properties | Merge-hastables
+            $FinalOutput = $hash, $Properties | Merge-Hashtables
             #$FinalOutput = $Properties, $CertificateExpirationHash
             ##Sends Custom Object to Pipeline
             [PSCustomObject]$FinalOutput
