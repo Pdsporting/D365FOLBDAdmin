@@ -406,10 +406,16 @@
                         }
                         if ($cert -eq 'DatabaseEncryptionCertificate' -and !$certexpiration) {
                             $DatabaseClusterServerName = $DatabaseClusterServerNames | Select-Object -First 1
-                            $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value
-                            if (!$certexpiration) {
-                                $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value
+                            try {
+                                $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value -ErrorAction Stop
+                                if (!$certexpiration) {
+                                    $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value -ErrorAction Stop
+                                }
                             }
+                            catch {
+                                Write-PSFMessage -Level Warning "Warning: Issue grabbing DatabaseEncryptionCertificate information. $_"
+                            }
+
                         }
                         if ($certexpiration) {
                             Write-PSFMessage -Level Verbose -Message "$value expires at $certexpiration"
@@ -430,14 +436,15 @@
                 }
                 $hash = $CertificateExpirationHash.Add($name, $certexpiration)
             }
-            Function Merge-Hashtables([ScriptBlock]$Operator) { ##probably will put in internal to test
+            Function Merge-Hashtables([ScriptBlock]$Operator) {
+                ##probably will put in internal to test
                 $Output = @{}
                 ForEach ($Hashtable in $Input) {
                     If ($Hashtable -is [Hashtable]) {
-                        ForEach ($Key in $Hashtable.Keys) {$Output.$Key = If ($Output.ContainsKey($Key)) {@($Output.$Key) + $Hashtable.$Key} Else  {$Hashtable.$Key}}
+                        ForEach ($Key in $Hashtable.Keys) { $Output.$Key = If ($Output.ContainsKey($Key)) { @($Output.$Key) + $Hashtable.$Key } Else { $Hashtable.$Key } }
                     }
                 }
-                If ($Operator) {ForEach ($Key in @($Output.Keys)) {$_ = @($Output.$Key); $Output.$Key = Invoke-Command $Operator}}
+                If ($Operator) { ForEach ($Key in @($Output.Keys)) { $_ = @($Output.$Key); $Output.$Key = Invoke-Command $Operator } }
                 $Output
             }
             $FinalOutput = $CertificateExpirationHash, $Properties | Merge-Hashtables
