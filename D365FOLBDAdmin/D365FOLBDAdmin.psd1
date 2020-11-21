@@ -58,7 +58,8 @@
 		"Update-ServiceFabricD365ClusterConfig",
 		"Get-D365LBDDBEvents",
 		'Add-D365LBDDatabaseDetailsandCert',
-		'Enable-D365LBDSFAppServers'
+		'Enable-D365LBDSFAppServers',
+		'Disable-D365LBDSFAppServers'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
@@ -73,7 +74,8 @@
 	"Get-D365CertsFromConfig","Get-D365Config","Get-D365OrchestrationLogs","Get-D365OrchestrationNodes","Get-D365TestConfigData",
 	"Import-D365LBDCertificates"
 	"New-D365AXSFNode","Remove-D365StuckApps",
-	"Start-D365DBSync","Start-D365FOLBDDBSync","Get-D365DBEvents",'Add-D365DatabaseDetailsandCert')
+	"Start-D365DBSync","Start-D365FOLBDDBSync","Get-D365DBEvents",'Add-D365DatabaseDetailsandCert',
+	'Disable-D365SFAppServers','Enable-D365SFAppServers')
 	
 	# List of all modules packaged with this module
 	ModuleList = @()

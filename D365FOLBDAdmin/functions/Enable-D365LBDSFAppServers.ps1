@@ -42,7 +42,7 @@ function Enable-D365LBDSFAppServers {
         $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
         $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
         $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
-        $AppNodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") } 
+        $AppNodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType") } 
         $primarynodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "PrimaryNodeType") } 
         if ($primarynodes.count -gt 0) {
             Stop-PSFFunction -Message "Error: Primary Node configuration not supported" -EnableException -FunctionName $_
@@ -52,9 +52,9 @@ function Enable-D365LBDSFAppServers {
         }
         Start-Sleep -Seconds 1
 
-        $nodestatus = Get-serviceFabriceNode | Where-Object { $_.NodeStatus -eq 'Disabled' -and ($_.NodeType -eq "AOSNodeType") }
+        $nodestatus = Get-serviceFabriceNode | Where-Object { $_.NodeStatus -eq 'Disabled' -and (($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType")) }
         do {
-            $nodestatus = Get-serviceFabriceNode | Where-Object { $_.NodeStatus -eq 'Disabled' -and ($_.NodeType -eq "AOSNodeType") } 
+            $nodestatus = Get-serviceFabriceNode | Where-Object { $_.NodeStatus -eq 'Disabled' -and (($_.NodeType -eq "AOSNodeType")-or ($_.NodeType -eq "MRType")) } 
             Start-Sleep -Seconds 5
         } until (!$nodestatus -or $nodestatus -eq 0)
         Write-PSFMessage -Message "All App Nodes Enabled" -Level VeryVerbose
