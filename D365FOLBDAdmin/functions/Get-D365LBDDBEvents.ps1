@@ -6,10 +6,12 @@ function Get-D365LBDDBEvents {
             Mandatory = $false,
             HelpMessage = 'D365FO Local Business Data Server Name')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
-        [int]$NumberofEvents = 20
+        [int]$NumberofEvents = 20,
+        [psobject]$Config
     )
-
-    $config = Get-D365LBDConfig -ComputerName $ComputerName
+    if (!$Config) {
+        $Config = Get-D365LBDConfig -ComputerName $ComputerName 
+    }
     
     Foreach ($AXSFServerName in $config.AXSFServerNames) {
         try {

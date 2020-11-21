@@ -4,9 +4,13 @@ function Remove-D365LBDStuckApps {##created for deployment bug when it cant clea
     param (
         [string]$SFServerCertificate,
         [string]$SFConnectionEndpoint,
-        [string]$AgentShareLocation
+        [string]$AgentShareLocation,
+        [PSFComputer]$ComputerName = "$env:COMPUTERNAME"
     )
-    $config = Get-D365LBDConfig 
+    if (!$Config) {
+        $Config = Get-D365LBDConfig -ComputerName $ComputerName 
+    }
+    
 
     if (-not $($config.TenantID)) {
         $cachedconfigfile = Join-path $($config.AgentShareLocation) -ChildPath "scripts\config.xml" 

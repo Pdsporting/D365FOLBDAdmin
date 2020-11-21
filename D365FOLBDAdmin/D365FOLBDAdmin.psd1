@@ -57,7 +57,8 @@
 		"New-D365LBDAXSFNode",
 		"Update-ServiceFabricD365ClusterConfig",
 		"Get-D365LBDDBEvents",
-		'Add-D365LBDDatabaseDetailsandCert'
+		'Add-D365LBDDatabaseDetailsandCert',
+		'Enable-D365LBDSFAppServers'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''

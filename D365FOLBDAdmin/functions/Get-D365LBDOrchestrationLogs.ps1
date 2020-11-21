@@ -3,8 +3,13 @@ function Get-D365LBDOrchestrationLogs {
     param (
         [string]$ComputerName,
         [string]$ActiveSecondary,
-        [int]$NumberofEvents = 5
+        [int]$NumberofEvents = 5,
+        [psobject]$Config
     )
+    if (!$Config) {
+        $Config = Get-D365LBDConfig -ComputerName $ComputerName 
+    }
+    
     $LatestEventInLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $ComputerName).TimeCreated
     $primary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents $NumberofEvents -ComputerName $ComputerName | 
     ForEach-Object -Process { `
