@@ -1,5 +1,5 @@
 
-function Remove-D365LBDStuckApps {##created for deployment bug when it cant clean properly
+function Remove-D365LBDStuckApps {##created for deployment bug when it cant clean properly this was fixed in later local agent versions
     [alias("Remove-D365StuckApps")]
     param (
         [string]$SFServerCertificate,
@@ -10,7 +10,6 @@ function Remove-D365LBDStuckApps {##created for deployment bug when it cant clea
     if (!$Config) {
         $Config = Get-D365LBDConfig -ComputerName $ComputerName 
     }
-    
 
     if (-not $($config.TenantID)) {
         $cachedconfigfile = Join-path $($config.AgentShareLocation) -ChildPath "scripts\config.xml" 

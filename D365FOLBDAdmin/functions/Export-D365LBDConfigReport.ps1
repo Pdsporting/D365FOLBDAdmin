@@ -37,8 +37,33 @@ function Export-D365LBDConfigReport {
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
+
+        
     } 
     PROCESS {
+        if (!$Config) {
+            $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
+        }
+        $Config.LCSEnvironmentName
+        $config.LCSEnvironmentID
+        $Config.AXServerNames.Count
+        $Config.OrchestratorServerNames.Count
+        $Config.DatabaseClusteredStatus
+        $Config.DatabaseClusterServerNames.Count
+        $Config.AOSKernelVersion
+        $Config.CustomModuleVersion
+        $Config.OrchServiceLocalAgentVersionNumber
+        $Config.SFClientCertificateExpiresAfter
+        $Config.SFServerCertificateExpiresAfter              
+        $Config.DataEncryptionCertificateExpiresAfter       
+        $Config.DataSigningCertificateExpiresAfter          
+        $Config.SessionAuthenticationCertificateExpiresAfter 
+        $Config.SharedAccessSMBCertificateExpiresAfter       
+        $Config.LocalAgentCertificateExpiresAfter            
+        $Config.DataEnciphermentCertificateExpiresAfter      
+        $Config.FinancialReportingCertificateExpiresAfter   
+        $Config.ReportingSSRSCertificateExpiresAfter         
+        $Config.DatabaseEncryptionCertificateExpiresAfter    
     }
     END {}
 }

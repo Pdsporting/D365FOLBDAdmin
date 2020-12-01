@@ -59,7 +59,8 @@
 		"Get-D365LBDDBEvents",
 		'Add-D365LBDDatabaseDetailsandCert',
 		'Enable-D365LBDSFAppServers',
-		'Disable-D365LBDSFAppServers'
+		'Disable-D365LBDSFAppServers',
+		'Export-D365LBDConfigReport'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
