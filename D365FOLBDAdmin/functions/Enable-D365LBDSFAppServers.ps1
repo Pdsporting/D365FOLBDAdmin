@@ -39,10 +39,23 @@ function Enable-D365LBDSFAppServers {
     BEGIN {
     } 
     PROCESS {
-        $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
-        $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
-        $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
-        $AppNodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType") } 
+        if (!$Config) {
+            $Config = Get-D365LBDConfig -ComputerName $ComputerName 
+        }
+        [int]$count = 0
+        do {
+            $OrchestratorServerName = $Config.$OrchestratorServerName | Select-Object -First 1 -Skip $count
+            Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName to try and connect to the service fabric" -Level Verbose
+            $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
+            $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
+            $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.ServerCertificate -ServerCertThumbprint $config.ServerCertificate -StoreLocation LocalMachine -StoreName My
+            Write-PSFMessage -Message "Count of servers tried $count" -Verbose
+        } until ($connection -or ($count -eq $Config.$OrchestratorServerName.Count))
+        if (($count -eq $Config.$OrchestratorServerName.Count) -and (!$connection)) {
+            Stop-PSFFunction -Message "Error: Can't conenct to Service Fabric"
+        }
+
+       $AppNodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType") } 
         $primarynodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "PrimaryNodeType") } 
         if ($primarynodes.count -gt 0) {
             Stop-PSFFunction -Message "Error: Primary Node configuration not supported" -EnableException -FunctionName $_
