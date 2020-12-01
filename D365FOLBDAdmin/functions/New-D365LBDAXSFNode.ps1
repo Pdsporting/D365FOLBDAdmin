@@ -26,4 +26,6 @@ function New-D365LBDAXSFNode {
         .\AddNode.ps1 -NodeName $env:COMPUTERNAME -NodeType AOSNodeType -NodeIPAddressorFQDN $ipaddress -ExistingClientConnectionEndpoint $SFConnectionEndpoint  -UpgradeDomain $UpdateDomain -FaultDomain $FaultDomain -AcceptEULA -X509Credential -ServerCertThumbprint $SFClusterCertificate -StoreLocation LocalMachine -StoreName My -FindValueThumbprint $SFClientCertificate
         Write-PSFMessage -Level Warning -Message "Remember to run a cluster configuration update after all nodes are added (and during a change downtime). Use Update-ServiceFabricD365ClusterConfig to help. "
     }
+    END {
+    }
 }

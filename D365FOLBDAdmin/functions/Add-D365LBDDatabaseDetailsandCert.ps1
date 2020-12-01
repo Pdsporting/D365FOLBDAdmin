@@ -31,7 +31,6 @@ function Add-D365LBDDatabaseDetailsandCert {
         if (!$Config) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName 
         }
-
         foreach ($server in $Config.AllAppServerList) {
             if ($Clustered) {
                 "Clustered" | Out-file \\$server\c$\ProgramData\SF\DatabaseDetailsandCert.txt -Force

@@ -37,8 +37,6 @@ function Export-D365LBDConfigReport {
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
-
-        
     } 
     PROCESS {
         if (!$Config) {

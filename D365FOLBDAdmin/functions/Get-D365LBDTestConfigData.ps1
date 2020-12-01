@@ -66,7 +66,6 @@ function Get-D365LBDTestConfigData {
         ##Sends Custom Object to Pipeline
         [PSCustomObject]$Properties
     }
-
     END {
     }
 }

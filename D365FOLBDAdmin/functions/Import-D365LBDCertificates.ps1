@@ -26,8 +26,10 @@ function Import-D365LBDCertificates {
         [Parameter(Mandatory = $false)]
         [string]$CertFolder,
         [switch]$Exportable
-
     )
+    BEGIN {
+    }
+    PROCESS {
     ##Import do to.. bythumbprint
     $certs = get-childitem "$CertFolder"
     foreach ($cert in $certs) {
@@ -37,6 +39,7 @@ function Import-D365LBDCertificates {
         else {
             Import-PfxCertificate $cert.FullName -CertStoreLocation "Cert:\localmachine\my"
         }
-        
+    }
+    END {
     }
 }

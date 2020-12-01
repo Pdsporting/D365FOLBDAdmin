@@ -24,14 +24,20 @@ function Start-D365LBDMonitorDeployment {
         [Parameter(Mandatory = $true)]
         [int]$Timeout
     )
-    $propsToCompare = $Primary[0].psobject.properties.name
-
-    $allnow = $Primary + $secondary | Sort-Object { $_.TimeCreated } -Descending | Select-Object -First $NumberofEventsToCheck
- 
-    if (Compare-Object -ReferenceObject $all -DifferenceObject  $allnow -Property  $propsToCompare) {
-        $allnow
+    BEGIN {
     }
-    else {
-        Write-Host "Nothing New"
+    PROCESS {
+        $propsToCompare = $Primary[0].psobject.properties.name
+
+        $allnow = $Primary + $secondary | Sort-Object { $_.TimeCreated } -Descending | Select-Object -First $NumberofEventsToCheck
+ 
+        if (Compare-Object -ReferenceObject $all -DifferenceObject  $allnow -Property  $propsToCompare) {
+            $allnow
+        }
+        else {
+            Write-Host "Nothing New"
+        }
+    }
+    END {
     }
 }
