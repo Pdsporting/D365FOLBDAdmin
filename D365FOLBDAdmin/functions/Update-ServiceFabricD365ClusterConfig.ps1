@@ -38,7 +38,6 @@ function Update-ServiceFabricD365ClusterConfig {
     }
     PROCESS {
         $SFNumber = $Config.SFVersionNumber
-
         [int]$count = 1
         $OrchestratorServerName = $config.OrchestratorServerNames | Select-Object -First $count
         Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName for service Fabric cab file version $SFNumber" -Level Verbose
