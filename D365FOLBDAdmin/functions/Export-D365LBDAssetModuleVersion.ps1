@@ -10,7 +10,7 @@ function Export-D365LBDAssetModuleVersion {
    .EXAMPLE
     Export-D365LBDAssetModuleVersion
 
-   .PARAMETER AgentShare
+   .PARAMETER AgentShareLocation
    optional string 
     The location of the Agent Share
    .PARAMETER CustomModuleName
@@ -21,15 +21,35 @@ function Export-D365LBDAssetModuleVersion {
     [alias("Export-D365FOLBDAssetModuleVersion", "Export-D365AssetModuleVersion")]
     param
     (
-        [Parameter(Mandatory = $true)]
-        [string]$AgentShare,
-        [string]$CustomModuleName
+        [Parameter(ParameterSetName='AgentShare',
+        Alias='AgentShare')]
+        [string]$AgentShareLocation,
+        [string]$CustomModuleName,
+        [Parameter(ValueFromPipeline = $True,
+        ValueFromPipelineByPropertyName = $True,
+        Mandatory = $false,
+        HelpMessage = 'D365FO Local Business Data Server Name',
+        ParameterSetName = 'NoConfig')]
+        [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
+        [Parameter(ParameterSetName='Config',
+        ValueFromPipeline = $True)]
+        [psobject]$Config
+        
     ) BEGIN {
     } 
     PROCESS {
+        if ($Config)
+        {
+            $AgentShareLocation = $Config.AgentShareLocation
+        }
+        if (!$AgentShareLocation)
+        {
+             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
+             $AgentShareLocation = $Config.AgentShareLocation
+        }
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         $Filter = "*/Apps/AOS/AXServiceApp/AXSF/InstallationRecords/MetadataModelInstallationRecords/$ModuleName*.xml"
-        $AssetFolders = Get-ChildItem "$AgentShare\assets" | Where-Object { $_.Name -ne "topology.xml" -and $_.Name -ne "chk" } | Sort-Object LastWriteTime 
+        $AssetFolders = Get-ChildItem "$AgentShareLocation\assets" | Where-Object { $_.Name -ne "topology.xml" -and $_.Name -ne "chk" } | Sort-Object LastWriteTime 
 
         foreach ($AssetFolder in $AssetFolders ) {
             $versionfile = $null

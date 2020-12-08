@@ -1,29 +1,21 @@
 function Disable-D365LBDSFAppServers {
     <#
     .SYNOPSIS
-   Grabs the configuration of the local business data environment
+  
    .DESCRIPTION
-   Grabs the configuration of the local business data environment through logic using the Service Fabric Cluster XML,
-   AXSF.Package.Current.xml and OrchestrationServicePkg.Package.Current.xml
+   
    .EXAMPLE
-   Get-D365LBDConfig
-   Will get config from the local machine.
+   Disable-D365LBDSFAppServers
+  
    .EXAMPLE
-    Get-D365LBDConfig -ComputerName "LBDServerName" -verbose
-   Will get the Dynamics 365 Config from the LBD server
+    Disable-D365LBDSFAppServers -ComputerName "LBDServerName" -verbose
+   
    .PARAMETER ComputerName
-   optional string 
-   The name of the Local Business Data Computer.
-   If ignored will use local host.
-   .PARAMETER ConfigImportFromFile
-   optional string 
-   The name of the config file to import (if you are choosing to import rather than pull dynamically)
-   .PARAMETER ConfigExportToFile
-   optional string 
-   The name of the config file to export 
-   .PARAMETER CustomModuleName
-   optional string 
-   The name of the custom module you will be using to caputre the version number
+   String
+   The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
+   .PARAMETER Config
+    Custom PSObject
+    Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
 
    #>
     [alias("Disable-D365SFAppServers")]
@@ -43,7 +35,7 @@ function Disable-D365LBDSFAppServers {
     } 
     PROCESS {
         if (!$Config) {
-            $Config = Get-D365LBDConfig -ComputerName $ComputerName 
+            $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
         }
         [int]$count = 0
         while (!$connection) {

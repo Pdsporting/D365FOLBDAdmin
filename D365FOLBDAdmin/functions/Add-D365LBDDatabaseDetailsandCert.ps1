@@ -8,15 +8,24 @@ function Add-D365LBDDatabaseDetailsandCert {
    .EXAMPLE
    Add-D365LBDDataEnciphermentCertConfig -Thumbprint "1243asd234213" -DatabaseServerNames 'DatabaseServerName01'
    Will get add the thumbprint to the environments config (AX SF servers) this would be a non database clustered environment (always-on in most cases)
-     .EXAMPLE
+    .EXAMPLE
    Add-D365LBDDataEnciphermentCertConfig -Thumbprint "1243asd234213" -Clustered -DatabaseServerNames ('DatabaseServerName01','DatabaseServerName02')
    Will get add the thumbprint to the environments config (AX SF servers) this would be a non database clustered environment (always-on in most cases)
-   .PARAMETER Thumbprint
-   required string 
-    the thumbprint of the DataEncipherment certificate
-     .PARAMETER Thumbrint
-   required string 
-    the thumbprint of the DataEncipherment certificate
+   .PARAMETER ComputerName
+   String
+   The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
+    .PARAMETER Clustered
+   Switch
+    Turn this switch on if it is a clustered database environment.
+    .PARAMETER DatabaseServerNames
+    String Array
+    Name of Database Server(s)
+    .PARAMETER Thumbprint
+    String
+    Thumbprint of encryption certificate used to encrypt the database server connections
+    .PARAMETER Config
+    Custom PSObject
+    Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
    #>
     [alias("Add-D365DatabaseDetailsandCert")]
     [CmdletBinding()]
@@ -27,7 +36,9 @@ function Add-D365LBDDatabaseDetailsandCert {
             ParameterSetName='NoConfig')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [switch]$Clustered,
+        [Parameter(Mandatory = $True)]
         [string[]]$DatabaseServerNames,
+        [Parameter(Mandatory = $True)]
         [string]$Thumbprint,
         [Parameter(ParameterSetName='Config',
         ValueFromPipeline = $True)]

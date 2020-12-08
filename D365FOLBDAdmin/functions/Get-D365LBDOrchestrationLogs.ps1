@@ -1,4 +1,23 @@
 function Get-D365LBDOrchestrationLogs {
+    <#
+    .SYNOPSIS
+  
+   .DESCRIPTION
+   
+   .EXAMPLE
+   Disable-D365LBDSFAppServers
+  
+   .EXAMPLE
+    Disable-D365LBDSFAppServers -ComputerName "LBDServerName" -verbose
+   
+   .PARAMETER ComputerName
+   String
+   The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
+   .PARAMETER Config
+    Custom PSObject
+    Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
+
+   #>
     [alias("Get-D365OrchestrationLogs")]
     param ([Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,
@@ -16,7 +35,7 @@ function Get-D365LBDOrchestrationLogs {
     }
     PROCESS {
         if (!$Config) {
-            $Config = Get-D365LBDConfig -ComputerName $ComputerName 
+            $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
         }
     
         $LatestEventInLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $ComputerName).TimeCreated

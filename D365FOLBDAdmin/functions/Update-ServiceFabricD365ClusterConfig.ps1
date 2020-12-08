@@ -1,32 +1,35 @@
 function Update-ServiceFabricD365ClusterConfig {
+    <#
+    .SYNOPSIS
+  
+   .DESCRIPTION
+   
+   .EXAMPLE
+   Disable-D365LBDSFAppServers
+  
+   .EXAMPLE
+    Disable-D365LBDSFAppServers -ComputerName "LBDServerName" -verbose
+   
+   .PARAMETER ComputerName
+   String
+   The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
+   .PARAMETER Config
+    Custom PSObject
+    Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
+
+   #>
     [CmdletBinding()]
     param([Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,
             Mandatory = $false,
             HelpMessage = 'D365FO Local Business Data Server Name')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
-        [Parameter(ParameterSetName='Config',
-        ValueFromPipeline = $True)]
+        [Parameter(ParameterSetName = 'Config',
+            ValueFromPipeline = $True)]
         [psobject]$Config,
         [string]$Workingfolder = "C:\temp"
     )
-    <#
-   .SYNOPSIS
-  todo not working yet
-
-  .DESCRIPTION
-   Connect-ServiceFabricAutomatic
-
-  .EXAMPLE
-  Connect-ServiceFabricAutomatic
-
-  .EXAMPLE
-  Connect-ServiceFabricAutomatic
-
-  .PARAMETER Config
-  optional custom object generated from Get-D365LBDConfig 
-  #>
-        
+       
     BEGIN {
         if ((!$Config)) {
             Write-PSFMessage -Message "No paramters selected will try and get config" -Level Verbose
