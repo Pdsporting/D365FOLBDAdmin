@@ -6,10 +6,10 @@ function Get-D365LBDOrchestrationNodes {
    .DESCRIPTION
    
    .EXAMPLE
-   Disable-D365LBDSFAppServers
+   Get-D365LBDOrchestrationNodes
   
    .EXAMPLE
-    Disable-D365LBDSFAppServers -ComputerName "LBDServerName" -verbose
+    Get-D365LBDOrchestrationNodes -ComputerName "LBDServerName" -verbose
    
    .PARAMETER ComputerName
    String

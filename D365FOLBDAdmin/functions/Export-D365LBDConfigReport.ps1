@@ -5,8 +5,10 @@ function Export-D365LBDConfigReport {
    .DESCRIPTION
 
    .EXAMPLE
+    Export-D365LBDConfigReport
 
    .EXAMPLE
+   Export-D365LBDConfigReport -computername 'AXSFServer01'
   
    .PARAMETER ComputerName
    String

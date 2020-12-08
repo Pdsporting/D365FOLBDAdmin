@@ -1,18 +1,21 @@
 function Get-D365LBDDBEvents {
     <#
     .SYNOPSIS
-  
+  Checks the event viewer of the primary and secondary orchestrator nodes.
    .DESCRIPTION
-   
+   Checks the event viewer of the primary and secondary orchestrator nodes.
    .EXAMPLE
-   Disable-D365LBDSFAppServers
+   Get-D365LBDDBEvents 
   
    .EXAMPLE
-    Disable-D365LBDSFAppServers -ComputerName "LBDServerName" -verbose
+    Get-D365LBDDBEvents  -ComputerName "LBDServerName" -verbose
    
    .PARAMETER ComputerName
    String
    The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
+   .PARAMETER NumberofEvents
+   Integer
+   Number of Events to be pulled defaulted to 20
    .PARAMETER Config
     Custom PSObject
     Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module

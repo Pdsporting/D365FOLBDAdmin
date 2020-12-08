@@ -5,10 +5,10 @@ function Get-D365LBDCertsFromConfig {
     .DESCRIPTION
     Grabs the certificatedetails from the config for easier export/analysis
     .EXAMPLE
-    Get-D365CertDetails
+    Get-D365LBDCertsFromConfig
     
     .EXAMPLE
-    Get-D365CertDetails 
+    Get-D365LBDCertsFromConfig -OnlyAdminCerts
     
     .PARAMETER Config
     optional psobject

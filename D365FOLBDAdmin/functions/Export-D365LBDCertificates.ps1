@@ -7,10 +7,10 @@ function Export-D365LBDCertificates {
    Exports 
 
   .EXAMPLE
-  Export-D365FOLBDAssetModuleVersion
+  Export-D365LBDCertificates
 
   .EXAMPLE
-  Export-D365FOLBDAssetModuleVersion
+  Export-D365LBDCertificates -exportlocation "C:/certs" -username Stefan
 
   .PARAMETER ExportLocation
   optional string 

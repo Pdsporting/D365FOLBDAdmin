@@ -40,17 +40,28 @@ function Start-D365LBDDBSync {
     [alias("Start-D365DBSync", "Start-D365FOLBDDBSync")]
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $False)]
+        [Parameter(Mandatory = $False,
+        ParameterSetName='NoConfig')]
         [string]$AXSFServer, ## Remote execution needs to be tested and worked on use localhost until then
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true,
+        ParameterSetName='NoConfig')]
         [string]$AXDatabaseServer,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true,
+        ParameterSetName='NoConfig')]
         [string]$AXDatabaseName,
         [Parameter(Mandatory = $true)]
         [string]$SQLUser,
         [Parameter(Mandatory = $true)]
         [string]$SQLUserPassword,
-        [int]$Timeout = 60
+        [int]$Timeout = 60,
+        [Parameter(ParameterSetName='Config',
+        ValueFromPipeline = $True)]
+        [psobject]$Config,
+        [Parameter(ValueFromPipeline = $True,
+            ValueFromPipelineByPropertyName = $True,
+            Mandatory = $false,
+            HelpMessage = 'D365FO Local Business Data Server Name')]
+        [PSFComputer]$ComputerName = "$env:COMPUTERNAME"
     )
     
     begin {
