@@ -31,8 +31,11 @@ function Export-D365LBDConfigReport {
     param([Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,
             Mandatory = $false,
-            HelpMessage = 'D365FO Local Business Data Server Name')]
+            HelpMessage = 'D365FO Local Business Data Server Name',
+            ParameterSetName = 'NoConfig')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
+        [Parameter(ParameterSetName='Config',
+        ValueFromPipeline = $True)]
         [psobject]$Config
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config

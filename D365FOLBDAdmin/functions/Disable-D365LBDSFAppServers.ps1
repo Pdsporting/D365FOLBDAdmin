@@ -31,33 +31,36 @@ function Disable-D365LBDSFAppServers {
     param([Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,
             Mandatory = $false,
-            HelpMessage = 'D365FO Local Business Data Server Name')]
+            HelpMessage = 'D365FO Local Business Data Server Name',
+            ParameterSetName = 'NoConfig')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
+        [Parameter(ParameterSetName = 'Config',
+            ValueFromPipeline = $True)]
         [psobject]$Config
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
-
-       
     } 
     PROCESS {
         if (!$Config) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName 
         }
-        while (!$connection) {
-            
-        }
         [int]$count = 0
-        do {
-            $OrchestratorServerName = $Config.$OrchestratorServerName | Select-Object -First 1 -Skip $count
-            Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName to try and connect to the service fabric" -Level Verbose
-            $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
-            $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
-            $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.ServerCertificate -ServerCertThumbprint $config.ServerCertificate -StoreLocation LocalMachine -StoreName My
-            Write-PSFMessage -Message "Count of servers tried $count" -Verbose
-        } until ($connection -or ($count -eq $Config.$OrchestratorServerName.Count))
-        if (($count -eq $Config.$OrchestratorServerName.Count) -and (!$connection)) {
-            Stop-PSFFunction -Message "Error: Can't conenct to Service Fabric"
+        while (!$connection) {
+            do {
+                $OrchestratorServerName = $Config.$OrchestratorServerName | Select-Object -First 1 -Skip $count
+                Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName to try and connect to the service fabric" -Level Verbose
+                $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
+                $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
+                $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.ServerCertificate -ServerCertThumbprint $config.ServerCertificate -StoreLocation LocalMachine -StoreName My
+                $count = $count + 1
+                if (!$connection) {
+                    Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
+                }
+            } until ($connection -or ($count -eq $Config.$OrchestratorServerName.Count))
+            if (($count -eq $Config.$OrchestratorServerName.Count) -and (!$connection)) {
+                Stop-PSFFunction -Message "Error: Can't conenct to Service Fabric"
+            }
         }
 
         $AppNodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") } 

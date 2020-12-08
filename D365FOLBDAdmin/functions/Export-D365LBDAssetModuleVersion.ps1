@@ -23,7 +23,6 @@ function Export-D365LBDAssetModuleVersion {
     (
         [Parameter(Mandatory = $true)]
         [string]$AgentShare,
-        [Parameter(Mandatory = $true)]
         [string]$CustomModuleName
     ) BEGIN {
     } 

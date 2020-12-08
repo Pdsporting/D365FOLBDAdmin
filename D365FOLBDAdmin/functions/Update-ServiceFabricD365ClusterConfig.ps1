@@ -5,7 +5,8 @@ function Update-ServiceFabricD365ClusterConfig {
             Mandatory = $false,
             HelpMessage = 'D365FO Local Business Data Server Name')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
-        [Parameter(Mandatory = $false)]
+        [Parameter(ParameterSetName='Config',
+        ValueFromPipeline = $True)]
         [psobject]$Config,
         [string]$Workingfolder = "C:\temp"
     )

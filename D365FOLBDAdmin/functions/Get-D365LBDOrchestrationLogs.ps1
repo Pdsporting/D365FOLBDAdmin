@@ -1,9 +1,15 @@
 function Get-D365LBDOrchestrationLogs {
     [alias("Get-D365OrchestrationLogs")]
-    param (
+    param ([Parameter(ValueFromPipeline = $True,
+            ValueFromPipelineByPropertyName = $True,
+            Mandatory = $false,
+            HelpMessage = 'D365FO Local Business Data Server Name',
+            ParameterSetName = 'NoConfig')]
         [string]$ComputerName,
         [string]$ActiveSecondary,
         [int]$NumberofEvents = 5,
+        [Parameter(ParameterSetName='Config',
+        ValueFromPipeline = $True)]
         [psobject]$Config
     )
     BEGIN {

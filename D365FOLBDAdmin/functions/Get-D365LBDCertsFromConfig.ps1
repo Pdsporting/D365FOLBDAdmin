@@ -22,9 +22,12 @@ function Get-D365LBDCertsFromConfig {
     param([Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,
             Mandatory = $false,
-            HelpMessage = 'D365FO Local Business Data Server Name')]
+            HelpMessage = 'D365FO Local Business Data Server Name',
+            ParameterSetName = 'NoConfig')]
         [string]$ComputerName = "$env:COMPUTERNAME",
-        [Parameter(Mandatory = $false)][psobject]$Config,
+        [Parameter(ParameterSetName='Config',
+        ValueFromPipeline = $True)]
+        [psobject]$Config,
         [switch]$OnlyAdminCerts    
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config

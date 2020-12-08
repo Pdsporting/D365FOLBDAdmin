@@ -16,9 +16,12 @@ function Add-D365LBDDataEnciphermentCertConfig {
     param([Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,
             Mandatory = $false,
-            HelpMessage = 'D365FO Local Business Data Server Name')]
+            HelpMessage = 'D365FO Local Business Data Server Name',
+            ParameterSetName='NoConfig')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [string]$Thumbprint,
+        [Parameter(ParameterSetName='Config',
+        ValueFromPipeline = $True)]
         [psobject]$Config
   
     )

@@ -24,6 +24,9 @@
    .PARAMETER CustomModuleName
    optional string 
    The name of the custom module you will be using to caputre the version number
+   .PARAMETER HighLevelOnly
+   optional switch
+   for quicker runs grab the config without verifying or grabbing additional details from the service fabric cluster
 
    #>
     [alias("Get-D365Config")]
