@@ -11,6 +11,9 @@ function Add-D365LBDDatabaseDetailsandCert {
     .EXAMPLE
    Add-D365LBDDataEnciphermentCertConfig -Thumbprint "1243asd234213" -Clustered -DatabaseServerNames ('DatabaseServerName01','DatabaseServerName02')
    Will get add the thumbprint to the environments config (AX SF servers) this would be a non database clustered environment (always-on in most cases)
+   .EXAMPLE
+   Add-D365LBDDataEnciphermentCertConfig -Config $config -Thumbprint "1243asd234213" -Clustered -DatabaseServerNames ('DatabaseServerName01','DatabaseServerName02')
+   Will get add the thumbprint to the environments config (AX SF servers) this would be a non database clustered environment (always-on in most cases)
    .PARAMETER ComputerName
    String
    The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.

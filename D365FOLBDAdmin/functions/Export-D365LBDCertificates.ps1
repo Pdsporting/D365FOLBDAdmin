@@ -10,7 +10,7 @@ function Export-D365LBDCertificates {
   Export-D365LBDCertificates
 
   .EXAMPLE
-  Export-D365LBDCertificates -exportlocation "C:/certs" -username Stefan
+  Export-D365LBDCertificates -exportlocation "C:/certs" -username Stefan -certthumbprint 'A5234656'
 
   .PARAMETER ExportLocation
   optional string 

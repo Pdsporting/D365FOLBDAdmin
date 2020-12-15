@@ -41,21 +41,21 @@ function Start-D365LBDDBSync {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $False,
-        ParameterSetName='NoConfig')]
+            ParameterSetName = 'NoConfig')]
         [string]$AXSFServer, ## Remote execution needs to be tested and worked on use localhost until then
         [Parameter(Mandatory = $true,
-        ParameterSetName='NoConfig')]
+            ParameterSetName = 'NoConfig')]
         [string]$AXDatabaseServer,
         [Parameter(Mandatory = $true,
-        ParameterSetName='NoConfig')]
+            ParameterSetName = 'NoConfig')]
         [string]$AXDatabaseName,
         [Parameter(Mandatory = $true)]
         [string]$SQLUser,
         [Parameter(Mandatory = $true)]
         [string]$SQLUserPassword,
         [int]$Timeout = 60,
-        [Parameter(ParameterSetName='Config',
-        ValueFromPipeline = $True)]
+        [Parameter(ParameterSetName = 'Config',
+            ValueFromPipeline = $True)]
         [psobject]$Config,
         [Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,
@@ -67,15 +67,16 @@ function Start-D365LBDDBSync {
     begin {
     }
     process {
-        if ($ComputerName -and !$Config -and !$AXSFServer){
+        $starttime = Get-date
+        if ($ComputerName -and !$Config -and !$AXSFServer) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
         }
-        if ($Config)
-        {
+        if ($Config) {
             $AXDatabaseServer = $Config.AXDatabaseServer
             $AXDatabaseName = $Config.AXDatabaseName
             $AXSFServer = $Config.AXSFServer
         }
+        $LatestEventinLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents 1 -computername $AXSFServerName -ErrorAction Stop).TimeCreated
         if (($AXSFServer.IsLocalhost) -or ($AXSFServer -eq $env:COMPUTERNAME) -or ($AXSFServer -eq "$env:COMPUTERNAME.$env:UserDNSDOMAINNAME")) {
             Write-PSFMessage -Message "AXSF is local Server" -Level Verbose
             Write-PSFMessage -Message "Looking for the AX Process to find deployment exe and the packages folder to start the Database Synchronize" -Level Warning 
@@ -85,8 +86,10 @@ function Start-D365LBDDBSync {
             $D365DeploymentExe = Get-ChildItem $AXSFCodeBinFolder | Where-Object { $_.Name -eq "Microsoft.Dynamics.AX.Deployment.Setup.exe" }
 
             $CommandLineArgs = '-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd {5} --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser, $SQLUserPassword
-            $exelocation = $D365DeploymentExe.FullName
-            Write-PSFMessage -Message "$exelocation $CommandLineArgs" -Level Verbose
+            
+            Write-PSFMessage -Level Verbose -Message "$($D365DeploymentExe.FullName)"
+            Write-PSFMessage -Level Verbose -Message '-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd removed --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser
+               
             $DbSyncProcess = Start-Process -filepath $D365DeploymentExe.FullName -ArgumentList $CommandLineArgs -Verbose -PassThru -OutVariable out
 
             if ($DbSyncProcess.WaitForExit(60000 * $Timeout) -eq $false) {
@@ -113,7 +116,8 @@ function Start-D365LBDDBSync {
     
                 ##Props to Microsoft for below technique in next few lines copied/learned from the 2012 deployment scripts https://gallery.technet.microsoft.com/scriptcenter/Build-and-deploy-for-b166c6e4
                 $CommandLineArgs = '-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd {5} --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser, $SQLUserPassword
-                Write-PSFMessage -Level Verbose -Message "$D365DeploymentExe  $CommandLineArgs"
+                Write-PSFMessage -Level Verbose -Message "$($D365DeploymentExe.FullName)"
+                Write-PSFMessage -Level Verbose -Message '-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd removed --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser
                 $DbSyncProcess = Start-Process -filepath $D365DeploymentExe.FullName -ArgumentList $CommandLineArgs
     
                 if ($DbSyncProcess.WaitForExit(60000 * $Timeout) -eq $false) {
@@ -126,6 +130,16 @@ function Start-D365LBDDBSync {
                 }
             } -Verbose
         }
+        $currtime = Get-date
+        $timediff = New-TimeSpan -Start $starttime -End $currtime
+        $LatestEventinLogNew = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents 1 -computername $AXSFServerName -ErrorAction Stop).TimeCreated
+        if ($LatestEventinLogNew -eq $LatestEventinLog ) {
+            Write-PSFMessage -Level Verbose -Message "No deployment happened, check username/password or SQL cert expiration"
+        }
+        else {
+            Write-PSFMessage -Level Verbose -Message "Database Sync took $timediff"
+        }
+
     }
     end {
     }

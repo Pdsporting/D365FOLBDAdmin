@@ -5,10 +5,10 @@ function Update-ServiceFabricD365ClusterConfig {
    .DESCRIPTION
    
    .EXAMPLE
-   Disable-D365LBDSFAppServers
+   Update-ServiceFabricD365ClusterConfig
   
    .EXAMPLE
-    Disable-D365LBDSFAppServers -ComputerName "LBDServerName" -verbose
+    Update-ServiceFabricD365ClusterConfig -ComputerName "LBDServerName" -verbose
    
    .PARAMETER ComputerName
    String

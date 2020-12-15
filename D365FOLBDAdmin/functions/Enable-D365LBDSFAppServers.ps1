@@ -38,7 +38,7 @@ function Enable-D365LBDSFAppServers {
         }[int]$count = 0
         while (!$connection) {
             do {
-                $OrchestratorServerName = $Config.$OrchestratorServerName | Select-Object -First 1 -Skip $count
+                $OrchestratorServerName = $Config.$OrchestratorServerNames | Select-Object -First 1 -Skip $count
                 Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName to try and connect to the service fabric" -Level Verbose
                 $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
                 $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
@@ -49,7 +49,7 @@ function Enable-D365LBDSFAppServers {
                 }
             } until ($connection -or ($count -eq $Config.$OrchestratorServerName.Count))
             if (($count -eq $Config.$OrchestratorServerName.Count) -and (!$connection)) {
-                Stop-PSFFunction -Message "Error: Can't conenct to Service Fabric"
+                Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
             }
         }
 

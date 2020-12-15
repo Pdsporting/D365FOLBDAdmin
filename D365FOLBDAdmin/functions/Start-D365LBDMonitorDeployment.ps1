@@ -31,7 +31,7 @@ function Start-D365LBDMonitorDeployment {
 
         $allnow = $Primary + $secondary | Sort-Object { $_.TimeCreated } -Descending | Select-Object -First $NumberofEventsToCheck
  
-        if (Compare-Object -ReferenceObject $all -DifferenceObject  $allnow -Property  $propsToCompare) {
+        if (Compare-Object -ReferenceObject $all -DifferenceObject $allnow -Property  $propsToCompare) {
             $allnow
         }
         else {

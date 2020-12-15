@@ -183,6 +183,7 @@
             $AgentShareWPConfigJson = Get-ChildItem "$AgentShareLocation\wp\*\StandaloneSetup-*\config.json" | Sort-Object { $_.CreationTime } | Select-Object -First 1
 
             if ($AgentShareWPConfigJson) {
+                Write-PSFMessage -Message "Verbose: Using AgentShare config at $AgentShareWPConfigJson to get Environment ID, EnvironmentName and TenantID." -Level Verbose
                 $jsonconfig = get-content $AgentShareWPConfigJson
                 $LCSEnvironmentId = $($jsonconfig | ConvertFrom-Json).environmentid
                 $TenantID = $($jsonconfig | ConvertFrom-Json).tenantid
@@ -387,6 +388,7 @@
                 'DatabaseEncryptionCertificate'      = $DatabaseEncryptionCertificate 
                 'DatabaseClusteredStatus'            = $DatabaseClusteredStatus
                 'DatabaseClusterServerNames'         = $DatabaseClusterServerNames
+                'SourceAXSFServer'                   = $AXSFConfigServerName
             }
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
             $CertificateExpirationHash = @{}

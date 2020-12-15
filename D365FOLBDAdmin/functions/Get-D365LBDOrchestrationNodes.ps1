@@ -46,6 +46,8 @@ function Get-D365LBDOrchestrationNodes {
             Stop-PSFFunction -Message "Can't Connect to Service Fabric $_" -EnableException $true -Cmdlet $PSCmdlet -ErrorAction Stop
         }
         $PartitionId = $(Get-ServiceFabricServiceHealth -ServiceName 'fabric:/LocalAgent/OrchestrationService').PartitionHealthStates.PartitionId
+       
+        Write-PSFMessage -Message "Looking up PartitionID $PartitionId." -Level Verbose
         $nodes = Get-ServiceFabricReplica -PartitionId "$PartitionId"
         $primary = $nodes | Where-Object { $_.ReplicaRole -eq "Primary" }
         $secondary = $nodes | Where-Object { $_.ReplicaType -eq "ActiveSecondary" }

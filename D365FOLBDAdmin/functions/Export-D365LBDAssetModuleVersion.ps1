@@ -21,8 +21,8 @@ function Export-D365LBDAssetModuleVersion {
     [alias("Export-D365FOLBDAssetModuleVersion", "Export-D365AssetModuleVersion")]
     param
     (
-        [Parameter(ParameterSetName='AgentShare',
-        Alias='AgentShare')]
+        [Parameter(ParameterSetName='AgentShare')]
+        [Alias('AgentShare')]
         [string]$AgentShareLocation,
         [string]$CustomModuleName,
         [Parameter(ValueFromPipeline = $True,

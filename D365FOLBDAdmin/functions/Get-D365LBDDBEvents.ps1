@@ -82,6 +82,9 @@ function Get-D365LBDDBEvents {
             }
      
             ##if ($events.Message -eq 'Database Synchronize Succeeded.')
+            if ($events.EventMessage -eq 'SyncSuccess'){
+                Write-PSFMessage -Level VeryVerbose -Message "Found a DB Sync Success"
+            }
         }
         $events
     }

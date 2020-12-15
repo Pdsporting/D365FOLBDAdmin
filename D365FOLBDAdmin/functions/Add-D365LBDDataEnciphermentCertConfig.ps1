@@ -44,6 +44,7 @@ function Add-D365LBDDataEnciphermentCertConfig {
         foreach ($server in $Config.AllAppServerList) {
             $Thumbprint | Out-file \\$server\c$\ProgramData\SF\DataEnciphermentCert.txt
         }
+        Write-PSFMessage -Level Verbose "c:\ProgramData\SF\DataEnciphermentCert.txt created/updated"
     }
     END {
       
