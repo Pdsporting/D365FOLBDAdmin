@@ -24,7 +24,7 @@ function New-D365LBDAXSFNode {
         $ipaddress = (Get-NetIPAddress | Where-Object { ($_.AddressFamily -eq "IPv4") -and ($_.IPAddress -ne "127.0.0.1") }).IPAddress
         Set-Location "$ServiceFabricInstallPath"
         .\AddNode.ps1 -NodeName $env:COMPUTERNAME -NodeType AOSNodeType -NodeIPAddressorFQDN $ipaddress -ExistingClientConnectionEndpoint $SFConnectionEndpoint  -UpgradeDomain $UpdateDomain -FaultDomain $FaultDomain -AcceptEULA -X509Credential -ServerCertThumbprint $SFClusterCertificate -StoreLocation LocalMachine -StoreName My -FindValueThumbprint $SFClientCertificate
-        Write-PSFMessage -Level Warning -Message "Remember to run a cluster configuration update after all nodes are added (and during a change downtime). Use Update-ServiceFabricD365ClusterConfig to help. "
+        Write-PSFMessage -Level Warning -Message "Remember to run a cluster configuration update after all nodes are added (and during a change downtime). Use Update-ServiceFabricD365ClusterConfig to help."
     }
     END {
     }

@@ -67,9 +67,9 @@ function Enable-D365LBDSFAppServers {
         }
         Start-Sleep -Seconds 1
 
-        $nodestatus = Get-serviceFabriceNode | Where-Object { $_.NodeStatus -eq 'Disabled' -and (($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType")) }
+        $nodestatus = Get-serviceFabricNode | Where-Object { $_.NodeStatus -eq 'Disabled' -and (($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType")) }
         do {
-            $nodestatus = Get-serviceFabriceNode | Where-Object { $_.NodeStatus -eq 'Disabled' -and (($_.NodeType -eq "AOSNodeType")-or ($_.NodeType -eq "MRType")) } 
+            $nodestatus = Get-serviceFabricNode | Where-Object { $_.NodeStatus -eq 'Disabled' -and (($_.NodeType -eq "AOSNodeType")-or ($_.NodeType -eq "MRType")) } 
             Start-Sleep -Seconds 5
         } until (!$nodestatus -or $nodestatus -eq 0)
         Write-PSFMessage -Message "All App Nodes Enabled" -Level VeryVerbose
