@@ -52,6 +52,7 @@ function Export-D365LBDAssetModuleVersion {
         $AssetFolders = Get-ChildItem "$AgentShareLocation\assets" | Where-Object { $_.Name -ne "topology.xml" -and $_.Name -ne "chk" } | Sort-Object LastWriteTime 
 
         foreach ($AssetFolder in $AssetFolders ) {
+            Write-PSFMessage -Message "Checking $AssetFolder" -Level Verbose
             $versionfile = $null
             $versionfilepath = $AssetFolder.FullName + "\$ModuleName*.xml"
             $versionfile = Get-ChildItem -Path $versionfilepath

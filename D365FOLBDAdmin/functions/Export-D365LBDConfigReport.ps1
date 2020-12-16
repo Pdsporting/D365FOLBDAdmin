@@ -29,7 +29,9 @@ function Export-D365LBDConfigReport {
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [Parameter(ParameterSetName='Config',
         ValueFromPipeline = $True)]
-        [psobject]$Config
+        [psobject]$Config,
+        [switch]$Detailed,
+        [string]$ExportLocation
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
@@ -38,26 +40,46 @@ function Export-D365LBDConfigReport {
         if (!$Config) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
         }
-        $Config.LCSEnvironmentName
-        $config.LCSEnvironmentID
-        $Config.AXServerNames.Count
-        $Config.OrchestratorServerNames.Count
-        $Config.DatabaseClusteredStatus
-        $Config.DatabaseClusterServerNames.Count
-        $Config.AOSKernelVersion
-        $Config.CustomModuleVersion
-        $Config.OrchServiceLocalAgentVersionNumber
-        $Config.SFClientCertificateExpiresAfter
-        $Config.SFServerCertificateExpiresAfter              
-        $Config.DataEncryptionCertificateExpiresAfter       
-        $Config.DataSigningCertificateExpiresAfter          
-        $Config.SessionAuthenticationCertificateExpiresAfter 
-        $Config.SharedAccessSMBCertificateExpiresAfter       
-        $Config.LocalAgentCertificateExpiresAfter            
-        $Config.DataEnciphermentCertificateExpiresAfter      
-        $Config.FinancialReportingCertificateExpiresAfter   
-        $Config.ReportingSSRSCertificateExpiresAfter         
-        $Config.DatabaseEncryptionCertificateExpiresAfter    
+        $html = "<html> <body>"
+        $html += "<h1>$($Config.LCSEnvironmentName) </h1>"
+        $html += "<p><b>Custom Code Version:<b/></p> $($Config.CustomModuleVersion) </p>"
+        $html += "<p><b>AX Kernel Version:<b/></p> $($Config.AOSKernelVersion) "
+        $html += "<p><b>Environment ID:<b/></p> $($config.LCSEnvironmentID) </p>"
+        $html += "<p><b>Amount of AX SF Servers:<b/></p> $($Config.AXServerNames.Count) </p>"
+        if ($Detailed){
+            $html += "<p>AX SF Servers: <b/></p> <ul>"
+            foreach($axsfserver in $Config.AXServerNames)
+            {
+                $html += "<li>$axsfserver</li>"
+            }
+            $html += "</ul>"
+        }
+        $html += "<p><b>Amount of Orchestrator Servers: $($Config.OrchestratorServerNames.Count)</p>"
+        if ($Detailed){
+            $html += "<p><b>Orchestrator Servers:</b></p> <ul>"
+            foreach($axsfserver in $Config.OrchestratorServerNames)
+            {
+                $html += "<li>$axsferver</li>"
+            }
+            $html += "</ul>"
+        }
+        $html += "<p><b>AX database is $($Config.DatabaseClusteredStatus)</p>"
+        $html += "<p><b>Amount of Database servers: $($Config.DatabaseClusterServerNames.Count)</p>"
+        $html += "<p><b>Local Agent Version: $Config.OrchServiceLocalAgentVersionNumber"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.SFClientCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.SFServerCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.DataEncryptionCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.DataSigningCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.SessionAuthenticationCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.SharedAccessSMBCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.DataEnciphermentCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.FinancialReportingCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.ReportingSSRSCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $( $Config.DatabaseEncryptionCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.LocalAgentCertificateExpiresAfter)</p>"
+        $html += "</body></html>"
+                   
+  
     }
     END {}
 }
