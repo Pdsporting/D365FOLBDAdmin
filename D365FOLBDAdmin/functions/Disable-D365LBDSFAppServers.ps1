@@ -43,14 +43,18 @@ function Disable-D365LBDSFAppServers {
                 $OrchestratorServerName = $Config.OrchestratorServerNames | Select-Object -First 1 -Skip $count
                 Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName to try and connect to the service fabric" -Level Verbose
                 $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
-                $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
-                $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.ServerCertificate -ServerCertThumbprint $config.ServerCertificate -StoreLocation LocalMachine -StoreName My
+                if (!$module)
+                {
+                    $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
+                }
+                Write-PSFMessage -Message "-ConnectionEndpoint $($config.SFConnectionEndpoint) -X509Credential -FindType FindByThumbprint -FindValue $($config.ServerCertificate) -ServerCertThumbprint $($config.ServerCertificate) -StoreLocation LocalMachine -StoreName My" -Level Verbose
+                $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.ServerCertificate -ServerCertThumbprint $config.ServerCertificate -StoreLocation LocalMachine -StoreName My
                 $count = $count + 1
                 if (!$connection) {
                     Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
                 }
-            } until ($connection -or ($count -eq $Config.OrchestratorServerName.Count))
-            if (($count -eq $Config.OrchestratorServerName.Count) -and (!$connection)) {
+            } until ($connection -or ($count -eq $($Config.OrchestratorServerNames).Count))
+            if (($count -eq $($Config.OrchestratorServerNames).Count) -and (!$connection)) {
                 Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
             }
         }
