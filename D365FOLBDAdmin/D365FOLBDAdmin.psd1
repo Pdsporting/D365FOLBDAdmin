@@ -60,7 +60,8 @@
 		'Enable-D365LBDSFAppServers',
 		'Disable-D365LBDSFAppServers',
 		'Export-D365LBDConfigReport',
-		'Restart-D365LBDSFAppServers'
+		'Restart-D365LBDSFAppServers',
+		'Set-D365LBDPreDeploymentOptions'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
@@ -76,7 +77,7 @@
 	"Import-D365LBDCertificates"
 	"New-D365AXSFNode","Remove-D365StuckApps",
 	"Start-D365DBSync","Start-D365FOLBDDBSync","Get-D365DBEvents",'Add-D365DatabaseDetailsandCert',
-	'Disable-D365SFAppServers','Enable-D365SFAppServers')
+	'Disable-D365SFAppServers','Enable-D365SFAppServers','Set-D365PreDeploymentOptions')
 	
 	# List of all modules packaged with this module
 	ModuleList = @()
