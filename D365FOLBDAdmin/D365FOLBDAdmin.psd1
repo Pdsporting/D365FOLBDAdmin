@@ -49,7 +49,6 @@
 		'Export-D365LBDCertificates',
 		'Import-D365LBDCertificates',
 		'Get-D365LBDCertsFromConfig',
-		'Connect-ServiceFabricAutomatic',
 		'Export-D365Certificates',
 		'Get-D365LBDTestConfigData',
 		'Start-MonitorD365Deployment',
@@ -60,7 +59,8 @@
 		'Add-D365LBDDatabaseDetailsandCert',
 		'Enable-D365LBDSFAppServers',
 		'Disable-D365LBDSFAppServers',
-		'Export-D365LBDConfigReport'
+		'Export-D365LBDConfigReport',
+		'Restart-D365LBDSFAppServers'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''

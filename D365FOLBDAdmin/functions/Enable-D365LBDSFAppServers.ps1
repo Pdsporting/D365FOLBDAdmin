@@ -25,9 +25,10 @@ function Enable-D365LBDSFAppServers {
             HelpMessage = 'D365FO Local Business Data Server Name',
             ParameterSetName = 'NoConfig')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
-        [Parameter(ParameterSetName='Config',
-        ValueFromPipeline = $True)]
-        [psobject]$Config
+        [Parameter(ParameterSetName = 'Config',
+            ValueFromPipeline = $True)]
+        [psobject]$Config,
+        [int]$Timeout = 600
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
@@ -41,8 +42,7 @@ function Enable-D365LBDSFAppServers {
                 $OrchestratorServerName = $Config.OrchestratorServerNames | Select-Object -First 1 -Skip $count
                 Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName to try and connect to the service fabric" -Level Verbose
                 $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
-                if (!$module)
-                {
+                if (!$module) {
                     $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                 }
                 Write-PSFMessage -Message "-ConnectionEndpoint $($config.SFConnectionEndpoint) -X509Credential -FindType FindByThumbprint -FindValue $($config.SFServerCertificate) -ServerCertThumbprint $($config.SFServerCertificate) -StoreLocation LocalMachine -StoreName My" -Level Verbose
@@ -56,23 +56,23 @@ function Enable-D365LBDSFAppServers {
                 Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
             }
         }
-
-       $AppNodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType") } 
-        $primarynodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "PrimaryNodeType") } 
+        $AppNodes = Get-ServiceFabricNode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType") -or ($_.NodeType -eq "ReportServerType") } 
+        $primarynodes = Get-ServiceFabricNode | Where-Object { ($_.NodeType -eq "PrimaryNodeType") } 
         if ($primarynodes.count -gt 0) {
-            Stop-PSFFunction -Message "Error: Primary Node configuration not supported" -EnableException -FunctionName $_
+            Stop-PSFFunction -Message "Error: Primary Node configuration not supported with enable or disable. Restart-D365LBDSFAppServers is supported." -EnableException $true -FunctionName $_
         }
         foreach ($AppNode in $AppNodes) {
             Enable-ServiceFabricNode -NodeName $AppNode.NodeName 
         }
         Start-Sleep -Seconds 1
-
-        $nodestatus = Get-serviceFabricNode | Where-Object { $_.NodeStatus -eq 'Disabled' -and (($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType")) }
+        [int]$timeoutondisablecounter = 0
+        $nodestatus = Get-ServiceFabricNode | Where-Object { $_.NodeStatus -eq 'Disabled' -and (($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType")) }
         do {
-            $nodestatus = Get-serviceFabricNode | Where-Object { $_.NodeStatus -eq 'Disabled' -and (($_.NodeType -eq "AOSNodeType")-or ($_.NodeType -eq "MRType")) } 
+            $nodestatus = Get-ServiceFabricNode | Where-Object { $_.NodeStatus -eq 'Disabled' -and (($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType")) } 
+            $timeoutondisablecounter = $timeoutondisablecounter + 5
             Start-Sleep -Seconds 5
-        } until (!$nodestatus -or $nodestatus -eq 0)
+        } until (!$nodestatus -or $nodestatus -eq 0 -or ($timeoutondisablecounter -gt $Timeout))
         Write-PSFMessage -Message "All App Nodes Enabled" -Level VeryVerbose
     }
-    END{}
+    END {}
 }
