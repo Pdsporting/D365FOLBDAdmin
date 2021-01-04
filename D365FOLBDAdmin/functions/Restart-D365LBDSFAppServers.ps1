@@ -5,7 +5,7 @@ function Restart-D365LBDSFAppServers {
    .DESCRIPTION
    
    .EXAMPLE
-   Enable-D365LBDSFAppServers
+   Restart-D365LBDSFAppServers
   
    .EXAMPLE
     Enable-D365LBDSFAppServers -ComputerName "LBDServerName" -verbose
@@ -28,7 +28,8 @@ function Restart-D365LBDSFAppServers {
         [Parameter(ParameterSetName = 'Config',
             ValueFromPipeline = $True)]
         [psobject]$Config,
-        [int]$Timeout = 600
+        [int]$Timeout = 600,
+        [switch]$waittillhealthy
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
@@ -59,13 +60,10 @@ function Restart-D365LBDSFAppServers {
         $AppNodes = Get-ServiceFabricNode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType") -or ($_.NodeType -eq "ReportServerType") } 
       
         foreach ($AppNode in $AppNodes) {
-            Restart-ServiceFabricNode -NodeName $AppNode.NodeName -Timeout 200
+            Restart-ServiceFabricNode -NodeName $AppNode.NodeName -CommandCompletionMode Verify -Timeout 200
         }
-        ## $primarynodes = Get-ServiceFabricNode | Where-Object { ($_.NodeType -eq "PrimaryNodeType") } 
-       ## if ($primarynodes.count -gt 0) {
-       ##     Stop-PSFFunction -Message "Error: Primary Node configuration not supported with enable or disable. Restart-D365LBDSFAppServers is supported." -EnableException $true -FunctionName $_
-        ##}
-        Start-Sleep -Seconds 1
+      
+        Start-Sleep -Seconds 5
         [int]$timeoutondisablecounter = 0
         $nodestatus = Get-ServiceFabricNode | Where-Object { $_.NodeStatus -eq 'Disabled' -and (($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType")) }
         do {
@@ -74,6 +72,41 @@ function Restart-D365LBDSFAppServers {
             Start-Sleep -Seconds 5
         } until (!$nodestatus -or $nodestatus -eq 0 -or ($timeoutondisablecounter -gt $Timeout))
         Write-PSFMessage -Message "All App Nodes Enabled" -Level VeryVerbose
+
+        do {
+            try {
+                $apps = Get-ServiceFabricApplication -ErrorAction Stop
+                Start-Sleep -Seconds 5
+            }
+            catch {}
+
+        } until ($apps.count -gt 0)
+        $counterofhealthyapps = 0
+        foreach ($app in $apps) {
+            $health = Get-serviceFabricApplicationHealth -ApplicationName $app.ApplicationName
+
+            if ($health.aggregatedhealthstate -eq "Ok") {
+                $counterofhealthyapps = $counterofhealthyapps + 1
+            }
+            else {
+                Write-PSFMessage -Level Warning -Message "Warning: $($health.ApplicationName) is Unhealthy"
+                if ($waittillhealthy) {
+                    $timer = 0
+                    do {
+                        $health = Get-serviceFabricApplicationHealth -ApplicationName $app.ApplicationName
+                        $timer = $timer + 10
+                        Start-Sleep -Seconds 10
+                        Write-PSFMessage -Message "Waiting for $($app.ApplicationName) to be healthy" -Level VeryVerbose
+                
+                    } until ($health.aggregatedhealthstate -eq "Ok" -or $timer -gt $Timeout)
+                }
+                if ($timer -gt $Timeout)
+                {
+                    Write-PSFMessage -Message "Warning: Timeout occured" -Level Warning
+                }
+            }
+
+        }
     }
     END {}
 }

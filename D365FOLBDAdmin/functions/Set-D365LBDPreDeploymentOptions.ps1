@@ -40,10 +40,11 @@ function Set-D365LBDPreDeploymentOptions {
         }
         if ($RemoveMR) {
             $JsonLocation = Get-ChildItem $AgentShareLocation\wp\*\StandaloneSetup-*\SetupModules.json | Sort-Object { $_.CreationTime }  | Select-Object -First 1 
-            copy-item $JsonLocation.fullName -Destination $AgentShareLocation\OriginalSetupModules
+            $JsonLocationRoot =  Get-ChildItem $AgentShareLocation\wp\*\StandaloneSetup-*\
+            copy-item $JsonLocation.fullName -Destination $AgentShareLocation\OriginalSetupModules.json
             $json = Get-Content $JsonLocation.FullName -Raw | ConvertFrom-Json
             $json.components = $json.components | Where-Object { $_.name -ne 'financialreporting' }
-            $json | ConvertTo-Json -Depth 100 | Out-File $JsonLocation.FullName -Force
+            $json | ConvertTo-Json -Depth 100 | Out-File $JsonLocationRoot \Setupmodules.json -Force -Verbose
         }
     }
     END {
