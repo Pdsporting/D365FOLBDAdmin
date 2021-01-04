@@ -17,7 +17,7 @@ function Restart-D365LBDSFAppServers {
     Custom PSObject
     Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
    #>
-    [alias("Enable-D365SFAppServers")]
+    [alias(" Restart-D365SFAppServers")]
     [CmdletBinding()]
     param([Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,

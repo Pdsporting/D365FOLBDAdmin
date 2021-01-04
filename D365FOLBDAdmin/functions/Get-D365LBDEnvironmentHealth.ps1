@@ -19,7 +19,7 @@ function Get-D365LBDEnvironmentHealth {
   The name of the custom module you will be using to capture the version number
 
   #>
-    [alias("Start-D365MonitorDeployment")]
+    [alias("Get-D365EnvironmentHealth")]
     param
     (
         [Parameter(Mandatory = $true)]
@@ -74,21 +74,21 @@ function Get-D365LBDEnvironmentHealth {
                 Default {}
             }
         }
-        if ($SystemDatabasesWithIssues -eq 0){
+        if ($SystemDatabasesWithIssues -eq 0) {
             $Properties = @{'Object' = "SSRSSystemDatabasesDatabase"
-                        'Details'            = "$SystemDatabasesAccessible databases are accessible"
-                        'Status'             = "Online" 
-                        'Source'             = $ReportServerServerName
-                    }
-                    New-Object -TypeName psobject -Property $Properties
+                'Details'            = "$SystemDatabasesAccessible databases are accessible"
+                'Status'             = "Online" 
+                'Source'             = $ReportServerServerName
+            }
+            New-Object -TypeName psobject -Property $Properties
         }
         else {
             $Properties = @{'Object' = "SSRSSystemDatabasesDatabase"
-            'Details'            = "$SystemDatabasesAccessible databases are accessible. $SystemDatabasesWithIssues are not accessible"
-            'Status'             = "Offline" 
-            'Source'             = $ReportServerServerName
-        }
-        New-Object -TypeName psobject -Property $Properties
+                'Details'            = "$SystemDatabasesAccessible databases are accessible. $SystemDatabasesWithIssues are not accessible"
+                'Status'             = "Offline" 
+                'Source'             = $ReportServerServerName
+            }
+            New-Object -TypeName psobject -Property $Properties
         }
 
     }
