@@ -44,7 +44,7 @@ function Set-D365LBDPreDeploymentOptions {
             copy-item $JsonLocation.fullName -Destination $AgentShareLocation\OriginalSetupModules.json
             $json = Get-Content $JsonLocation.FullName -Raw | ConvertFrom-Json
             $json.components = $json.components | Where-Object { $_.name -ne 'financialreporting' }
-            $json | ConvertTo-Json -Depth 100 | Out-File $JsonLocationRoot \Setupmodules.json -Force -Verbose
+            $json | ConvertTo-Json -Depth 100 | Out-File $JsonLocationRoot\Setupmodules.json -Force -Verbose
         }
     }
     END {
