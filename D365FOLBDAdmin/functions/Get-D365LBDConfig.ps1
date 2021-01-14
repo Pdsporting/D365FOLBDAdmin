@@ -346,7 +346,57 @@
                 }
             }
             ##
-            
+            <# Source: https://stackoverflow.com/questions/8423541/how-do-you-run-a-sql-server-query-from-powershell
+#>
+            function Invoke-SQL {
+                param(
+                    [string] $dataSource = ".\SQLEXPRESS",
+                    [string] $database = "MasterData",
+                    [string] $sqlCommand = $(throw "Please specify a query.")
+                )
+
+                $connectionString = "Data Source=$dataSource; " +
+                "Integrated Security=SSPI; " +
+                "Initial Catalog=$database"
+
+                $connection = new-object system.data.SqlClient.SQLConnection($connectionString)
+                $command = new-object system.data.sqlclient.sqlcommand($sqlCommand, $connection)
+                $connection.Open()
+    
+                $adapter = New-Object System.Data.sqlclient.sqlDataAdapter $command
+                $dataset = New-Object System.Data.DataSet
+                $adapter.Fill($dataSet) | Out-Null
+    
+                $connection.Close()
+                $dataSet.Tables
+
+            }
+            try {
+                if ($CustomModuleName) {
+                    $path = Get-ChildItem "$agentsharelocation\wp\*\StandaloneSetup-*\Apps\AOS\AXServiceApp\AXSF\InstallationRecords\MetadataModelInstallationRecords" | Select-Object -first 1 -ExpandProperty FullName
+                    $pathtoxml = "$path\$CustomModuleName.xml"
+                    [xml]$xml = Get-Content $pathtoxml
+                    $CustomModuleVersioninAgentShare = $xml.MetadataModelInstallationInfo.Version
+                }
+            }
+            catch {}
+            $SQLQuery = " Select top 1 [rh].[destination_database_name], [sd].[create_date], [bs].[backup_start_date] 
+from msdb..restorehistory rh 
+inner join msdb..backup bs on [rh].[backup_set_id] = [bs].[backup_set_id] 
+inner join msdb..backupmediafamily bmf on [bs].[media_set_id]
+inner join sys.databases sd on [sd].[name] = [rh].[destination_database_name]
+where [rh].[destination_database_name] = '$AXDatabaseName'
+ORDER BY [rh].[restore_date] DESC"
+
+            try {
+                $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
+            }
+            catch {}
+
+            $AXDatabaseRestoreDate = $Sqlresults | Select-Object restore_date
+            $AXDatabaseCreationDate = $Sqlresults | Select-Object create_date
+            $AXDatabaseBackupStartDate = $Sqlresults | Select-Object backup_start_date
+
             # Collect information into a hashtable Add any new field to Get-D365TestConfigData
             # Make sure to add Certification to Cert list below properties if adding cert
             $Properties = @{
@@ -389,6 +439,11 @@
                 'DatabaseClusteredStatus'            = $DatabaseClusteredStatus
                 'DatabaseClusterServerNames'         = $DatabaseClusterServerNames
                 'SourceAXSFServer'                   = $AXSFConfigServerName
+                'CustomModuleVersioninAgentShare'    = $CustomModuleVersioninAgentShare
+                'AXDatabaseRestoreDate'              = $AXDatabaseRestoreDate
+                'AXDatabaseCreationDate'             = $AXDatabaseCreationDate
+                'AXDatabaseBackupStartDate'          = $AXDatabaseBackupStartDate
+
             }
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
             $CertificateExpirationHash = @{}

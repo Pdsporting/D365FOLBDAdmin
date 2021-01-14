@@ -62,6 +62,10 @@ function Get-D365LBDTestConfigData {
             'FinancialReportingCertificateExpiresAfter'    = '5/15/2022 8:24:06 PM'
             'ReportingSSRSCertificateExpiresAfter'         = '5/15/2022 8:24:06 PM'
             'DatabaseEncryptionCertificateExpiresAfter'    = '5/15/2022 8:24:06 PM'
+            'CustomModuleVersioninAgentShare'              = '2020.1.29.1'
+            'AXDatabaseRestoreDate'                        = '5/15/2021 8:24:06 PM'
+            'AXDatabaseCreationDate'                       = '5/15/2020 8:24:06 PM'
+            'AXDatabaseBackupStartDate'                    = '5/15/2022 8:24:06 PM'
         }
         ##Sends Custom Object to Pipeline
         [PSCustomObject]$Properties
