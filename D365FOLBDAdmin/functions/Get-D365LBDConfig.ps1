@@ -380,10 +380,10 @@
                 }
             }
             catch {}
-            $SQLQuery = " Select top 1 [rh].[destination_database_name], [sd].[create_date], [bs].[backup_start_date] 
+            $SQLQuery = " Select top 1 [rh].[destination_database_name], [sd].[create_date], [bs].[backup_start_date], [bmf].[physical_device_name] as 'backup_file_used_for_restore' 
 from msdb..restorehistory rh 
-inner join msdb..backup bs on [rh].[backup_set_id] = [bs].[backup_set_id] 
-inner join msdb..backupmediafamily bmf on [bs].[media_set_id]
+inner join msdb..backupset bs on [rh].[backup_set_id] = [bs].[backup_set_id] 
+inner join msdb..backupmediafamily bmf on [bs].[media_set_id] = [bmf].[media_set_id]
 inner join sys.databases sd on [sd].[name] = [rh].[destination_database_name]
 where [rh].[destination_database_name] = '$AXDatabaseName'
 ORDER BY [rh].[restore_date] DESC"
@@ -396,6 +396,7 @@ ORDER BY [rh].[restore_date] DESC"
             $AXDatabaseRestoreDate = $Sqlresults | Select-Object restore_date
             $AXDatabaseCreationDate = $Sqlresults | Select-Object create_date
             $AXDatabaseBackupStartDate = $Sqlresults | Select-Object backup_start_date
+            $AXDatabaseBackupFileUsedForRestore = $Sqlresults | Select-Object backup_file_used_for_restore
 
             # Collect information into a hashtable Add any new field to Get-D365TestConfigData
             # Make sure to add Certification to Cert list below properties if adding cert
