@@ -453,13 +453,13 @@ ORDER BY [rh].[restore_date] DESC"
                     if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.")) -and $SyncStatusFound -eq $false) {
                         if ($event.message -contains "Table synchronization failed.") {
                             Write-PSFMessage -Message "Found a DB Sync failure $event" -Level Verbose
-                            $DBSyncStatus = $event.Message
+                            $DBSyncStatus = "Failed"
                             $DBSyncTimeStamp = $event.TimeCreated
 
                         }
                         if ($event.message -contains "Database Synchronize Succeeded.") {
                             Write-PSFMessage -Message "Found a DB Sync Success $event" -Level Verbose
-                            $DBSyncStatus = $event.Message
+                            $DBSyncStatus = "Succeeded"
                             $DBSyncTimeStamp = $event.TimeCreated
                             
                         }
