@@ -66,6 +66,9 @@ function Get-D365LBDTestConfigData {
             'AXDatabaseRestoreDate'                        = '5/15/2021 8:24:06 PM'
             'AXDatabaseCreationDate'                       = '5/15/2020 8:24:06 PM'
             'AXDatabaseBackupStartDate'                    = '5/15/2022 8:24:06 PM'
+            'CustomModuleVersionFullPreppedinAgentShare' =  '2020.1.29.1'
+                    'DBSyncStatus'                               = "Failed"
+                    'DBSyncTimeStamp'                            = '5/15/2022 8:24:06 PM'
         }
         ##Sends Custom Object to Pipeline
         [PSCustomObject]$Properties
