@@ -30,8 +30,8 @@ function Get-D365LBDDBEvents {
             ParameterSetName = 'NoConfig')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [int]$NumberofEvents = 20,
-        [Parameter(ParameterSetName='Config',
-        ValueFromPipeline = $True)]
+        [Parameter(ParameterSetName = 'Config',
+            ValueFromPipeline = $True)]
         [psobject]$Config
     )
     BEGIN {
@@ -80,11 +80,21 @@ function Get-D365LBDDBEvents {
                 'ThreadId'         = $_.ThreadId;
                 'Id'               = $_.Id;
             }
-     
-            ##if ($events.Message -eq 'Database Synchronize Succeeded.')
-            if ($events.EventMessage -eq 'SyncSuccess'){
-                Write-PSFMessage -Level VeryVerbose -Message "Found a DB Sync Success"
+            $SyncStatusFound = $false
+            foreach ($event in $events) {
+                if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.")) -and $SyncStatusFound -eq $false) {
+                    if ($event.message -contains "Table synchronization failed.") {
+                        Write-PSFMessage -Message "Found a DB Sync failure $event"
+                    }
+                    if ($event.message -contains "Database Synchronize Succeeded.") {
+                        Write-PSFMessage -Message "Found a DB Sync Success $event"
+                        
+                    }
+                    $SyncStatusFound = $true
+                }
             }
+    
+          
         }
         $events
     }

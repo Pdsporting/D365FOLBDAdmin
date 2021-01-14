@@ -61,7 +61,7 @@
 		'Disable-D365LBDSFAppServers',
 		'Export-D365LBDConfigReport',
 		'Restart-D365LBDSFAppServers',
-		'Set-D365LBDPreDeploymentOptions',
+		'Set-D365LBDOptions',
 		'Get-D365LBDEnvironmentHealth'
 		)
 	# Cmdlets to export from this module
