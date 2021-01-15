@@ -431,7 +431,7 @@ ORDER BY [rh].[restore_date] DESC"
                 }
             }
             ##Found which server is Getting latest database sync  using winevent end
-            Write-PSFMessage -Level VeryVerbose -Message "Gathering from $ServerWithLatestLog"
+            Write-PSFMessage -Level VeryVerbose -Message "Gathering Database Logs from $ServerWithLatestLog"
             $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents 30 -computername $ServerWithLatestLog | 
             ForEach-Object -Process { `
                     New-Object -TypeName PSObject -Property `
@@ -456,13 +456,11 @@ ORDER BY [rh].[restore_date] DESC"
                         Write-PSFMessage -Message "Found a DB Sync failure $event" -Level Verbose
                         $DBSyncStatus = "Failed"
                         $DBSyncTimeStamp = $event.TimeCreated
-
                     }
                     if ($event.message -contains "Database Synchronize Succeeded.") {
                         Write-PSFMessage -Message "Found a DB Sync Success $event" -Level Verbose
                         $DBSyncStatus = "Succeeded"
                         $DBSyncTimeStamp = $event.TimeCreated
-                            
                     }
                     $SyncStatusFound = $true
                 }
@@ -518,12 +516,16 @@ ORDER BY [rh].[restore_date] DESC"
                 'CustomModuleVersionFullPreppedinAgentShare' = $CustomModuleVersionFullPreppedinAgentShare
                 'DBSyncStatus'                               = $DBSyncStatus
                 'DBSyncTimeStamp'                            = $DBSyncTimeStamp
+                'DBSyncServerWithLatestLog'                  = $ServerWithLatestLog 
 
             }
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
             $CertificateExpirationHash = @{}
             if ($HighLevelOnly) {
-                Write-PSFMessage -Level Verbose -Message "High Level Only will not connect to service fabric"
+                if ($messagecount -eq 0) {
+                    Write-PSFMessage -Level Verbose -Message "High Level Only will not connect to service fabric"
+                    $messagecount = $messagecount + 1
+                }
             }
             else {
                 foreach ($cert in  $certlist) {
