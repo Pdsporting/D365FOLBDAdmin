@@ -401,7 +401,7 @@ ORDER BY [rh].[restore_date] DESC"
                 $assets = Get-ChildItem -Path "$AgentShareLocation\assets" | Where-object { ($_.Name -ne "chk") -and ($_.Name -ne "topology.xml") } | Sort-Object { $_.CreationTime } -Descending
                 $versions = @()
                 foreach ($asset in $assets) {
-                    $versionfile = (Get-ChildItem $asset.FullName -File | Where-Object { $_.Name -like $CustomModuleName }).Name
+                    $versionfile = (Get-ChildItem $asset.FullName -File | Where-Object { $_.Name -like "$CustomModuleName*" }).Name
                     $version = ($versionfile -replace $CustomModuleName) -replace ".xml"
                     $versions += $version
                 }
@@ -451,8 +451,8 @@ ORDER BY [rh].[restore_date] DESC"
             }
             $SyncStatusFound = $false
             foreach ($event in $events) {
-                if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.")) -and $SyncStatusFound -eq $false) {
-                    if ($event.message -contains "Table synchronization failed.") {
+                if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.")-or ($event.message -contains "Database Synchronize Failed.")) -and $SyncStatusFound -eq $false) {
+                    if (($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Failed.")) {
                         Write-PSFMessage -Message "Found a DB Sync failure $event" -Level Verbose
                         $DBSyncStatus = "Failed"
                         $DBSyncTimeStamp = $event.TimeCreated
