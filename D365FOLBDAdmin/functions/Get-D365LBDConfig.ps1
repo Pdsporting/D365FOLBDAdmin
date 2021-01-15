@@ -405,7 +405,7 @@ ORDER BY [rh].[restore_date] DESC"
                     $version = ($versionfile -replace $CustomModuleName) -replace ".xml"
                     $versions += $version
                 }
-                $CustomModuleVersionFullPreppedinAgentShare = $versions | Sort-Object -Descending | Select-Object -First 1
+                $CustomModuleVersionFullPreppedinAgentShare = $versions | Sort-Object | Select-Object -First 1
             }
             ##Getting DB Sync Status using winevent Start
             Foreach ($AXSFServerName in $AXSFServerNames) {
