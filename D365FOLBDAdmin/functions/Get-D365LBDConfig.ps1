@@ -362,14 +362,13 @@
                 $connection = new-object system.data.SqlClient.SQLConnection($connectionString)
                 $command = new-object system.data.sqlclient.sqlcommand($sqlCommand, $connection)
                 $connection.Open()
-    
+                
                 $adapter = New-Object System.Data.sqlclient.sqlDataAdapter $command
                 $dataset = New-Object System.Data.DataSet
+
                 $adapter.Fill($dataSet) | Out-Null
-    
                 $connection.Close()
                 $dataSet.Tables
-
             }
             try {
                 if ($CustomModuleName) {
@@ -408,8 +407,8 @@ ORDER BY [rh].[restore_date] DESC"
                 }
                 $CustomModuleVersionFullPreppedinAgentShare = $versions | Sort-Object -Descending | Select-Object -First 1
             }
-            ##Getting DB Sync Status
-            Foreach ($AXSFServerName in $config.AXSFServerNames) {
+            ##Getting DB Sync Status using winevent Start
+            Foreach ($AXSFServerName in $AXSFServerNames) {
                 try {
                     $LatestEventinLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents 1 -computername $AXSFServerName -ErrorAction Stop).TimeCreated
                 }
@@ -428,9 +427,10 @@ ORDER BY [rh].[restore_date] DESC"
                 if (($LatestEventinLog -gt $LatestEventinAllLogs) -or (!$LatestEventinAllLogs)) {
                     $LatestEventinAllLogs = $LatestEventinLog
                     $ServerWithLatestLog = $AXSFServerName 
-                    Write-PSFMessage -Level Verbose -Message "Server with latest log updated to $ServerWithLatestLog with a date time of $LatestEventinLog"
+                    Write-PSFMessage -Level Verbose -Message "Server with latest database synchronization log updated to $ServerWithLatestLog with a date time of $LatestEventinLog"
                 }
             }
+            ##Found which server is Getting latest database sync  using winevent end
             Write-PSFMessage -Level VeryVerbose -Message "Gathering from $ServerWithLatestLog"
             $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents 30 -computername $ServerWithLatestLog | 
             ForEach-Object -Process { `
@@ -448,158 +448,158 @@ ORDER BY [rh].[restore_date] DESC"
                     'ThreadId'         = $_.ThreadId;
                     'Id'               = $_.Id;
                 }
-                $SyncStatusFound = $false
-                foreach ($event in $events) {
-                    if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.")) -and $SyncStatusFound -eq $false) {
-                        if ($event.message -contains "Table synchronization failed.") {
-                            Write-PSFMessage -Message "Found a DB Sync failure $event" -Level Verbose
-                            $DBSyncStatus = "Failed"
-                            $DBSyncTimeStamp = $event.TimeCreated
+            }
+            $SyncStatusFound = $false
+            foreach ($event in $events) {
+                if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.")) -and $SyncStatusFound -eq $false) {
+                    if ($event.message -contains "Table synchronization failed.") {
+                        Write-PSFMessage -Message "Found a DB Sync failure $event" -Level Verbose
+                        $DBSyncStatus = "Failed"
+                        $DBSyncTimeStamp = $event.TimeCreated
 
-                        }
-                        if ($event.message -contains "Database Synchronize Succeeded.") {
-                            Write-PSFMessage -Message "Found a DB Sync Success $event" -Level Verbose
-                            $DBSyncStatus = "Succeeded"
-                            $DBSyncTimeStamp = $event.TimeCreated
+                    }
+                    if ($event.message -contains "Database Synchronize Succeeded.") {
+                        Write-PSFMessage -Message "Found a DB Sync Success $event" -Level Verbose
+                        $DBSyncStatus = "Succeeded"
+                        $DBSyncTimeStamp = $event.TimeCreated
                             
-                        }
-                        $SyncStatusFound = $true
                     }
+                    $SyncStatusFound = $true
                 }
+            }
 
-                # Collect information into a hashtable Add any new field to Get-D365TestConfigData
-                # Make sure to add Certification to Cert list below properties if adding cert
-                $Properties = @{
-                    "AllAppServerList"                           = $AllAppServerList
-                    "OrchestratorServerNames"                    = $OrchestratorServerNames
-                    "AXSFServerNames"                            = $AXSFServerNames
-                    "ReportServerServerName"                     = $ReportServerServerName
-                    "ReportServerServerip"                       = $ReportServerServerip
-                    "OrchDatabaseName"                           = $OrchDatabase
-                    "OrchDatabaseServer"                         = $OrchdatabaseServer
-                    "AgentShareLocation"                         = $AgentShareLocation
-                    "SFClientCertificate"                        = $ClientCert
-                    "SFClusterID"                                = $ClusterID
-                    "SFConnectionEndpoint"                       = $ConnectionEndpoint
-                    "SFServerCertificate"                        = $ServerCertificate
-                    "SFClusterCertificate"                       = $SFClusterCertificate
-                    "ClientURL"                                  = $ClientURL
-                    "AXDatabaseServer"                           = $AXDatabaseServer
-                    "AXDatabaseName"                             = $AXDatabaseName
-                    "LCSEnvironmentID"                           = $LCSEnvironmentId
-                    "LCSEnvironmentName"                         = $LCSEnvironmentName
-                    "TenantID"                                   = $TenantID
-                    "SourceComputerName"                         = $ComputerName
-                    "CustomModuleVersion"                        = $CustomModuleVersion
-                    "DataEncryptionCertificate"                  = $DataEncryptionCertificate 
-                    "DataSigningCertificate"                     = $DataSigningCertificate
-                    "SessionAuthenticationCertificate"           = $SessionAuthenticationCertificate
-                    "SharedAccessSMBCertificate"                 = $SharedAccessSMBCertificate
-                    "LocalAgentCertificate"                      = $LocalAgentCertificate
-                    "DataEnciphermentCertificate"                = "$DataEnciphermentCertificate"
-                    "FinancialReportingCertificate"              = $FinancialReportingCertificate
-                    "ReportingSSRSCertificate"                   = "$ReportingSSRSCertificate"
-                    "OrchServiceLocalAgentVersionNumber"         = $OrchServiceLocalAgentVersionNumber
-                    "NewlyAddedAXSFServers"                      = $NewlyAddedAXSFServers
-                    'SFVersionNumber'                            = $SFVersionNumber
-                    'InvalidSFServers'                           = $invalidnodes
-                    'DisabledSFServers'                          = $disablednodes
-                    'AOSKernelVersion'                           = $AOSKernelVersion
-                    'DatabaseEncryptionCertificate'              = $DatabaseEncryptionCertificate 
-                    'DatabaseClusteredStatus'                    = $DatabaseClusteredStatus
-                    'DatabaseClusterServerNames'                 = $DatabaseClusterServerNames
-                    'SourceAXSFServer'                           = $AXSFConfigServerName
-                    'CustomModuleVersioninAgentShare'            = $CustomModuleVersioninAgentShare
-                    'AXDatabaseRestoreDate'                      = $AXDatabaseRestoreDate
-                    'AXDatabaseCreationDate'                     = $AXDatabaseCreationDate
-                    'AXDatabaseBackupStartDate'                  = $AXDatabaseBackupStartDate
-                    'AXDatabaseBackupFileUsedForRestore'         = $AXDatabaseBackupFileUsedForRestore
-                    'CustomModuleVersionFullPreppedinAgentShare' = $CustomModuleVersionFullPreppedinAgentShare
-                    'DBSyncStatus'                               = $DBSyncStatus
-                    'DBSyncTimeStamp'                            = $DBSyncTimeStamp
+            # Collect information into a hashtable Add any new field to Get-D365TestConfigData
+            # Make sure to add Certification to Cert list below properties if adding cert
+            $Properties = @{
+                "AllAppServerList"                           = $AllAppServerList
+                "OrchestratorServerNames"                    = $OrchestratorServerNames
+                "AXSFServerNames"                            = $AXSFServerNames
+                "ReportServerServerName"                     = $ReportServerServerName
+                "ReportServerServerip"                       = $ReportServerServerip
+                "OrchDatabaseName"                           = $OrchDatabase
+                "OrchDatabaseServer"                         = $OrchdatabaseServer
+                "AgentShareLocation"                         = $AgentShareLocation
+                "SFClientCertificate"                        = $ClientCert
+                "SFClusterID"                                = $ClusterID
+                "SFConnectionEndpoint"                       = $ConnectionEndpoint
+                "SFServerCertificate"                        = $ServerCertificate
+                "SFClusterCertificate"                       = $SFClusterCertificate
+                "ClientURL"                                  = $ClientURL
+                "AXDatabaseServer"                           = $AXDatabaseServer
+                "AXDatabaseName"                             = $AXDatabaseName
+                "LCSEnvironmentID"                           = $LCSEnvironmentId
+                "LCSEnvironmentName"                         = $LCSEnvironmentName
+                "TenantID"                                   = $TenantID
+                "SourceComputerName"                         = $ComputerName
+                "CustomModuleVersion"                        = $CustomModuleVersion
+                "DataEncryptionCertificate"                  = $DataEncryptionCertificate 
+                "DataSigningCertificate"                     = $DataSigningCertificate
+                "SessionAuthenticationCertificate"           = $SessionAuthenticationCertificate
+                "SharedAccessSMBCertificate"                 = $SharedAccessSMBCertificate
+                "LocalAgentCertificate"                      = $LocalAgentCertificate
+                "DataEnciphermentCertificate"                = "$DataEnciphermentCertificate"
+                "FinancialReportingCertificate"              = $FinancialReportingCertificate
+                "ReportingSSRSCertificate"                   = "$ReportingSSRSCertificate"
+                "OrchServiceLocalAgentVersionNumber"         = $OrchServiceLocalAgentVersionNumber
+                "NewlyAddedAXSFServers"                      = $NewlyAddedAXSFServers
+                'SFVersionNumber'                            = $SFVersionNumber
+                'InvalidSFServers'                           = $invalidnodes
+                'DisabledSFServers'                          = $disablednodes
+                'AOSKernelVersion'                           = $AOSKernelVersion
+                'DatabaseEncryptionCertificate'              = $DatabaseEncryptionCertificate 
+                'DatabaseClusteredStatus'                    = $DatabaseClusteredStatus
+                'DatabaseClusterServerNames'                 = $DatabaseClusterServerNames
+                'SourceAXSFServer'                           = $AXSFConfigServerName
+                'CustomModuleVersioninAgentShare'            = $CustomModuleVersioninAgentShare
+                'AXDatabaseRestoreDate'                      = $AXDatabaseRestoreDate
+                'AXDatabaseCreationDate'                     = $AXDatabaseCreationDate
+                'AXDatabaseBackupStartDate'                  = $AXDatabaseBackupStartDate
+                'AXDatabaseBackupFileUsedForRestore'         = $AXDatabaseBackupFileUsedForRestore
+                'CustomModuleVersionFullPreppedinAgentShare' = $CustomModuleVersionFullPreppedinAgentShare
+                'DBSyncStatus'                               = $DBSyncStatus
+                'DBSyncTimeStamp'                            = $DBSyncTimeStamp
 
-                }
-                $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
-                $CertificateExpirationHash = @{}
-                if ($HighLevelOnly) {
-                    Write-PSFMessage -Level Verbose -Message "High Level Only will not connect to service fabric"
-                }
-                else {
-                    foreach ($cert in  $certlist) {
-                        $certthumbprint = $null 
-                        $certthumbprint = $Properties.$cert
-                        $certexpiration = $null
-                        if ($certthumbprint) {
-                            $value = $certthumbprint
-                            try {
-                                if ($cert -eq 'LocalAgentCertificate' -and !$certexpiration) {
-                                    $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $OrchestratorServerName -ArgumentList $value
+            }
+            $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
+            $CertificateExpirationHash = @{}
+            if ($HighLevelOnly) {
+                Write-PSFMessage -Level Verbose -Message "High Level Only will not connect to service fabric"
+            }
+            else {
+                foreach ($cert in  $certlist) {
+                    $certthumbprint = $null 
+                    $certthumbprint = $Properties.$cert
+                    $certexpiration = $null
+                    if ($certthumbprint) {
+                        $value = $certthumbprint
+                        try {
+                            if ($cert -eq 'LocalAgentCertificate' -and !$certexpiration) {
+                                $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $OrchestratorServerName -ArgumentList $value
+                                if (!$certexpiration) {
+                                    $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $OrchestratorServerName -ArgumentList $value
+                                }
+                            } if (!$certexpiration) {
+                                $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value
+                            }
+                            if (!$certexpiration) {
+                                $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value
+                            }
+                            if (!$certexpiration) {
+                                $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\Trust | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value
+                            }
+                            if ($cert -eq 'DatabaseEncryptionCertificate' -and !$certexpiration) {
+                                $DatabaseClusterServerName = $DatabaseClusterServerNames | Select-Object -First 1
+                                try {
+                                    $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value -ErrorAction Stop
                                     if (!$certexpiration) {
-                                        $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $OrchestratorServerName -ArgumentList $value
+                                        $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value -ErrorAction Stop
                                     }
-                                } if (!$certexpiration) {
-                                    $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value
                                 }
-                                if (!$certexpiration) {
-                                    $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value
+                                catch {
+                                    Write-PSFMessage -Level Warning "Warning: Issue grabbing DatabaseEncryptionCertificate information. $_"
                                 }
-                                if (!$certexpiration) {
-                                    $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\Trust | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value
-                                }
-                                if ($cert -eq 'DatabaseEncryptionCertificate' -and !$certexpiration) {
-                                    $DatabaseClusterServerName = $DatabaseClusterServerNames | Select-Object -First 1
-                                    try {
-                                        $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value -ErrorAction Stop
-                                        if (!$certexpiration) {
-                                            $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value -ErrorAction Stop
-                                        }
-                                    }
-                                    catch {
-                                        Write-PSFMessage -Level Warning "Warning: Issue grabbing DatabaseEncryptionCertificate information. $_"
-                                    }
 
-                                }
-                                if ($certexpiration) {
-                                    Write-PSFMessage -Level Verbose -Message "$value expires at $certexpiration"
-                                }
-                                else {
-                                    Write-PSFMessage -Level Verbose -Message "Could not find Certificate $cert $value"
-                                }
                             }
-                            catch {
-                                Write-PSFMessage -Level Warning -Message "$value $_ cant be found"
+                            if ($certexpiration) {
+                                Write-PSFMessage -Level Verbose -Message "$value expires at $certexpiration"
+                            }
+                            else {
+                                Write-PSFMessage -Level Verbose -Message "Could not find Certificate $cert $value"
                             }
                         }
-                        $name = $cert + "ExpiresAfter"
+                        catch {
+                            Write-PSFMessage -Level Warning -Message "$value $_ cant be found"
+                        }
+                    }
+                    $name = $cert + "ExpiresAfter"
                 
-                        $currdate = get-date
-                        if ($currdate -gt $certexpiration -and $certexpiration) {
-                            Write-PSFMessage -Level Warning -Message "WARNING: Expired Certificate $name with an expiration of $certexpiration"
-                        }
-                        $hash = $CertificateExpirationHash.Add($name, $certexpiration)
+                    $currdate = get-date
+                    if ($currdate -gt $certexpiration -and $certexpiration) {
+                        Write-PSFMessage -Level Warning -Message "WARNING: Expired Certificate $name with an expiration of $certexpiration"
                     }
+                    $hash = $CertificateExpirationHash.Add($name, $certexpiration)
                 }
-                Function Merge-Hashtables([ScriptBlock]$Operator) {
-                    ##probably will put in internal to test
-                    $Output = @{}
-                    ForEach ($Hashtable in $Input) {
-                        If ($Hashtable -is [Hashtable]) {
-                            ForEach ($Key in $Hashtable.Keys) { $Output.$Key = If ($Output.ContainsKey($Key)) { @($Output.$Key) + $Hashtable.$Key } Else { $Hashtable.$Key } }
-                        }
-                    }
-                    If ($Operator) { ForEach ($Key in @($Output.Keys)) { $_ = @($Output.$Key); $Output.$Key = Invoke-Command $Operator } }
-                    $Output
-                }
-                $FinalOutput = $CertificateExpirationHash, $Properties | Merge-Hashtables
-                #$FinalOutput = $Properties, $CertificateExpirationHash
-                ##Sends Custom Object to Pipeline
-                [PSCustomObject] $FinalOutput
             }
+            Function Merge-Hashtables([ScriptBlock]$Operator) {
+                ##probably will put in internal to test
+                $Output = @{}
+                ForEach ($Hashtable in $Input) {
+                    If ($Hashtable -is [Hashtable]) {
+                        ForEach ($Key in $Hashtable.Keys) { $Output.$Key = If ($Output.ContainsKey($Key)) { @($Output.$Key) + $Hashtable.$Key } Else { $Hashtable.$Key } }
+                    }
+                }
+                If ($Operator) { ForEach ($Key in @($Output.Keys)) { $_ = @($Output.$Key); $Output.$Key = Invoke-Command $Operator } }
+                $Output
+            }
+            $FinalOutput = $CertificateExpirationHash, $Properties | Merge-Hashtables
+            #$FinalOutput = $Properties, $CertificateExpirationHash
+            ##Sends Custom Object to Pipeline
+            [PSCustomObject] $FinalOutput
         }
-        END {
-            if ($ConfigExportToFile) {
-                $FinalOutput | Export-Clixml -Path $ConfigExportToFile
-            }
+    }
+    END {
+        if ($ConfigExportToFile) {
+            $FinalOutput | Export-Clixml -Path $ConfigExportToFile
         }
     }
 }
