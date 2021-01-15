@@ -432,7 +432,7 @@ ORDER BY [rh].[restore_date] DESC"
             }
             ##Found which server is Getting latest database sync  using winevent end
             Write-PSFMessage -Level VeryVerbose -Message "Gathering Database Logs from $ServerWithLatestLog"
-            $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents 30 -computername $ServerWithLatestLog | 
+            $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -computername $ServerWithLatestLog | 
             ForEach-Object -Process { `
                     New-Object -TypeName PSObject -Property `
                 @{'MachineName'        = $ServerWithLatestLog ;
