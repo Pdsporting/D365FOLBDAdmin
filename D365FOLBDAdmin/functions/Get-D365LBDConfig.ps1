@@ -379,7 +379,7 @@
                 }
             }
             catch {}
-            $SQLQuery = " Select top 1 [rh].[destination_database_name], [sd].[create_date], [bs].[backup_start_date], [bmf].[physical_device_name] as 'backup_file_used_for_restore' 
+            $SQLQuery = " Select top 1 [rh].[destination_database_name], [sd].[create_date], [bs].[backup_start_date], [rh].[restore_date], [bmf].[physical_device_name] as 'backup_file_used_for_restore' 
 from msdb..restorehistory rh 
 inner join msdb..backupset bs on [rh].[backup_set_id] = [bs].[backup_set_id] 
 inner join msdb..backupmediafamily bmf on [bs].[media_set_id] = [bmf].[media_set_id]
@@ -392,10 +392,26 @@ ORDER BY [rh].[restore_date] DESC"
             }
             catch {}
 
-            $AXDatabaseRestoreDate = $Sqlresults | Select-Object restore_date
-            $AXDatabaseCreationDate = $Sqlresults | Select-Object create_date
-            $AXDatabaseBackupStartDate = $Sqlresults | Select-Object backup_start_date
-            $AXDatabaseBackupFileUsedForRestore = $Sqlresults | Select-Object backup_file_used_for_restore
+            $AXDatabaseRestoreDateSQL = $Sqlresults | Select-Object restore_date
+            [string]$AXDatabaseRestoreDate = $AXDatabaseRestoreDateSQL
+            $AXDatabaseRestoreDate  = $AXDatabaseRestoreDate.Trim("@{restore_date=")
+            $AXDatabaseRestoreDate  = $AXDatabaseRestoreDate.Substring(0,$AXDatabaseRestoreDate.Length-1)
+
+            $AXDatabaseCreationDateSQL = $Sqlresults | Select-Object create_date
+            [string]$AXDatabaseCreationDate = $AXDatabaseCreationDateSQL
+            $AXDatabaseCreationDate = $AXDatabaseCreationDate.Trim("@{create_date=")
+            $AXDatabaseCreationDate = $AXDatabaseCreationDate.Substring(0,$AXDatabaseCreationDate.Length-1)
+
+            $AXDatabaseBackupStartDateSQL = $Sqlresults | Select-Object backup_start_date
+            [string]$AXDatabaseBackupStartDate = $AXDatabaseBackupStartDateSQL 
+            $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Trim("@{backup_start_date=")
+            $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Substring(0,$AXDatabaseBackupStartDate.Length-1)
+
+
+            $AXDatabaseBackupFileUsedForRestoreSQL = $Sqlresults | Select-Object backup_file_used_for_restore
+            [string]$AXDatabaseBackupFileUsedForRestore =  $AXDatabaseBackupFileUsedForRestoreSQL
+            $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Trim("@{backup_file_used_for_restore=")
+            $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Substring(0,$AXDatabaseBackupFileUsedForRestore.Length-1)
 
             if ($CustomModuleName) {
                 $assets = Get-ChildItem -Path "$AgentShareLocation\assets" | Where-object { ($_.Name -ne "chk") -and ($_.Name -ne "topology.xml") } | Sort-Object { $_.CreationTime } -Descending
@@ -405,7 +421,8 @@ ORDER BY [rh].[restore_date] DESC"
                     $version = ($versionfile -replace $CustomModuleName) -replace ".xml"
                     $versions += $version
                 }
-                $CustomModuleVersionFullPreppedinAgentShare = $versions | Sort-Object | Select-Object -First 1
+                $CustomModuleVersionFullPreppedinAgentShare = $versions | Sort-Object {$_.CreationTime} -Descending | Select-Object -First 1
+                $CustomModuleVersionFullPreppedinAgentShare  = $CustomModuleVersionFullPreppedinAgentShare.trim()
             }
             ##Getting DB Sync Status using winevent Start
             Foreach ($AXSFServerName in $AXSFServerNames) {
@@ -430,42 +447,43 @@ ORDER BY [rh].[restore_date] DESC"
                     Write-PSFMessage -Level Verbose -Message "Server with latest database synchronization log updated to $ServerWithLatestLog with a date time of $LatestEventinLog"
                 }
             }
-            ##Found which server is Getting latest database sync  using winevent end
-            Write-PSFMessage -Level VeryVerbose -Message "Gathering Database Logs from $ServerWithLatestLog"
-            $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -computername $ServerWithLatestLog | 
-            ForEach-Object -Process { `
-                    New-Object -TypeName PSObject -Property `
-                @{'MachineName'        = $ServerWithLatestLog ;
-                    'EventMessage'     = $_.Properties[0].value;
-                    'EventDetails'     = $_.Properties[1].value; 
-                    'Message'          = $_.Message;
-                    'LevelDisplayName' = $_.LevelDisplayName;
-                    'TimeCreated'      = $_.TimeCreated;
-                    'TaskDisplayName'  = $_.TaskDisplayName
-                    'UserId'           = $_.UserId;
-                    'LogName'          = $_.LogName;
-                    'ProcessId'        = $_.ProcessId;
-                    'ThreadId'         = $_.ThreadId;
-                    'Id'               = $_.Id;
+            if (!$HighLevelOnly) {
+                ##Found which server is Getting latest database sync  using winevent end
+                Write-PSFMessage -Level VeryVerbose -Message "Gathering Database Logs from $ServerWithLatestLog"
+                $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -computername $ServerWithLatestLog -maxevents 100  | 
+                ForEach-Object -Process { `
+                        New-Object -TypeName PSObject -Property `
+                    @{'MachineName'        = $ServerWithLatestLog ;
+                        'EventMessage'     = $_.Properties[0].value;
+                        'EventDetails'     = $_.Properties[1].value; 
+                        'Message'          = $_.Message;
+                        'LevelDisplayName' = $_.LevelDisplayName;
+                        'TimeCreated'      = $_.TimeCreated;
+                        'TaskDisplayName'  = $_.TaskDisplayName
+                        'UserId'           = $_.UserId;
+                        'LogName'          = $_.LogName;
+                        'ProcessId'        = $_.ProcessId;
+                        'ThreadId'         = $_.ThreadId;
+                        'Id'               = $_.Id;
+                    }
+                }
+                $SyncStatusFound = $false
+                foreach ($event in $events) {
+                    if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.") -or ($event.message -contains "Database Synchronize Failed.")) -and $SyncStatusFound -eq $false) {
+                        if (($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Failed.")) {
+                            Write-PSFMessage -Message "Found a DB Sync failure $event" -Level Verbose
+                            $DBSyncStatus = "Failed"
+                            $DBSyncTimeStamp = $event.TimeCreated
+                        }
+                        if ($event.message -contains "Database Synchronize Succeeded.") {
+                            Write-PSFMessage -Message "Found a DB Sync Success $event" -Level Verbose
+                            $DBSyncStatus = "Succeeded"
+                            $DBSyncTimeStamp = $event.TimeCreated
+                        }
+                        $SyncStatusFound = $true
+                    }
                 }
             }
-            $SyncStatusFound = $false
-            foreach ($event in $events) {
-                if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.")-or ($event.message -contains "Database Synchronize Failed.")) -and $SyncStatusFound -eq $false) {
-                    if (($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Failed.")) {
-                        Write-PSFMessage -Message "Found a DB Sync failure $event" -Level Verbose
-                        $DBSyncStatus = "Failed"
-                        $DBSyncTimeStamp = $event.TimeCreated
-                    }
-                    if ($event.message -contains "Database Synchronize Succeeded.") {
-                        Write-PSFMessage -Message "Found a DB Sync Success $event" -Level Verbose
-                        $DBSyncStatus = "Succeeded"
-                        $DBSyncTimeStamp = $event.TimeCreated
-                    }
-                    $SyncStatusFound = $true
-                }
-            }
-
             # Collect information into a hashtable Add any new field to Get-D365TestConfigData
             # Make sure to add Certification to Cert list below properties if adding cert
             $Properties = @{

@@ -13,15 +13,6 @@ function Set-D365LBDOptions {
     [alias("Set-D365Options")]
     param
     (
-        [Parameter(ParameterSetName = 'AgentShare')]
-        [Alias('AgentShare')]
-        [string]$AgentShareLocation,
-        [string]$CustomModuleName,
-        [Parameter(ValueFromPipeline = $True,
-            ValueFromPipelineByPropertyName = $True,
-            Mandatory = $false,
-            HelpMessage = 'D365FO Local Business Data Server Name',
-            ParameterSetName = 'NoConfig')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [Parameter(ParameterSetName = 'Config',
             ValueFromPipeline = $True)]
@@ -42,7 +33,7 @@ function Set-D365LBDOptions {
     BEGIN {
     }
     PROCESS {
-        if (!$Config -and !$AgentShareLocation) {
+        if (!$Config) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly   
         }
         if ($Config) {
