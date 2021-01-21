@@ -44,7 +44,7 @@ function Set-D365LBDOptions {
             $clienturl = $Config.clienturl
         }
         if ($RemoveMR) {
-            if (!$PreDeployment) {
+            if ($PreDeployment -eq $True) {
                 $JsonLocation = Get-ChildItem $AgentShareLocation\wp\*\StandaloneSetup-*\SetupModules.json | Sort-Object { $_.CreationTime }  | Select-Object -First 1 
                 $JsonLocationRoot = Get-ChildItem $AgentShareLocation\wp\*\StandaloneSetup-*\
                 copy-item $JsonLocation.fullName -Destination $AgentShareLocation\OriginalSetupModules.json
@@ -93,7 +93,7 @@ function Set-D365LBDOptions {
         if ($MaintenanceModeOff) {
             $SQLQuery = "update SQLSYSTEMVARIABLES SET VALUE = 0 Where PARM = 'CONFIGURATIONMODE'"
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
-            if (!$PostDeployment -or !$PreDeployment) {
+            if ($PostDeployment -eq $false -or $PreDeployment -eq $false) {
                 foreach ($AXSFServer in $config.AXSFServerNames) {
                     Restart-Computer -ComputerName $AXSFServer -Force
                 }

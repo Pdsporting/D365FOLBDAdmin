@@ -394,25 +394,37 @@ ORDER BY [rh].[restore_date] DESC"
 
             $AXDatabaseRestoreDateSQL = $Sqlresults | Select-Object restore_date
             [string]$AXDatabaseRestoreDate = $AXDatabaseRestoreDateSQL
-            $AXDatabaseRestoreDate  = $AXDatabaseRestoreDate.Trim("@{restore_date=")
-            $AXDatabaseRestoreDate  = $AXDatabaseRestoreDate.Substring(0,$AXDatabaseRestoreDate.Length-1)
+            $AXDatabaseRestoreDate = $AXDatabaseRestoreDate.Trim("@{restore_date=")
+            $AXDatabaseRestoreDate = $AXDatabaseRestoreDate.Substring(0, $AXDatabaseRestoreDate.Length - 1)
 
             $AXDatabaseCreationDateSQL = $Sqlresults | Select-Object create_date
             [string]$AXDatabaseCreationDate = $AXDatabaseCreationDateSQL
             $AXDatabaseCreationDate = $AXDatabaseCreationDate.Trim("@{create_date=")
-            $AXDatabaseCreationDate = $AXDatabaseCreationDate.Substring(0,$AXDatabaseCreationDate.Length-1)
+            $AXDatabaseCreationDate = $AXDatabaseCreationDate.Substring(0, $AXDatabaseCreationDate.Length - 1)
 
             $AXDatabaseBackupStartDateSQL = $Sqlresults | Select-Object backup_start_date
             [string]$AXDatabaseBackupStartDate = $AXDatabaseBackupStartDateSQL 
             $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Trim("@{backup_start_date=")
-            $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Substring(0,$AXDatabaseBackupStartDate.Length-1)
+            $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Substring(0, $AXDatabaseBackupStartDate.Length - 1)
 
 
             $AXDatabaseBackupFileUsedForRestoreSQL = $Sqlresults | Select-Object backup_file_used_for_restore
-            [string]$AXDatabaseBackupFileUsedForRestore =  $AXDatabaseBackupFileUsedForRestoreSQL
+            [string]$AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestoreSQL
             $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Trim("@{backup_file_used_for_restore=")
-            $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Substring(0,$AXDatabaseBackupFileUsedForRestore.Length-1)
+            $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Substring(0, $AXDatabaseBackupFileUsedForRestore.Length - 1)
 
+
+            $SQLQuery2 = "select * from SQLSYSTEMVARIABLES Where PARM = 'CONFIGURATIONMODE'"
+            $Sqlresults2 = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery2
+            $ConfigurationModeSQL = $Sqlresults | Select-Object value
+            [int]$configurationmode = $ConfigurationModeSQL
+            if ($configurationmode -eq 1) {
+                Write-PSFMessage -Level VeryVerbose -Message "Warning: Found that Maintenance Mode is On"
+                $ConfigurationModeEnabledDisabled = 'Enabled'
+            }
+            if ($configurationmode -eq 0)
+            { $ConfigurationModeEnabledDisabled = 'Disabled' }
+            
             if ($CustomModuleName) {
                 $assets = Get-ChildItem -Path "$AgentShareLocation\assets" | Where-object { ($_.Name -ne "chk") -and ($_.Name -ne "topology.xml") } | Sort-Object { $_.CreationTime } -Descending
                 $versions = @()
@@ -421,8 +433,8 @@ ORDER BY [rh].[restore_date] DESC"
                     $version = ($versionfile -replace $CustomModuleName) -replace ".xml"
                     $versions += $version
                 }
-                $CustomModuleVersionFullPreppedinAgentShare = $versions | Sort-Object {$_.CreationTime} -Descending | Select-Object -First 1
-                $CustomModuleVersionFullPreppedinAgentShare  = $CustomModuleVersionFullPreppedinAgentShare.trim()
+                $CustomModuleVersionFullPreppedinAgentShare = $versions | Sort-Object { $_.CreationTime } -Descending | Select-Object -First 1
+                $CustomModuleVersionFullPreppedinAgentShare = $CustomModuleVersionFullPreppedinAgentShare.trim()
             }
             ##Getting DB Sync Status using winevent Start
             Foreach ($AXSFServerName in $AXSFServerNames) {
@@ -535,6 +547,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'DBSyncStatus'                               = $DBSyncStatus
                 'DBSyncTimeStamp'                            = $DBSyncTimeStamp
                 'DBSyncServerWithLatestLog'                  = $ServerWithLatestLog 
+                'ConfigurationModeEnabledDisabled'           = $ConfigurationModeEnabledDisabled
 
             }
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
