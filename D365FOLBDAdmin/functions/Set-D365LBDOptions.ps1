@@ -147,7 +147,6 @@ function Set-D365LBDOptions {
                 $status = "$MSTeamsCustomStatus"
             }
             $bodyjson = @"
-
 {
     "@type": "MessageCard",
     "@context": "http://schema.org/extensions",
@@ -164,16 +163,13 @@ function Set-D365LBDOptions {
         },{
             "name": "Status",
             "value": "$status"
-        }
         }],
         "markdown": true
     }]
-
 }            
 "@
             if ($MSTeamsExtraDetails) {
                 $bodyjson = @"
-
 {
     "@type": "MessageCard",
     "@context": "http://schema.org/extensions",
@@ -193,11 +189,9 @@ function Set-D365LBDOptions {
         },{
             "name": "Status",
             "value": "$status"
-        }
         }],
         "markdown": true
     }]
-
 }            
 "@
             }
