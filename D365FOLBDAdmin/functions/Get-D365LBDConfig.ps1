@@ -379,6 +379,9 @@
                 }
             }
             catch {}
+            if (!$AXDatabaseName){
+                $AXDatabaseName = "AXDB"
+            }
             $SQLQuery = " Select top 1 [rh].[destination_database_name], [sd].[create_date], [bs].[backup_start_date], [rh].[restore_date], [bmf].[physical_device_name] as 'backup_file_used_for_restore' 
 from msdb..restorehistory rh 
 inner join msdb..backupset bs on [rh].[backup_set_id] = [bs].[backup_set_id] 
@@ -417,7 +420,10 @@ ORDER BY [rh].[restore_date] DESC"
             $SQLQuery2 = "select * from SQLSYSTEMVARIABLES Where PARM = 'CONFIGURATIONMODE'"
             $Sqlresults2 = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery2
             $ConfigurationModeSQL = $Sqlresults | Select-Object value
-            [int]$configurationmode = $ConfigurationModeSQL
+            [string]$ConfigurationModeString = $ConfigurationModeSQL
+            $ConfigurationModeString = $ConfigurationModeString.Trim("@value=")
+            $ConfigurationModeString  = $ConfigurationModeString.Substring(0, $ConfigurationModeString.Length - 1)
+            [int]$configurationmode = $ConfigurationModeString 
             if ($configurationmode -eq 1) {
                 Write-PSFMessage -Level VeryVerbose -Message "Warning: Found that Maintenance Mode is On"
                 $ConfigurationModeEnabledDisabled = 'Enabled'

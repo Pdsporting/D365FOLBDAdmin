@@ -36,6 +36,14 @@ function Set-D365LBDOptions {
         if (!$Config) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly   
         }
+        if ($PreDeployment)
+        {
+            Write-PSFMessage -Level Verbose -Message "PreDeployment Selected"
+        }
+        if ($PostDeployment)
+        {
+            Write-PSFMessage -Level Verbose -Message "PostDeployment Selected"
+        }
         if ($Config) {
             $agentsharelocation = $Config.AgentShareLocation
             $AXDatabaseServer = $Config.AXDatabaseServer
@@ -44,6 +52,8 @@ function Set-D365LBDOptions {
             $clienturl = $Config.clienturl
         }
         if ($RemoveMR) {
+            
+            Write-PSFMessage -Level Verbose -Message "Attempting to Remove MR"
             if ($PreDeployment -eq $True) {
                 $JsonLocation = Get-ChildItem $AgentShareLocation\wp\*\StandaloneSetup-*\SetupModules.json | Sort-Object { $_.CreationTime }  | Select-Object -First 1 
                 $JsonLocationRoot = Get-ChildItem $AgentShareLocation\wp\*\StandaloneSetup-*\
@@ -80,6 +90,7 @@ function Set-D365LBDOptions {
 
         }
         if ($MaintenanceModeOn) {
+            Write-PSFMessage -Message "Turning On Maintenance Mode" -Level Verbose
             $SQLQuery = "update SQLSYSTEMVARIABLES SET VALUE = 1 Where PARM = 'CONFIGURATIONMODE'"
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
             if (!$PostDeployment -or !$PreDeployment) {
@@ -91,6 +102,7 @@ function Set-D365LBDOptions {
 
         }
         if ($MaintenanceModeOff) {
+            Write-PSFMessage -Message "Turning Off Maintenance Mode" -Level Verbose
             $SQLQuery = "update SQLSYSTEMVARIABLES SET VALUE = 0 Where PARM = 'CONFIGURATIONMODE'"
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
             if ($PostDeployment -eq $false -or $PreDeployment -eq $false) {
@@ -99,6 +111,26 @@ function Set-D365LBDOptions {
                 }
             }
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
+        }
+        if ($EnableUserid) {
+
+            ##Trim 8 characters
+            $EnableUserid = $EnableUserid.SubString(0,8)
+            Write-PSFMessage -Message "Enabling $EnableUserid. Note: User must already exist in system" -Level Verbose
+            $SQLQuery = "update userinfo SET Enable = 1 Where id = '$EnableUserid'"
+            $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
+            
+            Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
+
+        }
+        if ($DisableUserid) {
+            $DisableUserid = $DisableUserid.SubString(0,8)
+            Write-PSFMessage -Message "Disabling $DisableUserid. Note: User must already exist in system" -Level Verbose
+            $SQLQuery = "update userinfo SET Enable = 1 Where id = '$DisableUserid'"
+            $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
+            
+            Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
+
         }
         if ($SQLQueryToRun) {
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
@@ -169,7 +201,8 @@ function Set-D365LBDOptions {
 }            
 "@
             }
-            $WebRequestResults = Invoke-WebRequest -uri $MSTeamsURI -ContentType 'application/json' -Body $bodyjson -UseBasicParsing -Method Post
+            Write-PSFMessage -Message "Calling $MSTeamsURI with Post of $bodyjson " -Level VeryVerbose
+            $WebRequestResults = Invoke-WebRequest -uri $MSTeamsURI -ContentType 'application/json' -Body $bodyjson -UseBasicParsing -Method Post -Verbose
             Write-PSFMessage -Message "$WebRequestResults" -Level VeryVerbose
         }
     }
