@@ -52,7 +52,7 @@ function Get-D365LBDOrchestrationLogs {
                 if (!$connection) {
                     Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
                 }
-            } until ($connection -or ($count -eq $Config.OrchestratorServerName.Count))
+            } until ($connection -or ($count -eq $($Config.OrchestratorServerName).Count))
             if (($count -eq $($Config.OrchestratorServerName).Count) -and (!$connection)) {
                 Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
             }

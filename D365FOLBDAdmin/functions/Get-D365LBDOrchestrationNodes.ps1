@@ -38,12 +38,25 @@ function Get-D365LBDOrchestrationNodes {
         if (!$Config) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
         }
-
-        try {
-            $connection = Connect-ServiceFabricCluster -connectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $Config.SFServerCertificate -ServerCertThumbprint $Config.SFServerCertificate | Out-Null
-        }
-        catch {
-            Stop-PSFFunction -Message "Can't Connect to Service Fabric $_" -EnableException $true -Cmdlet $PSCmdlet -ErrorAction Stop
+        [int]$count = 0
+        while (!$connection) {
+            do {
+                $OrchestratorServerName = $Config.OrchestratorServerNames | Select-Object -First 1 -Skip $count
+                Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName to try and connect to the service fabric" -Level Verbose
+                $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
+                if (!$module)
+                {
+                    $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
+                }
+                $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                $count = $count + 1
+                if (!$connection) {
+                    Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
+                }
+            } until ($connection -or ($count -eq $($Config.OrchestratorServerName).Count))
+            if (($count -eq $($Config.OrchestratorServerName).Count) -and (!$connection)) {
+                Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
+            }
         }
         $PartitionId = $(Get-ServiceFabricServiceHealth -ServiceName 'fabric:/LocalAgent/OrchestrationService').PartitionHealthStates.PartitionId
        
