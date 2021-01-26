@@ -78,6 +78,7 @@ function Get-D365LBDOrchestrationLogs {
                 'LatestEventInLog' = $LatestEventInLog;
             }
         }
+        
         $LatestEventInLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $orchnodes.SecondaryNodeName).TimeCreated
         $secondary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents $NumberofEvents -ComputerName $orchnodes.SecondaryNodeName | 
         ForEach-Object -Process { `
@@ -97,7 +98,15 @@ function Get-D365LBDOrchestrationLogs {
                 'LatestEventInLog' = $LatestEventInLog;
             }
         }
+        foreach ($primarylog in $primary)
+        {
+            if ($primarylog.EventMessage -like "status of job *, Success")
+            {
+                Write-PSFMessage -Message "Found RunBook Success Message" -Level Verbose
+            }
+        }
         $all = $Primary + $secondary | Sort-Object { $_.TimeCreated } -Descending | Select-Object -First $NumberofEvents
+        
         return $all
     }
     END {
