@@ -57,7 +57,7 @@ function Get-D365LBDOrchestrationLogs {
                 Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
             }
         }
-        $orchnodes = Get-D365LBDOrchestrationNodes
+        $orchnodes = Get-D365LBDOrchestrationNodes -config $Config
         Write-PSFMessage -Level Verbose -Message "$orchnodes"
     
         $LatestEventInLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $ComputerName).TimeCreated

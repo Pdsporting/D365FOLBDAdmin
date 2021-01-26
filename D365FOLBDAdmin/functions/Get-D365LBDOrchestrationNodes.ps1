@@ -28,8 +28,8 @@ function Get-D365LBDOrchestrationNodes {
             ParameterSetName = 'NoConfig')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [string]$Thumbprint,
-        [Parameter(ParameterSetName='Config',
-        ValueFromPipeline = $True)]
+        [Parameter(ParameterSetName = 'Config',
+            ValueFromPipeline = $True)]
         [psobject]$Config)
     BEGIN {
     }
@@ -44,8 +44,7 @@ function Get-D365LBDOrchestrationNodes {
                 $OrchestratorServerName = $Config.OrchestratorServerNames | Select-Object -First 1 -Skip $count
                 Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName to try and connect to the service fabric" -Level Verbose
                 $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
-                if (!$module)
-                {
+                if (!$module) {
                     $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                 }
                 $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
@@ -58,25 +57,25 @@ function Get-D365LBDOrchestrationNodes {
                 Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
             }
         }
-        $PartitionId = $(Get-ServiceFabricServiceHealth -ServiceName 'fabric:/LocalAgent/OrchestrationService').PartitionHealthStates | select PartitionId
-        [string]$PartitionIdString =  $PartitionId 
+        $PartitionId = $(Get-ServiceFabricServiceHealth -ServiceName 'fabric:/LocalAgent/OrchestrationService').PartitionHealthStates | Select-Object PartitionId
+        [string]$PartitionIdString = $PartitionId 
         $PartitionIdString = $PartitionIdString.Trim("@{PartitionId=")
         $PartitionIdString = $PartitionIdString.Substring(0, $PartitionIdString.Length - 1)
        
         Write-PSFMessage -Message "Looking up PartitionID $PartitionIdString." -Level Verbose
         $nodes = Get-ServiceFabricReplica -PartitionId "$PartitionIdString"
-        $primary = $nodes | Where-Object { $_.ReplicaRole -eq "Primary" }
-        $secondary = $nodes | Where-Object { $_.ReplicaType -eq "ActiveSecondary" }
+        $primary = $nodes | Where-Object { $_.ReplicaRole -eq "Primary" -or $_.ReplicaType -eq "Primary" }
+        $secondary = $nodes | Where-Object { $_.ReplicaRole -eq "ActiveSecondary" -or $_.ReplicaType -eq "ActiveSecondary" }
         New-Object -TypeName PSObject -Property `
-        @{'PrimaryNodeName'                              = $primary.NodeName;
-            'SecondaryNodeName'                          = $secondary.NodeName;
-            'PrimaryReplicaStatus'                       = $primary.Properties[2].value; 
-            'SecondaryReplicaStatus'                     = $secondary.Message;
-            'PrimaryLastInBuildStatusLevelDisplayName'   = $primary.LevelDisplayName;
-            'SecondaryLastInBuildStatusLevelDisplayName' = $secondary.TimeCreated;
-            'PrimaryHealthState'                         = $primary.UserId;
-            'SecondaryHealthState'                       = $secondary.LogName;
-            'PartitionId'                                = $PartitionId;
+        @{'PrimaryNodeName'                = $primary.NodeName;
+            'SecondaryNodeName'            = $secondary.NodeName;
+            'PrimaryReplicaStatus'         = $primary.ReplicaStatus; 
+            'SecondaryReplicaStatus'       = $secondary.Message;
+            'PrimaryLastinBuildDuration'   = $primary.LastinBuildDuration;
+            'SecondaryLastinBuildDuration' = $secondary.LastinBuildDuration;
+            'PrimaryHealthState'           = $primary.HealthState;
+            'SecondaryHealthState'         = $secondary.HealthState;
+            'PartitionId'                  = $PartitionId;
         }
     }
     END {
