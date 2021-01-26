@@ -70,12 +70,12 @@ function Get-D365LBDOrchestrationNodes {
         @{'PrimaryNodeName'                = $primary.NodeName;
             'SecondaryNodeName'            = $secondary.NodeName;
             'PrimaryReplicaStatus'         = $primary.ReplicaStatus; 
-            'SecondaryReplicaStatus'       = $secondary.Message;
+            'SecondaryReplicaStatus'       = $secondary.ReplicaStatus;
             'PrimaryLastinBuildDuration'   = $primary.LastinBuildDuration;
             'SecondaryLastinBuildDuration' = $secondary.LastinBuildDuration;
             'PrimaryHealthState'           = $primary.HealthState;
             'SecondaryHealthState'         = $secondary.HealthState;
-            'PartitionId'                  = $PartitionId;
+            'PartitionId'                  = $PartitionIdString;
         }
     }
     END {

@@ -25,7 +25,6 @@ function Get-D365LBDOrchestrationLogs {
             HelpMessage = 'D365FO Local Business Data Server Name',
             ParameterSetName = 'NoConfig')]
         [string]$ComputerName,
-        [string]$ActiveSecondary,
         [int]$NumberofEvents = 5,
         [Parameter(ParameterSetName='Config',
         ValueFromPipeline = $True)]
@@ -60,8 +59,8 @@ function Get-D365LBDOrchestrationLogs {
         $orchnodes = Get-D365LBDOrchestrationNodes -config $Config
         Write-PSFMessage -Level Verbose -Message "$orchnodes"
     
-        $LatestEventInLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $ComputerName).TimeCreated
-        $primary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents $NumberofEvents -ComputerName $ComputerName | 
+        $LatestEventInLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $orchnodes.PrimaryNodeName).TimeCreated
+        $primary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents $NumberofEvents -ComputerName $orchnodes.PrimaryNodeName | 
         ForEach-Object -Process { `
                 New-Object -TypeName PSObject -Property `
             @{'MachineName'        = $_.Properties[0].value;
@@ -79,8 +78,8 @@ function Get-D365LBDOrchestrationLogs {
                 'LatestEventInLog' = $LatestEventInLog;
             }
         }
-        $LatestEventInLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $ActiveSecondary).TimeCreated
-        $secondary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents $NumberofEvents -ComputerName $ActiveSecondary | 
+        $LatestEventInLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $orchnodes.SecondaryNodeName).TimeCreated
+        $secondary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents $NumberofEvents -ComputerName $orchnodes.SecondaryNodeName | 
         ForEach-Object -Process { `
                 New-Object -TypeName PSObject -Property `
             @{'MachineName'        = $_.Properties[0].value;
