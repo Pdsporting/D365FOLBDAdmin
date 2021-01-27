@@ -57,7 +57,7 @@ function Restart-D365LBDSFAppServers {
                 Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
             }
         }
-        $AppNodes = Get-ServiceFabricNode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType") -or ($_.NodeType -eq "ReportServerType") } 
+        $AppNodes = Get-ServiceFabricNode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType") -or ($_.NodeType -eq "ReportServerType") -or ($_.NodeType -eq "PrimaryNodeType") } 
       
         foreach ($AppNode in $AppNodes) {
             Restart-ServiceFabricNode -NodeName $AppNode.NodeName -CommandCompletionMode Verify -Timeout 200
