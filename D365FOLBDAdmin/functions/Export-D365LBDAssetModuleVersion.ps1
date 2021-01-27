@@ -48,13 +48,13 @@ function Export-D365LBDAssetModuleVersion {
              $AgentShareLocation = $Config.AgentShareLocation
         }
         Add-Type -AssemblyName System.IO.Compression.FileSystem
-        $Filter = "*/Apps/AOS/AXServiceApp/AXSF/InstallationRecords/MetadataModelInstallationRecords/$ModuleName*.xml"
+        $Filter = "*/Apps/AOS/AXServiceApp/AXSF/InstallationRecords/MetadataModelInstallationRecords/$CustomModuleName*.xml"
         $AssetFolders = Get-ChildItem "$AgentShareLocation\assets" | Where-Object { $_.Name -ne "topology.xml" -and $_.Name -ne "chk" } | Sort-Object LastWriteTime 
 
         foreach ($AssetFolder in $AssetFolders ) {
             Write-PSFMessage -Message "Checking $AssetFolder" -Level Verbose
             $versionfile = $null
-            $versionfilepath = $AssetFolder.FullName + "\$ModuleName*.xml"
+            $versionfilepath = $AssetFolder.FullName + "\$CustomModuleName*.xml"
             $versionfile = Get-ChildItem -Path $versionfilepath
             if (($null -eq $versionfile) -or !($versionfile)) {
                 ##SpecificAssetFolder which will be output
@@ -79,7 +79,7 @@ function Export-D365LBDAssetModuleVersion {
                     }
                     ##Closes Zip
                     $zip.Dispose()
-                    $NewfileWithoutVersionPath = $SpecificAssetFolder + "\$ModuleName.xml"
+                    $NewfileWithoutVersionPath = $SpecificAssetFolder + "\$CustomModuleName.xml"
                     Write-PSFMessage -Message "$SpecificAssetFolder\$FileName exported" -Level Verbose
 
                     $NewfileWithoutVersion = Get-ChildItem "$NewfileWithoutVersionPath"
@@ -88,8 +88,8 @@ function Export-D365LBDAssetModuleVersion {
                     }
                     [xml]$xml = Get-Content "$NewfileWithoutVersion"
                     $Version = $xml.MetadataModelInstallationInfo.Version
-                    Rename-Item -Path $NewfileWithoutVersionPath -NewName "$ModuleName $Version.xml" -Verbose | Out-Null
-                    Write-PSFMessage -Message "$ModuleName $Version.xml exported" -Level Verbose
+                    Rename-Item -Path $NewfileWithoutVersionPath -NewName "$CustomModuleName $Version.xml" -Verbose | Out-Null
+                    Write-PSFMessage -Message "$CustomModuleName $Version.xml exported" -Level Verbose
                     Write-Output "$Version"
                 }
             }
