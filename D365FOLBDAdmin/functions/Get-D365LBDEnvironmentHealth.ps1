@@ -23,16 +23,34 @@ function Get-D365LBDEnvironmentHealth {
     param
     (
         [Parameter(Mandatory = $true)]
-        [int]$Timeout
+        [int]$Timeout,
+        [psobject]$Config,
+        [string]$CustomModuleName
     )
     BEGIN {
     }
     PROCESS {
+        if (!$Config) {
+            if ($CustomModuleName) {
+                $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName
+            }
+            else {
+                $Config = Get-D365LBDConfig -ComputerName $ComputerName 
+            }
+        }
+        $SourceAXSFServer = $Config.SourceAXSFServer
+        $SFModuleSession = New-PSSession -ComputerName $SourceAXSFServer
+        Invoke-Command -SessionName $SFModuleSession -ScriptBlock {
+            $AssemblyList = "Microsoft.SqlServer.Management.Common", "Microsoft.SqlServer.Smo", "Microsoft.SqlServer.Management.Smo"
+            foreach ($Assembly in $AssemblyList) {
+                $AssemblyLoad = [Reflection.Assembly]::LoadWithPartialName($Assembly) 
+            }
+        }
         $AssemblyList = "Microsoft.SqlServer.Management.Common", "Microsoft.SqlServer.Smo", "Microsoft.SqlServer.Management.Smo"
         foreach ($Assembly in $AssemblyList) {
-            $AssemblyLoad = [Reflection.Assembly]::LoadWithPartialName($Assembly)
+            $AssemblyLoad = [Reflection.Assembly]::LoadWithPartialName($Assembly) 
         }
-        $SQLSSRSServer = New-Object ("Microsoft.SqlServer.Management.Smo.Server") $ReportServerServerName
+        $SQLSSRSServer = New-Object ("Microsoft.SqlServer.Management.Smo.Server") $ReportServerServerName 
         $SystemDatabasesWithIssues = 0
         $SystemDatabasesAccessible = 0
 
