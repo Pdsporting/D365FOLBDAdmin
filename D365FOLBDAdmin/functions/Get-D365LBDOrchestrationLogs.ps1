@@ -60,6 +60,27 @@ function Get-D365LBDOrchestrationLogs {
         Write-PSFMessage -Level Verbose -Message "$orchnodes"
     
         $LatestEventInLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $orchnodes.PrimaryNodeName).TimeCreated
+        if ($NumberofEvents -eq 1){
+            $primary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 2 -ComputerName $orchnodes.PrimaryNodeName | 
+            ForEach-Object -Process { `
+                    New-Object -TypeName PSObject -Property `
+                @{'MachineName'        = $_.Properties[0].value;
+                    'EventMessage'     = $_.Properties[1].value;
+                    'EventDetails'     = $_.Properties[2].value; 
+                    'Message'          = $_.Message;
+                    'LevelDisplayName' = $_.LevelDisplayName;
+                    'TimeCreated'      = $_.TimeCreated;
+                    'UserId'           = $_.UserId;
+                    'LogName'          = $_.LogName;
+                    'ProcessId'        = $_.ProcessId;
+                    'ThreadId'         = $_.ThreadId;
+                    'Id'               = $_.Id;
+                    'ReplicaType'      = 'Primary';
+                    'LatestEventInLog' = $LatestEventInLog;
+                }
+            }
+        }
+        else{
         $primary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents $NumberofEvents -ComputerName $orchnodes.PrimaryNodeName | 
         ForEach-Object -Process { `
                 New-Object -TypeName PSObject -Property `
@@ -78,8 +99,29 @@ function Get-D365LBDOrchestrationLogs {
                 'LatestEventInLog' = $LatestEventInLog;
             }
         }
-        
+    }
         $LatestEventInLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $orchnodes.SecondaryNodeName).TimeCreated
+        if ($NumberofEvents -eq 1){
+            $secondary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 2 -ComputerName $orchnodes.SecondaryNodeName | 
+            ForEach-Object -Process { `
+                    New-Object -TypeName PSObject -Property `
+                @{'MachineName'        = $_.Properties[0].value;
+                    'EventMessage'     = $_.Properties[1].value;
+                    'EventDetails'     = $_.Properties[2].value; 
+                    'Message'          = $_.Message;
+                    'LevelDisplayName' = $_.LevelDisplayName;
+                    'TimeCreated'      = $_.TimeCreated;
+                    'UserId'           = $_.UserId;
+                    'LogName'          = $_.LogName;
+                    'ProcessId'        = $_.ProcessId;
+                    'ThreadId'         = $_.ThreadId;
+                    'Id'               = $_.Id;
+                    'ReplicaType'      = 'ActiveSecondary';
+                    'LatestEventInLog' = $LatestEventInLog;
+                }
+            }
+        }
+        else{
         $secondary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents $NumberofEvents -ComputerName $orchnodes.SecondaryNodeName | 
         ForEach-Object -Process { `
                 New-Object -TypeName PSObject -Property `
@@ -98,6 +140,7 @@ function Get-D365LBDOrchestrationLogs {
                 'LatestEventInLog' = $LatestEventInLog;
             }
         }
+    }
         foreach ($primarylog in $primary)
         {
             if ($primarylog.EventMessage -like "status of job *, Success")
@@ -105,8 +148,13 @@ function Get-D365LBDOrchestrationLogs {
                 Write-PSFMessage -Message "Found RunBook Success Message" -Level Verbose
             }
         }
+        if (!$secondary)
+        {
+            $all = $Primary | Sort-Object { $_.TimeCreated } -Descending | Select-Object -First $NumberofEvents
+        }
+        else{
         $all = $Primary + $secondary | Sort-Object { $_.TimeCreated } -Descending | Select-Object -First $NumberofEvents
-        
+    }
         return $all
     }
     END {
