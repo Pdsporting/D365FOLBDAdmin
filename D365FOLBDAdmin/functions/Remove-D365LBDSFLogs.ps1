@@ -21,7 +21,7 @@ function Remove-D365LBDSFLogs {
         if (!$Config) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly   
         }
-        Foreach ($SFServerName in $config.AllAppServerList) {
+        Foreach ($SFServerName in $config.AllAppServerList.ComputerName) {
             $LogFolder = Get-ChildItem -Path "\\$SFServerName\c$\ProgramData\SF\DiagnosticStore\fabriclogs*\*\Fabric*" | Select-Object -First 1 -ExpandProperty FullName
             $StartTime = Get-Date
             Write-PSFMessage -Level Verbose -Message "Starting Clean on $LogFolder"

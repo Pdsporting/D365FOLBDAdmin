@@ -11,7 +11,7 @@ function Remove-D365LBDSFOldAssets {
             ParameterSetName = 'NoConfig')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [psobject]$Config,
-        [Integer]$NumberofAssetsToKeep,
+        [int]$NumberofAssetsToKeep,
         [switch]$ControlFile
     )
     BEGIN {
