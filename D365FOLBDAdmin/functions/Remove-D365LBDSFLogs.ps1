@@ -11,7 +11,7 @@ function Remove-D365LBDSFLogs {
             ParameterSetName = 'NoConfig')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [psobject]$Config,
-        [integer]$CleanupOlderThanDays = 1,
+        [int]$CleanupOlderThanDays = 1,
         [string]$CustomModuleName,
         [switch]$ControlFile
     )
@@ -19,7 +19,7 @@ function Remove-D365LBDSFLogs {
     }
     PROCESS {
         if (!$Config) {
-            $Config = Get-D365LBDConfig -ComputerName $ComputerName 
+            $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly   
         }
         Foreach ($SFServerName in $config.AllAppServerList) {
             $LogFolder = Get-ChildItem -Path "\\$SFServerName\c$\ProgramData\SF\DiagnosticStore\fabriclogs*\*\Fabric*" | Select-Object -First 1 -ExpandProperty FullName

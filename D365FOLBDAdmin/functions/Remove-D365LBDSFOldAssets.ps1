@@ -18,7 +18,7 @@ function Remove-D365LBDSFOldAssets {
     }
     PROCESS {
         if (!$Config) {
-            $Config = Get-D365LBDConfig -ComputerName $ComputerName 
+            $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly   
         }
 
         if ($NumberofAssetsToKeep -lt 2){
