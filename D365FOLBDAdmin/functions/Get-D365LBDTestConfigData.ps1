@@ -70,6 +70,7 @@ function Get-D365LBDTestConfigData {
             'DBSyncStatus'                                 = "Failed"
             'DBSyncTimeStamp'                              = '5/15/2022 8:24:06 PM'
             'DBSyncServerWithLatestLog'                    = 'Server5'
+            'DeploymentAssetIDinWPFolder'                  = 'asd87213-123a-312c-213f-891798asd8231h5'
         }
         ##Sends Custom Object to Pipeline
         [PSCustomObject]$Properties

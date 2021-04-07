@@ -82,7 +82,7 @@ function Export-D365LBDConfigReport {
         $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.DataEnciphermentCertificateExpiresAfter)</p><br />"
         $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.FinancialReportingCertificateExpiresAfter)</p><br />"
         $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.ReportingSSRSCertificateExpiresAfter)</p><br />"
-        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $( $Config.DatabaseEncryptionCertificateExpiresAfter)</p><br />"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.DatabaseEncryptionCertificateExpiresAfter)</p><br />"
         $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.LocalAgentCertificateExpiresAfter)</p> <br />"
         $html += "</body></html>"
         $html |  Out-File "$ExportLocation"   

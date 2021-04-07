@@ -26,8 +26,8 @@ function Get-D365LBDOrchestrationLogs {
             ParameterSetName = 'NoConfig')]
         [string]$ComputerName,
         [int]$NumberofEvents = 5,
-        [Parameter(ParameterSetName='Config',
-        ValueFromPipeline = $True)]
+        [Parameter(ParameterSetName = 'Config',
+            ValueFromPipeline = $True)]
         [psobject]$Config
     )
     BEGIN {
@@ -42,8 +42,7 @@ function Get-D365LBDOrchestrationLogs {
                 $OrchestratorServerName = $Config.OrchestratorServerNames | Select-Object -First 1 -Skip $count
                 Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName to try and connect to the service fabric" -Level Verbose
                 $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
-                if (!$module)
-                {
+                if (!$module) {
                     $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                 }
                 $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
@@ -60,7 +59,7 @@ function Get-D365LBDOrchestrationLogs {
         Write-PSFMessage -Level Verbose -Message "$orchnodes"
     
         $LatestEventInLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $orchnodes.PrimaryNodeName).TimeCreated
-        if ($NumberofEvents -eq 1){
+        if ($NumberofEvents -eq 1) {
             $primary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 2 -ComputerName $orchnodes.PrimaryNodeName | 
             ForEach-Object -Process { `
                     New-Object -TypeName PSObject -Property `
@@ -80,28 +79,28 @@ function Get-D365LBDOrchestrationLogs {
                 }
             }
         }
-        else{
-        $primary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents $NumberofEvents -ComputerName $orchnodes.PrimaryNodeName | 
-        ForEach-Object -Process { `
-                New-Object -TypeName PSObject -Property `
-            @{'MachineName'        = $_.Properties[0].value;
-                'EventMessage'     = $_.Properties[1].value;
-                'EventDetails'     = $_.Properties[2].value; 
-                'Message'          = $_.Message;
-                'LevelDisplayName' = $_.LevelDisplayName;
-                'TimeCreated'      = $_.TimeCreated;
-                'UserId'           = $_.UserId;
-                'LogName'          = $_.LogName;
-                'ProcessId'        = $_.ProcessId;
-                'ThreadId'         = $_.ThreadId;
-                'Id'               = $_.Id;
-                'ReplicaType'      = 'Primary';
-                'LatestEventInLog' = $LatestEventInLog;
+        else {
+            $primary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents $NumberofEvents -ComputerName $orchnodes.PrimaryNodeName | 
+            ForEach-Object -Process { `
+                    New-Object -TypeName PSObject -Property `
+                @{'MachineName'        = $_.Properties[0].value;
+                    'EventMessage'     = $_.Properties[1].value;
+                    'EventDetails'     = $_.Properties[2].value; 
+                    'Message'          = $_.Message;
+                    'LevelDisplayName' = $_.LevelDisplayName;
+                    'TimeCreated'      = $_.TimeCreated;
+                    'UserId'           = $_.UserId;
+                    'LogName'          = $_.LogName;
+                    'ProcessId'        = $_.ProcessId;
+                    'ThreadId'         = $_.ThreadId;
+                    'Id'               = $_.Id;
+                    'ReplicaType'      = 'Primary';
+                    'LatestEventInLog' = $LatestEventInLog;
+                }
             }
         }
-    }
         $LatestEventInLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $orchnodes.SecondaryNodeName).TimeCreated
-        if ($NumberofEvents -eq 1){
+        if ($NumberofEvents -eq 1) {
             $secondary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 2 -ComputerName $orchnodes.SecondaryNodeName | 
             ForEach-Object -Process { `
                     New-Object -TypeName PSObject -Property `
@@ -121,40 +120,40 @@ function Get-D365LBDOrchestrationLogs {
                 }
             }
         }
-        else{
-        $secondary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents $NumberofEvents -ComputerName $orchnodes.SecondaryNodeName | 
-        ForEach-Object -Process { `
-                New-Object -TypeName PSObject -Property `
-            @{'MachineName'        = $_.Properties[0].value;
-                'EventMessage'     = $_.Properties[1].value;
-                'EventDetails'     = $_.Properties[2].value; 
-                'Message'          = $_.Message;
-                'LevelDisplayName' = $_.LevelDisplayName;
-                'TimeCreated'      = $_.TimeCreated;
-                'UserId'           = $_.UserId;
-                'LogName'          = $_.LogName;
-                'ProcessId'        = $_.ProcessId;
-                'ThreadId'         = $_.ThreadId;
-                'Id'               = $_.Id;
-                'ReplicaType'      = 'ActiveSecondary';
-                'LatestEventInLog' = $LatestEventInLog;
+        else {
+            $secondary = Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents $NumberofEvents -ComputerName $orchnodes.SecondaryNodeName | 
+            ForEach-Object -Process { `
+                    New-Object -TypeName PSObject -Property `
+                @{'MachineName'        = $_.Properties[0].value;
+                    'EventMessage'     = $_.Properties[1].value;
+                    'EventDetails'     = $_.Properties[2].value; 
+                    'Message'          = $_.Message;
+                    'LevelDisplayName' = $_.LevelDisplayName;
+                    'TimeCreated'      = $_.TimeCreated;
+                    'UserId'           = $_.UserId;
+                    'LogName'          = $_.LogName;
+                    'ProcessId'        = $_.ProcessId;
+                    'ThreadId'         = $_.ThreadId;
+                    'Id'               = $_.Id;
+                    'ReplicaType'      = 'ActiveSecondary';
+                    'LatestEventInLog' = $LatestEventInLog;
+                }
             }
         }
-    }
-        foreach ($primarylog in $primary)
-        {
-            if ($primarylog.EventMessage -like "status of job *, Success")
-            {
+        foreach ($primarylog in $primary) {
+            if ($primarylog.EventMessage -like "status of job *, Success") {
                 Write-PSFMessage -Message "Found RunBook Success Message" -Level Verbose
             }
+            if ($primarylog.EventMessage -like "status of job *, Error") {
+                Write-PSFMessage -Message "Found RunBook Error Message" -Level Verbose
+            }
         }
-        if (!$secondary)
-        {
+        if (!$secondary) {
             $all = $Primary | Sort-Object { $_.TimeCreated } -Descending | Select-Object -First $NumberofEvents
         }
-        else{
-        $all = $Primary + $secondary | Sort-Object { $_.TimeCreated } -Descending | Select-Object -First $NumberofEvents
-    }
+        else {
+            $all = $Primary + $secondary | Sort-Object { $_.TimeCreated } -Descending | Select-Object -First $NumberofEvents
+        }
         return $all
     }
     END {

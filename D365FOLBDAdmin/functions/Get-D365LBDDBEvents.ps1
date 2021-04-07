@@ -43,6 +43,7 @@ function Get-D365LBDDBEvents {
     
         Foreach ($AXSFServerName in $config.AXSFServerNames) {
             try {
+                Write-PSFMessage -Level Verbose -Message "Reaching out to $AXSFServerName to look for DB logs"
                 $LatestEventinLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents 1 -computername $AXSFServerName -ErrorAction Stop).TimeCreated
             }
             catch {

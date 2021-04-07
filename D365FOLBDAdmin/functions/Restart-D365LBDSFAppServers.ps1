@@ -29,7 +29,9 @@ function Restart-D365LBDSFAppServers {
             ValueFromPipeline = $True)]
         [psobject]$Config,
         [int]$Timeout = 600,
-        [switch]$waittillhealthy
+        [switch]$waittillhealthy,
+        [switch]$RebootWholeOS,
+        [switch]$RebootWholeOSIncludingOrch
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
@@ -50,6 +52,10 @@ function Restart-D365LBDSFAppServers {
                 $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
                 $count = $count + 1
                 if (!$connection) {
+                    $trialEndpoint = "https://$OrchestratorServerName" + ":198000"
+                    $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                }
+                if (!$connection) {
                     Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
                 }
             } until ($connection -or ($count -eq $($Config.OrchestratorServerNames).Count))
@@ -59,8 +65,36 @@ function Restart-D365LBDSFAppServers {
         }
         $AppNodes = Get-ServiceFabricNode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType") -or ($_.NodeType -eq "ReportServerType") -or ($_.NodeType -eq "PrimaryNodeType") } 
       
-        foreach ($AppNode in $AppNodes) {
-            Restart-ServiceFabricNode -NodeName $AppNode.NodeName -CommandCompletionMode Verify -Timeout 200
+        if ($RebootWholeOS -or $RebootWholeOSIncludingOrch) {
+            if ($waittillhealthy) {
+                $AppNodes | ForEach-Object -Parallel {
+                    Restart-Computer -ComputerName $_ -Force -Wait -For PowerShell -Timeout $Timeout -Delay 2
+                } 
+            }
+            else {
+                $AppNodes | ForEach-Object -Parallel {
+                    Restart-Computer -ComputerName $_ -Force
+                } 
+            }   
+            if ($RebootWholeOSIncludingOrch) {
+                $OrchNodes = Get-ServiceFabricNode | Where-Object { ($_.NodeType -eq "OrchestratorType") } 
+      
+                if ($waittillhealthy) {
+                    $OrchNodes  | ForEach-Object -Parallel {
+                        Restart-Computer -ComputerName $_ -Force -Wait -For PowerShell -Timeout $Timeout -Delay 2
+                    } 
+                }
+                else {
+                    $OrchNodes  | ForEach-Object -Parallel {
+                        Restart-Computer -ComputerName $_ -Force
+                    } 
+                }   
+            }
+        }
+        else {
+            foreach ($AppNode in $AppNodes) {
+                Restart-ServiceFabricNode -NodeName $AppNode.NodeName -CommandCompletionMode Verify -Timeout 200
+            }
         }
       
         Start-Sleep -Seconds 5
@@ -79,7 +113,6 @@ function Restart-D365LBDSFAppServers {
                 Start-Sleep -Seconds 5
             }
             catch {}
-
         } until ($apps.count -gt 0)
         $counterofhealthyapps = 0
         foreach ($app in $apps) {
@@ -100,8 +133,7 @@ function Restart-D365LBDSFAppServers {
                 
                     } until ($health.aggregatedhealthstate -eq "Ok" -or $timer -gt $Timeout)
                 }
-                if ($timer -gt $Timeout)
-                {
+                if ($timer -gt $Timeout) {
                     Write-PSFMessage -Message "Warning: Timeout occured" -Level Warning
                 }
             }

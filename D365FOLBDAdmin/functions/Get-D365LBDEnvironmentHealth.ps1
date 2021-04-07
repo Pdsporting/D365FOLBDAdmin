@@ -88,7 +88,6 @@ function Get-D365LBDEnvironmentHealth {
                     }
                     New-Object -TypeName psobject -Property $Properties
                 }
-
                 Default {}
             }
         }
@@ -108,9 +107,7 @@ function Get-D365LBDEnvironmentHealth {
             }
             New-Object -TypeName psobject -Property $Properties
         }
-
     }
-
     END {
     }
 }

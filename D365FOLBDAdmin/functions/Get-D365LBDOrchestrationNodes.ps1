@@ -48,6 +48,10 @@ function Get-D365LBDOrchestrationNodes {
                     $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                 }
                 $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                if (!$connection) {
+                    $trialEndpoint = "https://$OrchestratorServerName" + ":198000"
+                    $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                }
                 $count = $count + 1
                 if (!$connection) {
                     Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
