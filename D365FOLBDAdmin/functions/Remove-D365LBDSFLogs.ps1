@@ -26,7 +26,7 @@ function Remove-D365LBDSFLogs {
             $StartTime = Get-Date
             Write-PSFMessage -Level Verbose -Message "Starting Clean on $LogFolder"
             $FilesThatAreBeingDeleted = Get-ChildItem -path $LogFolder | Sort-Object LastWriteTime | Where-Object { $_.Name -ne "ControlFile.txt" -and $_.LastWriteTime -lt (Get-Date).AddDays(-$CleanupOlderThanDays) }
-            $FileCount = $FilesThatAreBeingDeleted.CreationTimeUtc
+            $FileCount = $FilesThatAreBeingDeleted.Count
             Write-PSFMessage -Level Verbose -Message "Deleting $FileCount files on $SFServerName"
             if ($FilesThatAreBeingDeleted -and $FileCount -gt 0 ) {
                 $FilesThatAreBeingDeleted.FullName | Remove-Item -Force -Recurse
@@ -35,7 +35,7 @@ function Remove-D365LBDSFLogs {
             $TimeDiff = New-TimeSpan -Start $StartTime -End $EndTime
             Write-PSFMessage -Level VeryVerbose -Message "$SFServerName - StartTime: $StartTime - EndTime: $EndTime - Execution Time: $($TimeDiff.Minutes) Minutes $($TimeDiff.Seconds) Seconds - Count of Files: $FileCount"
             if ($ControlFile -and $FileCount -gt 0) {
-                "$SFServerName - StartTime: $StartTime - EndTime: $EndTime - Execution Time: $($TimeDiff.Minutes) $($TimeDiff.Seconds) Count of Files: $FileCount " | Out-File $LogFolder\ControlFile.txt -append
+                "$SFServerName - StartTime: $StartTime - EndTime: $EndTime - Execution Time: $($TimeDiff.Minutes) $($TimeDiff.Seconds) Count of Files: $FileCount" | Out-File $LogFolder\ControlFile.txt -append
             }
         }
         Write-PSFMessage -Level VeryVerbose -Message "$($config.LCSEnvironmentName) Service Fabric Servers have been cleaned of older than $CleanupOlderThanDays days Service Fabric Logs."
