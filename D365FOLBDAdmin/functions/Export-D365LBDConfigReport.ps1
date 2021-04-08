@@ -31,7 +31,7 @@ function Export-D365LBDConfigReport {
         ValueFromPipeline = $True)]
         [psobject]$Config,
         [switch]$Detailed,
-        [string]$ExportLocation,
+        [string]$ExportLocation,##mandatory
         [string]$CustomModuleName
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
@@ -48,42 +48,48 @@ function Export-D365LBDConfigReport {
         }
         $html = "<html> <body>"
         $html += "<h1>$($Config.LCSEnvironmentName) </h1>"
-        $html += "<p><b>Custom Code Version:<b/></p> $($Config.CustomModuleVersion) </p>"
-        $html += "<p><b>AX Kernel Version:<b/></p> $($Config.AOSKernelVersion) "
-        $html += "<p><b>Environment ID:<b/></p> $($config.LCSEnvironmentID) </p>"
+        $html += "<p><b>Custom Code Version:</b></p> $($Config.CustomModuleVersion)"
+        $html += "<p><b>AX Kernel Version:</b></p> $($Config.AOSKernelVersion) "
+        $html += "<p><b>Environment ID:</b></p> $($config.LCSEnvironmentID)"
         $CountofAXServerNames = $Config.AXSFServerNames.Count
-        $html += "<p><b>Amount of AX SF Servers:<b/></p> $($CountofAXServerNames) </p>"
+        $html += "<p><b>Amount of AX SF Servers:</b></p> $($CountofAXServerNames) </p>"
         if ($Detailed){
-            $html += "<p>AX SF Servers: <b/></p> <ul>"
-            foreach($axsfserver in $Config.AXServerNames)
+            $html += "<b><p>AX SF Servers: </b></p> <ul>"
+            foreach($axsfserver in $Config.AXSFServerNames)
             {
                 $html += "<li>$axsfserver</li>"
             }
             $html += "</ul>"
         }
-        $html += "<p><b>Amount of Orchestrator Servers: $($Config.OrchestratorServerNames.Count)</p>"
+        $html += "<p><b>Number of Orchestrator Servers: </b> $($Config.OrchestratorServerNames.Count)</p>"
         if ($Detailed){
             $html += "<p><b>Orchestrator Servers:</b></p> <ul>"
-            foreach($axsfserver in $Config.OrchestratorServerNames)
+            foreach($AXOrchServerName in $Config.OrchestratorServerNames)
             {
-                $html += "<li>$axsferver</li>"
+                $html += "<li>$AXOrchServerName</li>"
             }
             $html += "</ul>"
         }
-        $html += "<p><b>AX database is $($Config.DatabaseClusteredStatus)</p> <br />"
-        $html += "<p><b>Amount of Database servers: $($Config.DatabaseClusterServerNames.Count)</p> <br />"
-        $html += "<p><b>Local Agent Version: $Config.OrchServiceLocalAgentVersionNumber</p> <br />"
-        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.SFClientCertificateExpiresAfter)</p><br />"
-        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.SFServerCertificateExpiresAfter)</p><br />"
-        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.DataEncryptionCertificateExpiresAfter)</p><br />"
-        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.DataSigningCertificateExpiresAfter)</p><br />"
-        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.SessionAuthenticationCertificateExpiresAfter)</p><br />"
-        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.SharedAccessSMBCertificateExpiresAfter)</p><br />"
-        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.DataEnciphermentCertificateExpiresAfter)</p><br />"
-        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.FinancialReportingCertificateExpiresAfter)</p><br />"
-        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.ReportingSSRSCertificateExpiresAfter)</p><br />"
-        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.DatabaseEncryptionCertificateExpiresAfter)</p><br />"
-        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.LocalAgentCertificateExpiresAfter)</p> <br />"
+        $html += "<p><b>AX database is $($Config.DatabaseClusteredStatus)</p>"
+        $html += "<p><b>Number of Database servers:</b> $($Config.DatabaseClusterServerNames.Count)</p>"
+        $html += "<p><b>Database server(s):</b></p> <ul>"
+            foreach($AXDBServerName in $($Config.DatabaseClusterServerNames))
+            {
+                $html += "<li>$AXDBServerName</li>"
+            }
+            $html += "</ul>"
+        $html += "<p><b>Local Agent Version: $($Config.OrchServiceLocalAgentVersionNumber)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.SFClientCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.SFServerCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.DataEncryptionCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.DataSigningCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.SessionAuthenticationCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.SharedAccessSMBCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.DataEnciphermentCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.FinancialReportingCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.ReportingSSRSCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.DatabaseEncryptionCertificateExpiresAfter)</p>"
+        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.LocalAgentCertificateExpiresAfter)</p>"
         $html += "</body></html>"
         $html |  Out-File "$ExportLocation"   
   
