@@ -1,7 +1,7 @@
 
 function Remove-D365LBDSFOldAssets {
    
-    [alias("Remove-D365LBDSFOldAssets")]
+    [alias("Remove-D365SFOldAssets")]
     param
     (
         [Parameter(ValueFromPipeline = $True,
@@ -31,7 +31,7 @@ function Remove-D365LBDSFOldAssets {
         Write-PSFMessage -Level Verbose -Message "Starting Clean on $AssetsFolderinAgentShareLocation"
         $FilesThatAreBeingDeleted = Get-ChildItem $AssetsFolderinAgentShareLocation | Where-Object { $_.Name -ne "chk" -and $_.Name -ne "toplogy.xml" -and $_.Name -ne "$AlreadyDeployedAssetIDInWPFolder" -and $_.LastWriteTime -lt $Onedayold -and $_.Name -ne "ControlFile.txt" } | Sort-Object LastWriteTime | Select-Object -SkipLast $NumberofAssetsToKeep
         $FileCount = $FilesThatAreBeingDeleted.Count
-        if (!$FileCount -or $FileCount -eq 0) {
+        if ($FileCount -or $FileCount -ne 0) {
             $FilesThatAreBeingDeleted.FullName | Remove-Item -Force -Recurse
         }
         $EndTime = Get-Date

@@ -66,29 +66,25 @@ function Restart-D365LBDSFAppServers {
         $AppNodes = Get-ServiceFabricNode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType") -or ($_.NodeType -eq "ReportServerType") -or ($_.NodeType -eq "PrimaryNodeType") } 
       
         if ($RebootWholeOS -or $RebootWholeOSIncludingOrch) {
-            if ($waittillhealthy) {
-                $AppNodes | ForEach-Object -Parallel {
-                    Restart-Computer -ComputerName $_ -Force -Wait -For PowerShell -Timeout $Timeout -Delay 2
-                } 
-            }
-            else {
-                $AppNodes | ForEach-Object -Parallel {
-                    Restart-Computer -ComputerName $_ -Force
-                } 
-            }   
             if ($RebootWholeOSIncludingOrch) {
-                $OrchNodes = Get-ServiceFabricNode | Where-Object { ($_.NodeType -eq "OrchestratorType") } 
-      
                 if ($waittillhealthy) {
-                    $OrchNodes  | ForEach-Object -Parallel {
-                        Restart-Computer -ComputerName $_ -Force -Wait -For PowerShell -Timeout $Timeout -Delay 2
-                    } 
+                    Write-PSFMessage -Message "Restarting $($config.AllAppServerList) and Waiting for Powershell to be available" -Level Verbose
+                    Restart-computer -ComputerName  $config.AllAppServerList -Force -Wait -for PowerShell -Delay 2 -Verbose
                 }
                 else {
-                    $OrchNodes  | ForEach-Object -Parallel {
-                        Restart-Computer -ComputerName $_ -Force
-                    } 
+                    Write-PSFMessage -Message "Restarting $($config.AllAppServerList)" -Level Verbose
+                    Restart-computer -ComputerName  $config.AllAppServerList -Force -Wait -for PowerShell -Delay 2 -Verbose
                 }   
+            }
+            else{ ## Only SF nodes
+                if ($waittillhealthy) {
+                    Write-PSFMessage -Message "Restarting $($config.AXSFServerNames) and Waiting for Powershell to be available" -Level Verbose
+                    Restart-computer -ComputerName  $config.AXSFServerNames -Force -Wait -for PowerShell -Delay 2
+                }
+                else {
+                    Write-PSFMessage -Message "Restarting $($config.AXSFServerNames)" -Level Verbose
+                    Restart-computer -ComputerName  $config.AXSFServerNames -Force -Verbose
+                }  
             }
         }
         else {

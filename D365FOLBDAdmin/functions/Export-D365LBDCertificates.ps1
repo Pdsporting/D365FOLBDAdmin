@@ -1,7 +1,7 @@
 function Export-D365LBDCertificates {
     <#
    .SYNOPSIS
-
+Need to rethink approach
 
   .DESCRIPTION
    Exports 

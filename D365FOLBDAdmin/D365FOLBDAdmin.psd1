@@ -78,7 +78,7 @@
 	"Export-D365FOLBDAssetModuleVersion", 
 	"Get-D365CertsFromConfig","Get-D365Config","Get-D365OrchestrationLogs","Get-D365OrchestrationNodes","Get-D365TestConfigData",
 	"Import-D365LBDCertificates"
-	"New-D365AXSFNode","Remove-D365StuckApps",
+	"New-D365AXSFNode","Remove-D365StuckApps","Remove-D365SFOldAssets",
 	"Start-D365DBSync","Start-D365FOLBDDBSync","Get-D365DBEvents",'Add-D365DatabaseDetailsandCert',
 	'Disable-D365SFAppServers','Enable-D365SFAppServers','Set-D365PreDeploymentOptions',
 	'Remove-D365SFOldAssets',
