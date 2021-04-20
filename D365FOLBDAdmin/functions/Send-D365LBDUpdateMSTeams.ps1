@@ -1,4 +1,4 @@
-function Send-D365UpdateMSTeams {
+function Send-D365LBDUpdateMSTeams {
     <#
    .SYNOPSIS
   Uses switches to set different deployment options
@@ -27,21 +27,53 @@ function Send-D365UpdateMSTeams {
         [string]$MSTeamsExtraDetails,
         [string]$MSTeamsBuildName,
         [string]$MSTeamsCustomStatus,
-        [string]$SQLQueryToRun
+        [string]$MessageType,
+        [string]$CustomModuleName
     )
     BEGIN {
     }
     PROCESS {
-        if ($MSTeamsURI) {
-            if ($PreDeployment) {
-                $status = 'PreDeployment Started'
+        switch ( $MessageType) {
+            "PreDeployment" { $status = 'PreDeployment Started' }
+            "PostDeployment" { $status = 'Deployment Completed' }
+            "BuildStart" { $status = 'Build Started' }
+            "BuildComplete" { $status = 'PreDeployment Started' }
+            "BuildPrepStarted" { $status = 'Build Prep Started' }
+            "BuildPrepped" { $status = 'Build Prepped' }
+            "PlainText" {}
+            default { Stop-PSFFunction -Message "Message type $MessageType is not supported" }
+        }
+        if ($MSTeamsCustomStatus) {
+            $status = "$MSTeamsCustomStatus"
+        }
+        if ($MessageType -eq "PreDeployment" -or $MessageType -eq "PostDeployment") {
+            
+            if (!$Config) {
+                if (!$CustomModuleName) {
+                    Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName
+                }
+                else {
+                    Get-D365LBDConfig -ComputerName $ComputerName 
+                }
             }
-            if ($PostDeployment) {
-                $status = 'Deployment Finished. PostDeployment Started'
+            if ($CustomModuleName)
+            {
+               $Prepped = Export-D365LBDAssetModuleVersion -CustomModuleName $CustomModuleName -config $Config
+               if ($Prepped)
+               {
+                   if ($Prepped.Count -eq 1)
+                   {
+                    Write-PSFMessage -Message "Found a prepped build: $Prepped" -Level VeryVerbose
+                   }
+                   else{
+                   foreach ($build in $Prepped){
+                       Write-PSFMessage -Message "Found multiple prepped builds including: $build" -Level VeryVerbose
+                   }
+                }
+               }
             }
-            if ($MSTeamsCustomStatus) {
-                $status = "$MSTeamsCustomStatus"
-            }
+            $Config.CustomModuleVersioninAgentShare
+
             $bodyjson = @"
 {
     "@type": "MessageCard",
@@ -64,8 +96,9 @@ function Send-D365UpdateMSTeams {
     }]
 }            
 "@
-            if ($MSTeamsExtraDetails) {
-                 $bodyjson = @"
+        }
+        if ($MSTeamsExtraDetails) {
+            $bodyjson = @"
 {
     "@type": "MessageCard",
     "@context": "http://schema.org/extensions",
@@ -90,11 +123,11 @@ function Send-D365UpdateMSTeams {
     }]
 }            
 "@
-            }
-            Write-PSFMessage -Message "Calling $MSTeamsURI with Post of $bodyjson " -Level VeryVerbose
-            $WebRequestResults = Invoke-WebRequest -uri $MSTeamsURI -ContentType 'application/json' -Body $bodyjson -UseBasicParsing -Method Post -Verbose
-            Write-PSFMessage -Message "$WebRequestResults" -Level VeryVerbose
         }
+        Write-PSFMessage -Message "Calling $MSTeamsURI with Post of $bodyjson " -Level VeryVerbose
+        $WebRequestResults = Invoke-WebRequest -uri $MSTeamsURI -ContentType 'application/json' -Body $bodyjson -UseBasicParsing -Method Post -Verbose
+        Write-PSFMessage -Message "$WebRequestResults" -Level VeryVerbose
+        
     }
     END {
     }
