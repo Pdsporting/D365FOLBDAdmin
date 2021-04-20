@@ -425,6 +425,7 @@ ORDER BY [rh].[restore_date] DESC"
             $ConfigurationModeSQL = $SqlresultsToGetConfigMode | Select-Object value
             [string]$ConfigurationModeString = $ConfigurationModeSQL
             $ConfigurationModeString = $ConfigurationModeString.Trim("@{value=")
+            $ConfigurationModeString = $ConfigurationModeString.Trim("value=")
             $ConfigurationModeString = $ConfigurationModeString.Substring(0, $ConfigurationModeString.Length - 1)
             [int]$configurationmode = $ConfigurationModeString 
             if ($configurationmode -eq 1) {
@@ -447,13 +448,13 @@ ORDER BY [rh].[restore_date] DESC"
 
             $OrchestratorJobSQL = $SqlresultsToGetOrchestratorDataOrchestratorJob | Select-Object State
             [string]$OrchestratorDataOrchestratorJobStateString = $OrchestratorJobSQL
-            $OrchestratorDataOrchestratorJobStateString = $OrchestratorDataOrchestratorJobStateString.Trim("@{state=")
+            $OrchestratorDataOrchestratorJobStateString = $OrchestratorDataOrchestratorJobStateString.Trim("State=")
             $OrchestratorDataOrchestratorJobStateString = $OrchestratorDataOrchestratorJobStateString.Substring(0, $OrchestratorDataOrchestratorJobStateString.Length - 1)
             [int]$OrchestratorDataOrchestratorJobStateInt = $OrchestratorDataOrchestratorJobStateString
 
             $RunBookSQL = $SqlresultsToGetOrchestratorDataRunBook | Select-Object State
             [string]$OrchestratorDataRunBookStateString = $RunBookSQL
-            $OrchestratorDataRunBookStateString = $OrchestratorDataRunBookStateString.Trim("@{state=")
+            $OrchestratorDataRunBookStateString = $OrchestratorDataRunBookStateString.Trim("state=")
             $OrchestratorDataRunBookStateString = $OrchestratorDataRunBookStateString.Substring(0, $OrchestratorDataRunBookStateString.Length - 1)
             [int]$OrchestratorDataRunBookStateInt = $OrchestratorDataRunBookStateString
 
