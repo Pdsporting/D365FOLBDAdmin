@@ -64,7 +64,8 @@
 		'Set-D365LBDOptions',
 		'Get-D365LBDEnvironmentHealth',
 		'Remove-D365LBDSFOldAssets',
-		'Remove-D365LBDSFLogs'
+		'Remove-D365LBDSFLogs',
+		'Send-D365LBDUpdateMSTeams'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
@@ -76,13 +77,25 @@
 	AliasesToExport = @('Add-D365DataEnciphermentCertConfig',
 	"Export-D365AssetModuleVersion",
 	"Export-D365FOLBDAssetModuleVersion", 
-	"Get-D365CertsFromConfig","Get-D365Config","Get-D365OrchestrationLogs","Get-D365OrchestrationNodes","Get-D365TestConfigData",
+	"Get-D365CertsFromConfig",
+	"Get-D365Config",
+	"Get-D365OrchestrationLogs",
+	"Get-D365OrchestrationNodes",
+	"Get-D365TestConfigData",
 	"Import-D365LBDCertificates"
-	"New-D365AXSFNode","Remove-D365StuckApps","Remove-D365SFOldAssets",
-	"Start-D365DBSync","Start-D365FOLBDDBSync","Get-D365DBEvents",'Add-D365DatabaseDetailsandCert',
-	'Disable-D365SFAppServers','Enable-D365SFAppServers','Set-D365PreDeploymentOptions',
+	"New-D365AXSFNode",
+	"Remove-D365StuckApps",
+	"Remove-D365SFOldAssets",
+	"Start-D365DBSync",
+	"Start-D365FOLBDDBSync",
+	"Get-D365DBEvents",
+	'Add-D365DatabaseDetailsandCert',
+	'Disable-D365SFAppServers',
+	'Enable-D365SFAppServers',
+	'Set-D365PreDeploymentOptions',
 	'Remove-D365SFOldAssets',
-	'Remove-D365SFLogs')
+	'Remove-D365SFLogs',
+	'Send-D365UpdateMSTeams')
 	
 	# List of all modules packaged with this module
 	ModuleList = @()

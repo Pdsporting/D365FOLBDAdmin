@@ -18,6 +18,8 @@ function Get-D365LBDEnvironmentHealth {
   optional string 
   The name of the custom module you will be using to capture the version number
 
+  ##Switch fix minor issues 
+
   #>
     [alias("Get-D365EnvironmentHealth")]
     param

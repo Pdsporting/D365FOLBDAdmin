@@ -382,7 +382,7 @@
             if (!$AXDatabaseName) {
                 $AXDatabaseName = "AXDB"
             }
-            $SQLQuery = " Select top 1 [rh].[destination_database_name], [sd].[create_date], [bs].[backup_start_date], [rh].[restore_date], [bmf].[physical_device_name] as 'backup_file_used_for_restore' 
+            $SQLQueryToGetRefreshinfo = " Select top 1 [rh].[destination_database_name], [sd].[create_date], [bs].[backup_start_date], [rh].[restore_date], [bmf].[physical_device_name] as 'backup_file_used_for_restore' 
 from msdb..restorehistory rh 
 inner join msdb..backupset bs on [rh].[backup_set_id] = [bs].[backup_set_id] 
 inner join msdb..backupmediafamily bmf on [bs].[media_set_id] = [bmf].[media_set_id]
@@ -391,38 +391,38 @@ where [rh].[destination_database_name] = '$AXDatabaseName'
 ORDER BY [rh].[restore_date] DESC"
 
             try {
-                $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
+                $SqlresultsToGetRefreshinfo = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQueryToGetRefreshinfo
             }
             catch {}
 
-            $AXDatabaseRestoreDateSQL = $Sqlresults | Select-Object restore_date
+            $AXDatabaseRestoreDateSQL = $SqlresultsToGetRefreshinfo | Select-Object restore_date
             [string]$AXDatabaseRestoreDate = $AXDatabaseRestoreDateSQL
             $AXDatabaseRestoreDate = $AXDatabaseRestoreDate.Trim("@{restore_date=")
             $AXDatabaseRestoreDate = $AXDatabaseRestoreDate.Substring(0, $AXDatabaseRestoreDate.Length - 1)
 
-            $AXDatabaseCreationDateSQL = $Sqlresults | Select-Object create_date
+            $AXDatabaseCreationDateSQL = $SqlresultsToGetRefreshinfo | Select-Object create_date
             [string]$AXDatabaseCreationDate = $AXDatabaseCreationDateSQL
             $AXDatabaseCreationDate = $AXDatabaseCreationDate.Trim("@{create_date=")
             $AXDatabaseCreationDate = $AXDatabaseCreationDate.Substring(0, $AXDatabaseCreationDate.Length - 1)
 
-            $AXDatabaseBackupStartDateSQL = $Sqlresults | Select-Object backup_start_date
+            $AXDatabaseBackupStartDateSQL = $SqlresultsToGetRefreshinfo | Select-Object backup_start_date
             [string]$AXDatabaseBackupStartDate = $AXDatabaseBackupStartDateSQL 
             $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Trim("@{backup_start_date=")
             $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Substring(0, $AXDatabaseBackupStartDate.Length - 1)
 
 
-            $AXDatabaseBackupFileUsedForRestoreSQL = $Sqlresults | Select-Object backup_file_used_for_restore
+            $AXDatabaseBackupFileUsedForRestoreSQL = $SqlresultsToGetRefreshinfo | Select-Object backup_file_used_for_restore
             [string]$AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestoreSQL
             $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Trim("@{backup_file_used_for_restore=")
             $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Substring(0, $AXDatabaseBackupFileUsedForRestore.Length - 1)
 
 
-            $SQLQuery2 = "select * from SQLSYSTEMVARIABLES Where PARM = 'CONFIGURATIONMODE'"
+            $SQLQueryToGetConfigMode = "select * from SQLSYSTEMVARIABLES Where PARM = 'CONFIGURATIONMODE'"
             try {
-                $Sqlresults2 = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery2
+                $SqlresultsToGetConfigMode = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQueryToGetConfigMode
             }
             catch {}
-            $ConfigurationModeSQL = $Sqlresults | Select-Object value
+            $ConfigurationModeSQL = $SqlresultsToGetConfigMode | Select-Object value
             [string]$ConfigurationModeString = $ConfigurationModeSQL
             $ConfigurationModeString = $ConfigurationModeString.Trim("@{value=")
             $ConfigurationModeString = $ConfigurationModeString.Substring(0, $ConfigurationModeString.Length - 1)
@@ -434,6 +434,48 @@ ORDER BY [rh].[restore_date] DESC"
             if ($configurationmode -eq 0)
             { $ConfigurationModeEnabledDisabled = 'Disabled' }
             
+            $SQLQueryToGetOrchestratorDataOrchestratorJob = "select top 1 State, QueuedDateTime, LastProcessedDateTime, EndDateTime,JobId, DeploymentInstanceId from OrchestratorJob order by ScheduledDateTime desc"
+            $SQLQueryToGetOrchestratorDataRunBook = "select top 1 RunBookTaskId, Name, Description, State, StartDateTime, EndDateTime, OutputMessage from RunBookTask"
+            try {
+                $SqlresultsToGetOrchestratorDataOrchestratorJob = invoke-sql -datasource $OrchdatabaseServer -database $OrchDatabase -sqlcommand $SQLQueryToGetOrchestratorDataOrchestratorJob
+            }
+            catch {}
+            try {
+                $SqlresultsToGetOrchestratorDataRunBook = invoke-sql -datasource $OrchdatabaseServer -database $OrchDatabase -sqlcommand $SQLQueryToGetOrchestratorDataRunBook
+            }
+            catch {}
+
+            $OrchestratorJobSQL = $SqlresultsToGetOrchestratorDataOrchestratorJob | Select-Object State
+            [string]$OrchestratorDataOrchestratorJobStateString = $OrchestratorJobSQL
+            $OrchestratorDataOrchestratorJobStateString = $OrchestratorDataOrchestratorJobStateString.Trim("@{state=")
+            $OrchestratorDataOrchestratorJobStateString = $OrchestratorDataOrchestratorJobStateString.Substring(0, $OrchestratorDataOrchestratorJobStateString.Length - 1)
+            [int]$OrchestratorDataOrchestratorJobStateInt = $OrchestratorDataOrchestratorJobStateString
+
+            $RunBookSQL = $SqlresultsToGetOrchestratorDataRunBook | Select-Object State
+            [string]$OrchestratorDataRunBookStateString = $RunBookSQL
+            $OrchestratorDataRunBookStateString = $OrchestratorDataRunBookStateString.Trim("@{state=")
+            $OrchestratorDataRunBookStateString = $OrchestratorDataRunBookStateString.Substring(0, $OrchestratorDataRunBookStateString.Length - 1)
+            [int]$OrchestratorDataRunBookStateInt = $OrchestratorDataRunBookStateString
+
+            switch ( $OrchestratorDataRunBookStateInt) {
+                0 { $OrchestratorJobRunBookState = 'Running' }
+                1 { $OrchestratorJobRunBookState = 'Unknown Status' }
+                2 { $OrchestratorJobRunBookState = 'Succeeded' }
+                3 { $OrchestratorJobRunBookState = 'Failed' }
+                4 { $OrchestratorJobRunBookState = 'Unknown Status' }
+                5 { $OrchestratorJobRunBookState = 'Unknown Status' }
+            }
+            switch ($OrchestratorDataOrchestratorJobStateInt ) {
+                0 { $OrchestratorDataOrchestratorJobState = 'Running' }
+                1 { $OrchestratorDataOrchestratorJobState = 'Unknown Status' }
+                2 { $OrchestratorDataOrchestratorJobState = 'Succeeded' }
+                3 { $OrchestratorDataOrchestratorJobState = 'Failed' }
+                4 { $OrchestratorDataOrchestratorJobState = 'Unknown Status' }
+                5 { $OrchestratorDataOrchestratorJobState = 'Unknown Status' }
+            }
+
+
+
             if ($CustomModuleName) {
                 $assets = Get-ChildItem -Path "$AgentShareLocation\assets" | Where-object { ($_.Name -ne "chk") -and ($_.Name -ne "topology.xml") } | Sort-Object { $_.CreationTime } -Descending
                 $versions = @()
@@ -563,6 +605,8 @@ ORDER BY [rh].[restore_date] DESC"
                 'DBSyncServerWithLatestLog'                  = $ServerWithLatestLog 
                 'ConfigurationModeEnabledDisabled'           = $ConfigurationModeEnabledDisabled
                 'DeploymentAssetIDinWPFolder'                = $DeploymentAssetIDinWPFolder
+                'OrchestratorJobRunBookState'                = $OrchestratorJobRunBookState
+                'OrchestratorDataOrchestratorJobState'       = $OrchestratorDataOrchestratorJobState
 
             }
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
