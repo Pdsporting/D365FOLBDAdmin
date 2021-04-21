@@ -425,7 +425,7 @@ ORDER BY [rh].[restore_date] DESC"
             $ConfigurationModeSQL = $SqlresultsToGetConfigMode | Select-Object value
             [string]$ConfigurationModeString = $ConfigurationModeSQL
             $ConfigurationModeString = $ConfigurationModeString.Trim("@{value=")
-            $ConfigurationModeString = $ConfigurationModeString.Trim("value=")
+            $ConfigurationModeString = $ConfigurationModeString.Trim("VALUE=")
             $ConfigurationModeString = $ConfigurationModeString.Substring(0, $ConfigurationModeString.Length - 1)
             [int]$configurationmode = $ConfigurationModeString 
             if ($configurationmode -eq 1) {
@@ -454,7 +454,8 @@ ORDER BY [rh].[restore_date] DESC"
 
             $RunBookSQL = $SqlresultsToGetOrchestratorDataRunBook | Select-Object State
             [string]$OrchestratorDataRunBookStateString = $RunBookSQL
-            $OrchestratorDataRunBookStateString = $OrchestratorDataRunBookStateString.Trim("state=")
+            $OrchestratorDataRunBookStateString = $OrchestratorDataRunBookStateString.Trim("@{State=")
+            $OrchestratorDataRunBookStateString = $OrchestratorDataRunBookStateString.Trim("State=")
             $OrchestratorDataRunBookStateString = $OrchestratorDataRunBookStateString.Substring(0, $OrchestratorDataRunBookStateString.Length - 1)
             [int]$OrchestratorDataRunBookStateInt = $OrchestratorDataRunBookStateString
 
@@ -474,8 +475,6 @@ ORDER BY [rh].[restore_date] DESC"
                 4 { $OrchestratorDataOrchestratorJobState = 'Unknown Status' }
                 5 { $OrchestratorDataOrchestratorJobState = 'Unknown Status' }
             }
-
-
 
             if ($CustomModuleName) {
                 $assets = Get-ChildItem -Path "$AgentShareLocation\assets" | Where-object { ($_.Name -ne "chk") -and ($_.Name -ne "topology.xml") } | Sort-Object { $_.CreationTime } -Descending
