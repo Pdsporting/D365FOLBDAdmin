@@ -448,6 +448,7 @@ ORDER BY [rh].[restore_date] DESC"
 
             $OrchestratorJobSQL = $SqlresultsToGetOrchestratorDataOrchestratorJob | Select-Object State
             [string]$OrchestratorDataOrchestratorJobStateString = $OrchestratorJobSQL
+            $OrchestratorDataOrchestratorJobStateString = $OrchestratorDataOrchestratorJobStateString.Trim("@{State=")
             $OrchestratorDataOrchestratorJobStateString = $OrchestratorDataOrchestratorJobStateString.Trim("State=")
             $OrchestratorDataOrchestratorJobStateString = $OrchestratorDataOrchestratorJobStateString.Substring(0, $OrchestratorDataOrchestratorJobStateString.Length - 1)
             [int]$OrchestratorDataOrchestratorJobStateInt = $OrchestratorDataOrchestratorJobStateString
@@ -468,12 +469,12 @@ ORDER BY [rh].[restore_date] DESC"
                 5 { $OrchestratorJobRunBookState = 'Unknown Status' }
             }
             switch ($OrchestratorDataOrchestratorJobStateInt ) {
-                0 { $OrchestratorDataOrchestratorJobState = 'Running' }
-                1 { $OrchestratorDataOrchestratorJobState = 'Unknown Status' }
-                2 { $OrchestratorDataOrchestratorJobState = 'Succeeded' }
-                3 { $OrchestratorDataOrchestratorJobState = 'Failed' }
-                4 { $OrchestratorDataOrchestratorJobState = 'Unknown Status' }
-                5 { $OrchestratorDataOrchestratorJobState = 'Unknown Status' }
+                0 { $OrchestratorJobState = 'Running' }
+                1 { $OrchestratorJobState = 'Unknown Status' }
+                2 { $OrchestratorJobState = 'Succeeded' }
+                3 { $OrchestratorJobState = 'Failed' }
+                4 { $OrchestratorJobState = 'Unknown Status' }
+                5 { $OrchestratorJobState = 'Unknown Status' }
             }
 
             if ($CustomModuleName) {
@@ -606,7 +607,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'ConfigurationModeEnabledDisabled'           = $ConfigurationModeEnabledDisabled
                 'DeploymentAssetIDinWPFolder'                = $DeploymentAssetIDinWPFolder
                 'OrchestratorJobRunBookState'                = $OrchestratorJobRunBookState
-                'OrchestratorDataOrchestratorJobState'       = $OrchestratorDataOrchestratorJobState
+                'OrchestratorJobState'       = $OrchestratorJobState
 
             }
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
