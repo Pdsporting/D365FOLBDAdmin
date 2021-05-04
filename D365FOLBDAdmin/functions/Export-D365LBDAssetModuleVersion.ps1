@@ -21,31 +21,29 @@ function Export-D365LBDAssetModuleVersion {
     [alias("Export-D365FOLBDAssetModuleVersion", "Export-D365AssetModuleVersion")]
     param
     (
-        [Parameter(ParameterSetName='AgentShare')]
+        [Parameter(ParameterSetName = 'AgentShare')]
         [Alias('AgentShare')]
         [string]$AgentShareLocation,
         [string]$CustomModuleName,
         [Parameter(ValueFromPipeline = $True,
-        ValueFromPipelineByPropertyName = $True,
-        Mandatory = $false,
-        HelpMessage = 'D365FO Local Business Data Server Name',
-        ParameterSetName = 'NoConfig')]
+            ValueFromPipelineByPropertyName = $True,
+            Mandatory = $false,
+            HelpMessage = 'D365FO Local Business Data Server Name',
+            ParameterSetName = 'NoConfig')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
-        [Parameter(ParameterSetName='Config',
-        ValueFromPipeline = $True)]
+        [Parameter(ParameterSetName = 'Config',
+            ValueFromPipeline = $True)]
         [psobject]$Config
         
     ) BEGIN {
     } 
     PROCESS {
-        if ($Config)
-        {
+        if ($Config) {
             $AgentShareLocation = $Config.AgentShareLocation
         }
-        if (!$AgentShareLocation)
-        {
-             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
-             $AgentShareLocation = $Config.AgentShareLocation
+        if (!$AgentShareLocation) {
+            $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
+            $AgentShareLocation = $Config.AgentShareLocation
         }
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         $Filter = "*/Apps/AOS/AXServiceApp/AXSF/InstallationRecords/MetadataModelInstallationRecords/$CustomModuleName*.xml"
@@ -69,16 +67,24 @@ function Export-D365LBDAssetModuleVersion {
                     Write-PSFMessage -Level Verbose -Message "Invalid Zip file or Module name $StandaloneSetupZip"
                 }
                 else {
-                    $zip.Entries | 
-                    Where-Object { $_.FullName -like $Filter } |
-                    ForEach-Object { 
-                        # extract the selected items from the ZIP archive
-                        # and copy them to the out folder
-                        $FileName = $_.Name
-                        [System.IO.Compression.ZipFileExtensions]::ExtractToFile($_, "$SpecificAssetFolder\$FileName") 
+                    try {
+                        $zip.Entries | 
+                        Where-Object { $_.FullName -like $Filter } |
+                        ForEach-Object { 
+                            # extract the selected items from the ZIP archive
+                            # and copy them to the out folder
+                            $FileName = $_.Name
+                            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($_, "$SpecificAssetFolder\$FileName") 
+                        } -ErrorAction Continue
+                    }
+                    catch {
+                        Write-PSFMessage -Message "$_" -Level VeryVerbose
+                    }
+                    finally {
+                        $zip.Dispose()
                     }
                     ##Closes Zip
-                    $zip.Dispose()
+                   ## $zip.Dispose()
                     $NewfileWithoutVersionPath = $SpecificAssetFolder + "\$CustomModuleName.xml"
                     Write-PSFMessage -Message "$SpecificAssetFolder\$FileName exported" -Level Verbose
 
@@ -95,5 +101,5 @@ function Export-D365LBDAssetModuleVersion {
             }
         }
     }
-    END{}
+    END {}
 }

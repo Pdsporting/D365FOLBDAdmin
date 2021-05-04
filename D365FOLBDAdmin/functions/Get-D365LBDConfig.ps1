@@ -394,46 +394,51 @@ ORDER BY [rh].[restore_date] DESC"
                 $SqlresultsToGetRefreshinfo = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQueryToGetRefreshinfo
             }
             catch {}
-
-            $AXDatabaseRestoreDateSQL = $SqlresultsToGetRefreshinfo | Select-Object restore_date
-            [string]$AXDatabaseRestoreDate = $AXDatabaseRestoreDateSQL
-            $AXDatabaseRestoreDate = $AXDatabaseRestoreDate.Trim("@{restore_date=")
-            $AXDatabaseRestoreDate = $AXDatabaseRestoreDate.Substring(0, $AXDatabaseRestoreDate.Length - 1)
-
-            $AXDatabaseCreationDateSQL = $SqlresultsToGetRefreshinfo | Select-Object create_date
-            [string]$AXDatabaseCreationDate = $AXDatabaseCreationDateSQL
-            $AXDatabaseCreationDate = $AXDatabaseCreationDate.Trim("@{create_date=")
-            $AXDatabaseCreationDate = $AXDatabaseCreationDate.Substring(0, $AXDatabaseCreationDate.Length - 1)
-
-            $AXDatabaseBackupStartDateSQL = $SqlresultsToGetRefreshinfo | Select-Object backup_start_date
-            [string]$AXDatabaseBackupStartDate = $AXDatabaseBackupStartDateSQL 
-            $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Trim("@{backup_start_date=")
-            $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Substring(0, $AXDatabaseBackupStartDate.Length - 1)
-
-
-            $AXDatabaseBackupFileUsedForRestoreSQL = $SqlresultsToGetRefreshinfo | Select-Object backup_file_used_for_restore
-            [string]$AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestoreSQL
-            $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Trim("@{backup_file_used_for_restore=")
-            $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Substring(0, $AXDatabaseBackupFileUsedForRestore.Length - 1)
-
-
-            $SQLQueryToGetConfigMode = "select * from SQLSYSTEMVARIABLES Where PARM = 'CONFIGURATIONMODE'"
-            try {
-                $SqlresultsToGetConfigMode = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQueryToGetConfigMode
+            if ($SqlresultsToGetRefreshinfo.Count -eq 0) {
+                $whoami = whoami
+                Write-PSFMessage -Level VeryVerbose -Message "Can't find SQL results with query. Check if database is up and permissions are set for $whoami. Server: $AXDatabaseServer - DatabaseName: $AXDatabaseName."
             }
-            catch {}
-            $ConfigurationModeSQL = $SqlresultsToGetConfigMode | Select-Object value
-            [string]$ConfigurationModeString = $ConfigurationModeSQL
-            $ConfigurationModeString = $ConfigurationModeString.Trim("@{value=")
-            $ConfigurationModeString = $ConfigurationModeString.Trim("VALUE=")
-            $ConfigurationModeString = $ConfigurationModeString.Substring(0, $ConfigurationModeString.Length - 1)
-            [int]$configurationmode = $ConfigurationModeString 
-            if ($configurationmode -eq 1) {
-                Write-PSFMessage -Level VeryVerbose -Message "Warning: Found that Maintenance Mode is On"
-                $ConfigurationModeEnabledDisabled = 'Enabled'
+            else {
+                $AXDatabaseRestoreDateSQL = $SqlresultsToGetRefreshinfo | Select-Object restore_date
+                [string]$AXDatabaseRestoreDate = $AXDatabaseRestoreDateSQL
+                $AXDatabaseRestoreDate = $AXDatabaseRestoreDate.Trim("@{restore_date=")
+                $AXDatabaseRestoreDate = $AXDatabaseRestoreDate.Substring(0, $AXDatabaseRestoreDate.Length - 1)
+
+                $AXDatabaseCreationDateSQL = $SqlresultsToGetRefreshinfo | Select-Object create_date
+                [string]$AXDatabaseCreationDate = $AXDatabaseCreationDateSQL
+                $AXDatabaseCreationDate = $AXDatabaseCreationDate.Trim("@{create_date=")
+                $AXDatabaseCreationDate = $AXDatabaseCreationDate.Substring(0, $AXDatabaseCreationDate.Length - 1)
+
+                $AXDatabaseBackupStartDateSQL = $SqlresultsToGetRefreshinfo | Select-Object backup_start_date
+                [string]$AXDatabaseBackupStartDate = $AXDatabaseBackupStartDateSQL 
+                $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Trim("@{backup_start_date=")
+                $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Substring(0, $AXDatabaseBackupStartDate.Length - 1)
+
+
+                $AXDatabaseBackupFileUsedForRestoreSQL = $SqlresultsToGetRefreshinfo | Select-Object backup_file_used_for_restore
+                [string]$AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestoreSQL
+                $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Trim("@{backup_file_used_for_restore=")
+                $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Substring(0, $AXDatabaseBackupFileUsedForRestore.Length - 1)
+       
+
+                $SQLQueryToGetConfigMode = "select * from SQLSYSTEMVARIABLES Where PARM = 'CONFIGURATIONMODE'"
+                try {
+                    $SqlresultsToGetConfigMode = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQueryToGetConfigMode
+                }
+                catch {}
+                $ConfigurationModeSQL = $SqlresultsToGetConfigMode | Select-Object value
+                [string]$ConfigurationModeString = $ConfigurationModeSQL
+                $ConfigurationModeString = $ConfigurationModeString.Trim("@{value=")
+                $ConfigurationModeString = $ConfigurationModeString.Trim("VALUE=")
+                $ConfigurationModeString = $ConfigurationModeString.Substring(0, $ConfigurationModeString.Length - 1)
+                [int]$configurationmode = $ConfigurationModeString 
+                if ($configurationmode -eq 1) {
+                    Write-PSFMessage -Level VeryVerbose -Message "Warning: Found that Maintenance Mode is On"
+                    $ConfigurationModeEnabledDisabled = 'Enabled'
+                }
+                if ($configurationmode -eq 0)
+                { $ConfigurationModeEnabledDisabled = 'Disabled' }
             }
-            if ($configurationmode -eq 0)
-            { $ConfigurationModeEnabledDisabled = 'Disabled' }
             
             $SQLQueryToGetOrchestratorDataOrchestratorJob = "select top 1 State, QueuedDateTime, LastProcessedDateTime, EndDateTime,JobId, DeploymentInstanceId from OrchestratorJob order by ScheduledDateTime desc"
             $SQLQueryToGetOrchestratorDataRunBook = "select top 1 RunBookTaskId, Name, Description, State, StartDateTime, EndDateTime, OutputMessage from RunBookTask"
@@ -445,36 +450,42 @@ ORDER BY [rh].[restore_date] DESC"
                 $SqlresultsToGetOrchestratorDataRunBook = invoke-sql -datasource $OrchdatabaseServer -database $OrchDatabase -sqlcommand $SQLQueryToGetOrchestratorDataRunBook
             }
             catch {}
-
-            $OrchestratorJobSQL = $SqlresultsToGetOrchestratorDataOrchestratorJob | Select-Object State
-            [string]$OrchestratorDataOrchestratorJobStateString = $OrchestratorJobSQL
-            $OrchestratorDataOrchestratorJobStateString = $OrchestratorDataOrchestratorJobStateString.Trim("@{State=")
-            $OrchestratorDataOrchestratorJobStateString = $OrchestratorDataOrchestratorJobStateString.Trim("State=")
-            $OrchestratorDataOrchestratorJobStateString = $OrchestratorDataOrchestratorJobStateString.Substring(0, $OrchestratorDataOrchestratorJobStateString.Length - 1)
-            [int]$OrchestratorDataOrchestratorJobStateInt = $OrchestratorDataOrchestratorJobStateString
-
-            $RunBookSQL = $SqlresultsToGetOrchestratorDataRunBook | Select-Object State
-            [string]$OrchestratorDataRunBookStateString = $RunBookSQL
-            $OrchestratorDataRunBookStateString = $OrchestratorDataRunBookStateString.Trim("@{State=")
-            $OrchestratorDataRunBookStateString = $OrchestratorDataRunBookStateString.Trim("State=")
-            $OrchestratorDataRunBookStateString = $OrchestratorDataRunBookStateString.Substring(0, $OrchestratorDataRunBookStateString.Length - 1)
-            [int]$OrchestratorDataRunBookStateInt = $OrchestratorDataRunBookStateString
-
-            switch ( $OrchestratorDataRunBookStateInt) {
-                0 { $OrchestratorJobRunBookState = 'Running' }
-                1 { $OrchestratorJobRunBookState = 'Unknown Status' }
-                2 { $OrchestratorJobRunBookState = 'Succeeded' }
-                3 { $OrchestratorJobRunBookState = 'Failed' }
-                4 { $OrchestratorJobRunBookState = 'Unknown Status' }
-                5 { $OrchestratorJobRunBookState = 'Unknown Status' }
+            if ($SqlresultsToGetOrchestratorDataRunBook.Count -eq 0) {
+                $whoami = whoami
+                Write-PSFMessage -Level VeryVerbose -Message "Can't find SQL results with query. Check if database is up and permissions are set for $whoami. Server: $OrchdatabaseServer - DatabaseName: $OrchDatabase."
             }
-            switch ($OrchestratorDataOrchestratorJobStateInt ) {
-                0 { $OrchestratorJobState = 'Running' }
-                1 { $OrchestratorJobState = 'Unknown Status' }
-                2 { $OrchestratorJobState = 'Succeeded' }
-                3 { $OrchestratorJobState = 'Failed' }
-                4 { $OrchestratorJobState = 'Unknown Status' }
-                5 { $OrchestratorJobState = 'Unknown Status' }
+            else {
+           
+                $OrchestratorJobSQL = $SqlresultsToGetOrchestratorDataOrchestratorJob | Select-Object State
+                [string]$OrchestratorDataOrchestratorJobStateString = $OrchestratorJobSQL
+                $OrchestratorDataOrchestratorJobStateString = $OrchestratorDataOrchestratorJobStateString.Trim("@{State=")
+                $OrchestratorDataOrchestratorJobStateString = $OrchestratorDataOrchestratorJobStateString.Trim("State=")
+                $OrchestratorDataOrchestratorJobStateString = $OrchestratorDataOrchestratorJobStateString.Substring(0, $OrchestratorDataOrchestratorJobStateString.Length - 1)
+                [int]$OrchestratorDataOrchestratorJobStateInt = $OrchestratorDataOrchestratorJobStateString
+
+                $RunBookSQL = $SqlresultsToGetOrchestratorDataRunBook | Select-Object State
+                [string]$OrchestratorDataRunBookStateString = $RunBookSQL
+                $OrchestratorDataRunBookStateString = $OrchestratorDataRunBookStateString.Trim("@{State=")
+                $OrchestratorDataRunBookStateString = $OrchestratorDataRunBookStateString.Trim("State=")
+                $OrchestratorDataRunBookStateString = $OrchestratorDataRunBookStateString.Substring(0, $OrchestratorDataRunBookStateString.Length - 1)
+                [int]$OrchestratorDataRunBookStateInt = $OrchestratorDataRunBookStateString
+
+                switch ( $OrchestratorDataRunBookStateInt) {
+                    0 { $OrchestratorJobRunBookState = 'Running' }
+                    1 { $OrchestratorJobRunBookState = 'Unknown Status' }
+                    2 { $OrchestratorJobRunBookState = 'Succeeded' }
+                    3 { $OrchestratorJobRunBookState = 'Failed' }
+                    4 { $OrchestratorJobRunBookState = 'Unknown Status' }
+                    5 { $OrchestratorJobRunBookState = 'Unknown Status' }
+                }
+                switch ($OrchestratorDataOrchestratorJobStateInt ) {
+                    0 { $OrchestratorJobState = 'Running' }
+                    1 { $OrchestratorJobState = 'Unknown Status' }
+                    2 { $OrchestratorJobState = 'Succeeded' }
+                    3 { $OrchestratorJobState = 'Failed' }
+                    4 { $OrchestratorJobState = 'Unknown Status' }
+                    5 { $OrchestratorJobState = 'Unknown Status' }
+                }
             }
 
             if ($CustomModuleName) {
@@ -552,7 +563,6 @@ ORDER BY [rh].[restore_date] DESC"
             $WPAssetIDTXTContent = Get-Content $WPAssetIDTXT.FullName
             $DeploymentAssetIDinWPFolder = $WPAssetIDTXTContent[0] -replace "AssetID: ", ""
 
-
             # Collect information into a hashtable Add any new field to Get-D365TestConfigData
             # Make sure to add Certification to Cert list below properties if adding cert
             $Properties = @{
@@ -607,8 +617,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'ConfigurationModeEnabledDisabled'           = $ConfigurationModeEnabledDisabled
                 'DeploymentAssetIDinWPFolder'                = $DeploymentAssetIDinWPFolder
                 'OrchestratorJobRunBookState'                = $OrchestratorJobRunBookState
-                'OrchestratorJobState'       = $OrchestratorJobState
-
+                'OrchestratorJobState'                       = $OrchestratorJobState
             }
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
             $CertificateExpirationHash = @{}
@@ -651,7 +660,6 @@ ORDER BY [rh].[restore_date] DESC"
                                 catch {
                                     Write-PSFMessage -Level Warning "Warning: Issue grabbing DatabaseEncryptionCertificate information. $_"
                                 }
-
                             }
                             if ($certexpiration) {
                                 Write-PSFMessage -Level Verbose -Message "$value expires at $certexpiration"

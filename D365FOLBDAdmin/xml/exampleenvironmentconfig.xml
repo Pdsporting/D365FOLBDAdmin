@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<D365LBDEnvironment>
+   <EnvironmentType>
+      <!--LBDUnrestricted, LBDGated, LBDProduction, DevelopmentIDE-->
+      LBDUnrestricted
+   </EnvironmentType>
+   <EnvironmentAdditionalConfig>
+      <EnvironmentOwnerEmail>Stefan@fakeemail.com</EnvironmentOwnerEmail>
+      <SQLDetails>
+         <SQLServer>
+            <ServerName>Database01</ServerName>
+            <DatabaseEncryptionThumbprint>549F09C7DC2642759E7E1264D417175F5C9AC5A2</DatabaseEncryptionThumbprint>
+         </SQLServer>
+         <SQLServer>
+            <ServerName>Database02</ServerName>
+            <DatabaseEncryptionThumbprint>699F09C7DC2642759E7E1264D417175F5C9AC5A2</DatabaseEncryptionThumbprint>
+         </SQLServer>
+      </SQLDetails>
+      <DataEnciphermentCertThumbprint>420F09C7DC2642759E7E1264D417175F5C9AC5A2</DataEnciphermentCertThumbprint>
+      <DriveSpaceWarningPercentage>15</DriveSpaceWarningPercentage>
+      <DriveSpaceErrorPercentage>3</DriveSpaceErrorPercentage>
+      <ModifiedInfrastructureScriptsfolderLocation>//myshare/environment/InfrastureScripts-33627</ModifiedInfrastructureScriptsfolderLocation>
+   </EnvironmentAdditionalConfig>
+   <Automation>
+      <AutomaticDeployments Enabled="true">
+         <Frequency>15</Frequency>
+         <!--Frequency to check if next step is to be triggered (in minutes)-->
+      </AutomaticDeployments>
+      <CleanupSFLogs Enabled="true">
+         <Frequency>60</Frequency>
+         <!--Frequency to check if next step is to be triggered (in minutes)-->
+      </CleanupSFLogs>
+      <CleanupAssets Enabled="true">
+         <Frequency>1440</Frequency>
+         <AssetsToKeep>5</AssetsToKeep>
+      </CleanupAssets>
+      <CheckforPreppedAsset Enabled="true">
+         <!--Frequency in minutes-->
+         <Frequency>5</Frequency>
+      </CheckforPreppedAsset>
+      <CheckForHealthIssues Enabled="true">
+         <!--Frequency in minutes-->
+         <Frequency>5</Frequency>
+         <IfIssuesEmail Enabled="true" />
+         <IfIssuesWebhookAll Enabled="true" />
+         <CheckAllHardDisks Enabled="true" />
+      </CheckForHealthIssues>
+      <DeploymentHeadsUpCommunication Enabled="false">
+         <CreateMeetingRequest Enabled="false">
+            <TimeFrame>1440</TimeFrame>
+            <!--How long in advance to create meeting request (in minutes)-->
+            <CustomMessage>Please join the meeting if you have a change in this deployment</CustomMessage>
+         </CreateMeetingRequest>
+         <EmailHeadsupInAdvance Enabled="false">
+            <TimeFrame>2160</TimeFrame>
+            <!--How long in advance to create meeting request (in minutes)-->
+            <CustomMessage>Please have all approvals for the upcoming deployment</CustomMessage>
+         </EmailHeadsupInAdvance>
+         <SendWebHookMessagesHeadsupinAdvance Enabled="false">
+            <CustomMessage>Please have all approvals for the upcoming deployment</CustomMessage>
+            <TimeFrame>2160</TimeFrame>
+            <!--How long in advance to create meeting request (in minutes)-->
+         </SendWebHookMessagesHeadsupinAdvance>
+      </DeploymentHeadsUpCommunication>
+      <RequiredPreDeploymentJob Enabled="false">
+         <Runbookid>JenkinsJob01</Runbookid>
+         <TimeFrame>0</TimeFrame>
+         <!--How long in advance to run job before starting the deployment (in minutes)-->
+      </RequiredPreDeploymentJob>
+      <RequiredPostDeploymentJob Enabled="false">
+         <Runbookid>JenkinsJob02</Runbookid>
+         <TimeFrame>0</TimeFrame>
+         <!--How long in advance to run job after the deployment has been completed-->
+      </RequiredPostDeploymentJob>
+   </Automation>
+   <Communication>
+      <Email>
+         <EmailGroup>
+            <FriendlyName>QA Team</FriendlyName>
+            <UserEmail>Stefan@fakeemail1.com</UserEmail>
+            <UserEmail>Stefan@fakeemail2.com</UserEmail>
+            <MessageTypes>
+               <!--All, DownTime, Manual-->
+               Downtime
+            </MessageTypes>
+         </EmailGroup>
+      </Email>
+      <Webhooks>
+         <Webhook>
+            <Type>
+               <!--MSTeams, Mattermost-->
+               MSTeams
+            </Type>
+            <WebhookFriendlyName>Environment Main MS Teams Channel</WebhookFriendlyName>
+            <ChannelWebHookURL>https://DOMAIN.Webhook.office.com/Webhookb2/Fake1823109321908234092830948230958235234/incomingwebhook/e12312</ChannelWebHookURL>
+            <MessageTypes>
+               <!--All, DownTime, Manual-->
+               All
+            </MessageTypes>
+         </Webhook>
+         <Webhook>
+            <Type>
+               <!--MSTeams, Mattermost-->
+               MSTeams
+            </Type>
+            <WebhookFriendlyName>QA MSTeams Channel</WebhookFriendlyName>
+            <ChannelWebHookURL>https://DOMAIN.Webhook.office.com/Webhookb2/Fake1823109321908234092830948230958235234/incomingwebhook/e12312</ChannelWebHookURL>
+            <MessageTypes>
+               <!--All, DownTime, Manual-->
+               Downtime
+            </MessageTypes>
+         </Webhook>
+         <Webhook>
+            <Type>
+               <!--MSTeams, Mattermost-->
+               Mattermost
+            </Type>
+            <WebhookFriendlyName>Mattermost release channel</WebhookFriendlyName>
+            <ChannelWebHookURL>https://internalmattermost.domain.com/webhook/jklasjdl2</ChannelWebHookURL>
+            <MessageTypes>
+               <!--All, DownTime, Manual-->
+               Manual
+            </MessageTypes>
+         </Webhook>
+      </Webhooks>
+   </Communication>
+   <Deployment>
+      <CurrentAttachedBranch>develop</CurrentAttachedBranch>
+      <CurrentBranchRepoType>
+         <!--TFSVC, Git-->
+         TFSVC
+      </CurrentBranchRepoType>
+      <SourceControlRepoURL>https://fakeurl.visualstudio.com/D365FOLBDADmin/</SourceControlRepoURL>
+      <LastBuildName>
+         <!--Will Say currently deployed build name if no new build is being prepped-->
+         develop.2021.5.3.1
+      </LastBuildName>
+      <DeploymentType>
+         <!--LCSUnrestricted, LCSGated, LCSProduction, DevelopmentIDE, UnrestrictedSType-->
+         LCSUnrestricted
+      </DeploymentType>
+      <DeploymentStatus>
+         <!--Dont Change but examples are-->
+         <!--LCSSuccess, LCSFailedGated, LCSPreparing, LCSPrepared, LCSDeploying-->
+         LCSSuccess
+      </DeploymentStatus>
+      <AutomaticScheduledDeployment>         <!--Master on and off control is in automation-->
+         <AutomaticScheduledCutoffPeriod>
+            <AutomaticScheduledCutoffPeriodHardDay>
+               April 1 2021
+               <CutoffPeriodOwner>Stefan@fakeemail.com</CutoffPeriodOwner>
+            </AutomaticScheduledCutoffPeriodHardDay>
+         </AutomaticScheduledCutoffPeriod>
+         <AutomaticScheduledCutoffPeriod>
+            <AutomaticScheduledCutoffPeriodDays>
+               <!--Uses Server Date Time and TimeZone-->
+               <!-- M, T, W, T, F, Sat, Sun-->
+               M,T,W,T,F
+            </AutomaticScheduledCutoffPeriodDays>
+            <AutomaticScheduledCutoffPeriodStartTime>
+               <!--Uses Server Date Time and TimeZone-->
+               9:00AM
+            </AutomaticScheduledCutoffPeriodStartTime>
+            <!--Uses Server Date Time and TimeZone-->
+            <AutomaticScheduledCutoffPeriodEndTime>11:59AM</AutomaticScheduledCutoffPeriodEndTime>
+         </AutomaticScheduledCutoffPeriod>
+         <AutomaticScheduledCutoffPeriod>
+            <AutomaticScheduledCutoffPeriodDays>
+               <!--Uses Server Date Time and TimeZone-->
+               <!-- M, T, W, T, F, Sat, Sun-->
+               M,T,W,T,F
+            </AutomaticScheduledCutoffPeriodDays>
+            <AutomaticScheduledCutoffPeriodStartTime>
+               <!--Uses Server Date Time and TimeZone-->
+               1:00PM
+            </AutomaticScheduledCutoffPeriodStartTime>
+            <!--Uses Server Date Time and TimeZone-->
+            <AutomaticScheduledCutoffPeriodEndTime>7:00PM</AutomaticScheduledCutoffPeriodEndTime>
+         </AutomaticScheduledCutoffPeriod>
+      </AutomaticScheduledDeployment>
+      <ManualScheduledDeployments>
+         <Deployment>
+            <DateTime>Monday, May 3, 2021 8:06:04 PM</DateTime>
+         </Deployment>
+      </ManualScheduledDeployments>
+      <LastPrepStartDateTime>Monday, May 3, 2021 8:06:04 PM</LastPrepStartDateTime>
+      <LastPrepEndDateTime>Monday, May 3, 2021 10:06:04 PM</LastPrepEndDateTime>
+   </Deployment>
+   <Dependencies>
+      <CustomWebURLDependencies>
+         <CustomWebURL>
+            <URI>http://internalIntegrationtest1.com/websitesimpleresponse</URI>
+            <Type>
+               <!--Basic or Advanced-->
+               Basic
+            </Type>
+            <AdvancedCustomHeaders></AdvancedCustomHeaders>
+            <AdvancedCustomBody></AdvancedCustomBody>
+            <AdvancedCustomSuccessResponse></AdvancedCustomSuccessResponse>
+            <AdvancedCustomContentType></AdvancedCustomContentType>
+         </CustomWebURL>
+         <CustomWebURL>
+            <URI>http://internalIntegrationtest2.com/websitehealth</URI>
+            <Type>
+               <!--Basic or Advanced-->
+               Advanced
+            </Type>
+            <AdvancedCustomHeaders></AdvancedCustomHeaders>
+            <AdvancedCustomBody></AdvancedCustomBody>
+            <AdvancedCustomSuccessResponse>Healthy</AdvancedCustomSuccessResponse>
+            <AdvancedCustomContentType></AdvancedCustomContentType>
+         </CustomWebURL>
+      </CustomWebURLDependencies>
+      <Dependency>
+         <Type>
+            <!--Service, Process, Database-->
+            Service
+         </Type>
+         <Name>MSDtsServer130</Name>
+         <LocationType>
+            <!--AXSF, All, ManagementReporter, SSRS, SQLDB-->
+            AXSF
+         </LocationType>
+      </Dependency>
+      <Dependency>
+         <Type>
+            <!--Service, Process, Database-->
+            Process
+         </Type>
+         <Name>AXService.exe</Name>
+         <LocationType>
+            <!--AXSF, All, ManagementReporter, SSRS, SQLDB-->
+            AXSF
+         </LocationType>
+      </Dependency>
+      <Dependency>
+         <Type>
+            <!--Service, Process, Database-->
+            Database
+         </Type>
+         <Name>AXBDCloneForReporting</Name>
+         <LocationType>
+            <!--AXSF, All, ManagementReporter, SSRS, SQLDB-->
+            SQLDB
+         </LocationType>
+      </Dependency>
+   </Dependencies>
+</D365LBDEnvironment>
