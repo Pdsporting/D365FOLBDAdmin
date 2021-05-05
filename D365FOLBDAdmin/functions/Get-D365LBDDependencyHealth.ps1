@@ -45,7 +45,7 @@ function Get-D365LBDDependencyHealth {
             }
         }
         $AgentShareLocation = $config.AgentShareLocation 
-        $EnvironmentAdditionalConfig = get-childitem  "\\$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
+        $EnvironmentAdditionalConfig = get-childitem  "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
         [xml]$EnvironmentAdditionalConfigXML = get-content  $EnvironmentAdditionalConfig
 
         ##checking WebURLS
