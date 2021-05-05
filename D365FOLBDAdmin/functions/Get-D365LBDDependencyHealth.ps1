@@ -336,7 +336,8 @@ function Get-D365LBDDependencyHealth {
             if ($scanneditem.State -eq "Down") {
                 Write-PSFMessage -Message "Found an item down" -Level VeryVerbose
                 if ($SendAlertIfIssue) {
-                    Send-MailMessage -to "$environmentowner" -Body "$output" -Verbose -SmtpServer "$SMTPServer" 
+                   $EnvironmentOwnerEmail = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.EnvironmentOwnerEmail
+                    Send-MailMessage -to "$EnvironmentOwnerEmail" -Body "$output" -Verbose -SmtpServer "$SMTPServer" 
                 }
             }
         }

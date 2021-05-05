@@ -20,6 +20,7 @@
       <DriveSpaceWarningPercentage>15</DriveSpaceWarningPercentage>
       <DriveSpaceErrorPercentage>3</DriveSpaceErrorPercentage>
       <ModifiedInfrastructureScriptsfolderLocation>//myshare/environment/InfrastureScripts-33627</ModifiedInfrastructureScriptsfolderLocation>
+      <LBDAdminOrchestrationServers></LBDAdminOrchestrationServers>
    </EnvironmentAdditionalConfig>
    <Automation>
       <AutomaticDeployments Enabled="true">
