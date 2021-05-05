@@ -52,16 +52,7 @@ function Get-D365LBDDependencyHealth {
         $EnvironmentAdditionalConfigXML.D365LBDEnvironment.Dependencies.CustomWebURLDependencies.CustomWebURL | ForEach-Object -Process { 
             if ($_.Type.'#text'.Trim() -eq 'Basic') {
                 $results = Invoke-WebRequest -Uri $_.uri -UseBasicParsing
-                if ($results.statusCode -eq 200) {
-                    New-Object -TypeName PSObject -Property `
-                    @{'CustomWebURL'     = $_.uri ;
-                        'DependencyType' = "Web Service/Page"
-                        'Location'       = "Web Service/Page"; 
-                        'State'          = "Down";
-                        'ExtraInfo'      = $results.Statuscode
-                    }
-                }
-                else {
+                if ($results.statusCode -eq 200 -or $results.statusCode -eq 203 -or $results.statusCode -eq 204 ) {
                     New-Object -TypeName PSObject -Property `
                     @{'CustomWebURL'     = $_.uri ;
                         'DependencyType' = "Web Service/Page"
@@ -70,14 +61,24 @@ function Get-D365LBDDependencyHealth {
                         'ExtraInfo'      = $results.Statuscode
                     }
                 }
+                else {
+                    New-Object -TypeName PSObject -Property `
+                    @{'CustomWebURL'     = $_.uri ;
+                        'DependencyType' = "Web Service/Page"
+                        'Location'       = "Web Service/Page"; 
+                        'State'          = "Down";
+                        'ExtraInfo'      = $results.Statuscode
+                    }
+                }
             }
             else {
                 $childnodes = $($_.AdvancedCustomSuccessResponse | Select-Object childnodes).childnodes
                 $properties = $childnodes | Get-Member -MemberType Property
                 $propertiestocheck = $properties.Name
+                [int]$countofproperties = $propertiestocheck.count
                 $results = Invoke-RestMethod -Uri $_.uri -UseBasicParsing
-                foreach ($property in $propertiestocheck) {
-                    $diff = compare-object $results.data.$property -DifferenceObject $childnodes.$property.trim()
+                if ($countofproperties -eq 0 -or $countofproperties -eq 1 ) {
+                    $diff = Compare-Object $results -DifferenceObject $($childnodes.'#text'.Trim())
                     if ($diff) {
                         Write-PSFMessage -message "Found differences $diff" -Level VeryVerbose
                         New-Object -TypeName PSObject -Property `
@@ -96,11 +97,33 @@ function Get-D365LBDDependencyHealth {
                             'State'          = "Operational";
                             'ExtraInfo'      = $results.Statuscode
                         }
+                }
+                else {
+                    foreach ($property in $propertiestocheck) {
+                        $diff = compare-object $results.data.$property -DifferenceObject $childnodes.$property.trim()
+                        if ($diff) {
+                            Write-PSFMessage -message "Found differences $diff" -Level VeryVerbose
+                            New-Object -TypeName PSObject -Property `
+                            @{'CustomWebURL'     = $_.uri ;
+                                'DependencyType' = "Web Service/Page"
+                                'Location'       = "Web Service/Page"; 
+                                'State'          = "Down";
+                                'ExtraInfo'      = $results.Statuscode
+                            }
+                        }
+                        else {
+                            New-Object -TypeName PSObject -Property `
+                            @{'CustomWebURL'     = $_.uri ;
+                                'DependencyType' = "Web Service/Page"
+                                'Location'       = "Web Service/Page"; 
+                                'State'          = "Operational";
+                                'ExtraInfo'      = $results.Statuscode
+                            }
+                        }
                     }
                 }
             }
         }
-        
     }
     END {}
 }
