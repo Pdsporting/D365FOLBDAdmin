@@ -46,7 +46,7 @@ function Get-D365LBDDependencyHealth {
         }
         $AgentShareLocation = $config.AgentShareLocation 
         $EnvironmentAdditionalConfig = get-childitem  "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
-        [xml]$EnvironmentAdditionalConfigXML = get-content  $EnvironmentAdditionalConfig
+        [xml]$EnvironmentAdditionalConfigXML = get-content $EnvironmentAdditionalConfig.FullName
 
         ##checking WebURLS
         $EnvironmentAdditionalConfigXML.D365LBDEnvironment.Dependencies.CustomWebURLDependencies.CustomWebURL | ForEach-Object -Process { 
@@ -82,7 +82,6 @@ function Get-D365LBDDependencyHealth {
                 if ($countofproperties -eq 0 -or $countofproperties -eq 1 ) {
                     ##only one or 0 child items start
                     $diff = Compare-Object $results -DifferenceObject $($childnodes.'#text'.Trim())
-
                     if ($diff) {
                         Write-PSFMessage -message "Found differences $diff" -Level VeryVerbose
                         New-Object -TypeName PSObject -Property `
@@ -92,162 +91,52 @@ function Get-D365LBDDependencyHealth {
                             'State'          = "Down";
                             'ExtraInfo'      = $results.Statuscode
                         }
+                    }
+                    else {
+                        ##no differences found so success
+                        New-Object -TypeName PSObject -Property `
+                        @{'Source'           = $env:COMPUTERNAME ;
+                            'DependencyType' = "Web Service/Page";
+                            'Name'           = $_.uri ;
+                            'State'          = "Operational";
+                            'ExtraInfo'      = $results.Statuscode
+                        }
+                    }  ##only one or 0 child items end
+                }##multiple items to check start 
+                else {
+                    foreach ($property in $propertiestocheck) {
+                        $diff = compare-object $results.data.$property -DifferenceObject $childnodes.$property.trim()
+                        if ($diff) {
+                            Write-PSFMessage -message "Found differences $diff" -Level VeryVerbose
+                            New-Object -TypeName PSObject -Property `
+                            @{'Source'           = $env:COMPUTERNAME ;
+                                'DependencyType' = "Web Service/Page";
+                                'Name'           = $_.uri ;
+                                'State'          = "Down";
+                                'ExtraInfo'      = $results.Statuscode
+                            }
+                        }
                         else {
                             New-Object -TypeName PSObject -Property `
                             @{'Source'           = $env:COMPUTERNAME ;
                                 'DependencyType' = "Web Service/Page";
                                 'Name'           = $_.uri ;
                                 'State'          = "Operational";
-                                'ExtraInfo'      = $results.Statuscode
-                            }
-                        }  ##only one or 0 child items end
-                        else {
-                            foreach ($property in $propertiestocheck) {
-                                ##multiple items to check start
-                                $diff = compare-object $results.data.$property -DifferenceObject $childnodes.$property.trim()
-                                if ($diff) {
-                                    Write-PSFMessage -message "Found differences $diff" -Level VeryVerbose
-                                    New-Object -TypeName PSObject -Property `
-                                    @{'Source'           = $env:COMPUTERNAME ;
-                                        'DependencyType' = "Web Service/Page";
-                                        'Name'           = $_.uri ;
-                                        'State'          = "Down";
-                                        'ExtraInfo'      = $results.Statuscode
-                                    }
-                                }
-                                else {
-                                    New-Object -TypeName PSObject -Property `
-                                    @{'Source'           = $env:COMPUTERNAME ;
-                                        'DependencyType' = "Web Service/Page";
-                                        'Name'           = $_.uri ;
-                                        'State'          = "Operational";
-                                        'ExtraInfo'      = $results.Statuscode;
+                                'ExtraInfo'      = $results.Statuscode;
 
-                                    }
-                                }
                             }
                         }
                     }
-                } ## Advanced Weburl End
-            }
-            $servicestovalidate = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.Dependencies.ServerDependencies.Dependency | Where-Object { $_.Type.'#text'.Trim() -eq "service" }
-            foreach ($servicetovalidate in $servicestovalidate) {
-                if ($servicestovalidate.locationType.'#text'.Trim() -eq 'AXSF') {
-                    foreach ($AXSfServerName in $Config.AXSFServerNames) {
-                        $results = Invoke-Command -ComputerName $AXSfServerName -ScriptBlock { Get-service $servicetovalidate } | ForEach-Object -Process { `
-                                if ($results.Status -eq "Running") {
-                                $results | ForEach-Object -Process { `
-                                        New-Object -TypeName PSObject -Property `
-                                    @{'Source'           = $env:COMPUTERNAME ;
-                                        'DependencyType' = "Service";
-                                        'Name'           = "$servicetovalidate"; 
-                                        'State'          = "Operational";
-                                        'ExtraInfo'      = $_.StartType;
-                                    }
-                                }
-                            } ##Operational start
-                            else {
-                                $results | ForEach-Object -Process { `
-                                        New-Object -TypeName PSObject -Property `
-                                    @{'Source'           = $env:COMPUTERNAME ;
-                                        'DependencyType' = "Service";
-                                        'Name'           = "$servicetovalidate"; 
-                                        'State'          = "Down";
-                                        'ExtraInfo'      = $_.StartType;
-                                    }
-                                }
-                            }##Failure end
-                        }
-                    }
-                }
-                if ($servicestovalidate.locationType.'#text'.Trim() -eq 'SSRS') {
-                    foreach ($SSRSClusterServerName in $Config.SSRSClusterServerNames) {
-                        $results = Invoke-Command -ComputerName $SSRSClusterServerName -ScriptBlock { Get-service $servicetovalidate } | ForEach-Object -Process { `
-                                if ($results.Status -eq "Running") {
-                                $results | ForEach-Object -Process { `
-                                        New-Object -TypeName PSObject -Property `
-                                    @{'Source'           = $env:COMPUTERNAME ;
-                                        'DependencyType' = "Service";
-                                        'Name'           = "$servicetovalidate"; 
-                                        'State'          = "Operational";
-                                        'ExtraInfo'      = $_.StartType;
-                                    }
-                                }
-                            } ##Operational start
-                            else {
-                                $results | ForEach-Object -Process { `
-                                        New-Object -TypeName PSObject -Property `
-                                    @{'Source'           = $env:COMPUTERNAME ;
-                                        'DependencyType' = "Service";
-                                        'Name'           = "$servicetovalidate"; 
-                                        'State'          = "Down";
-                                        'ExtraInfo'      = $_.StartType;
-                                    }
-                                }
-                            }##Failure end
-                        }
-                    }
-                }
-                if ($servicestovalidate.locationType.'#text'.Trim() -eq 'SQLDB') {
-                    foreach ($DatabaseClusterServerName in $config.DatabaseClusterServerNames) {
-                        $results = Invoke-Command -ComputerName $DatabaseClusterServerName -ScriptBlock { Get-service $servicetovalidate } | ForEach-Object -Process { `
-                                if ($results.Status -eq "Running") {
-                                $results | ForEach-Object -Process { `
-                                        New-Object -TypeName PSObject -Property `
-                                    @{'Source'           = $env:COMPUTERNAME ;
-                                        'DependencyType' = "Service";
-                                        'Name'           = "$servicetovalidate"; 
-                                        'State'          = "Operational";
-                                        'ExtraInfo'      = $_.StartType;
-                                    }
-                                }
-                            } ##Operational start
-                            else {
-                                $results | ForEach-Object -Process { `
-                                        New-Object -TypeName PSObject -Property `
-                                    @{'Source'           = $env:COMPUTERNAME ;
-                                        'DependencyType' = "Service";
-                                        'Name'           = "$servicetovalidate"; 
-                                        'State'          = "Down";
-                                        'ExtraInfo'      = $_.StartType;
-                                    }
-                                }
-                            }##Failure end
-                        }
-                    }
-                }
-                if ($servicestovalidate.locationType.'#text'.Trim() -eq 'ManagementReporter') {
-                    foreach ($ManagementReporterServer in $ManagementReporterServers) {
-                        $results = Invoke-Command -ComputerName $ManagementReporterServer -ScriptBlock { Get-service $servicetovalidate } | ForEach-Object -Process { `
-                                if ($results.Status -eq "Running") {
-                                $results | ForEach-Object -Process { `
-                                        New-Object -TypeName PSObject -Property `
-                                    @{'Source'           = $env:COMPUTERNAME ;
-                                        'DependencyType' = "Service";
-                                        'Name'           = "$servicetovalidate"; 
-                                        'State'          = "Operational";
-                                        'ExtraInfo'      = $_.StartType;
-                                    }
-                                }
-                            } ##Operational start
-                            else {
-                                $results | ForEach-Object -Process { `
-                                        New-Object -TypeName PSObject -Property `
-                                    @{'Source'           = $env:COMPUTERNAME ;
-                                        'DependencyType' = "Service";
-                                        'Name'           = "$servicetovalidate"; 
-                                        'State'          = "Down";
-                                        'ExtraInfo'      = $_.StartType;
-                                    }
-                                }
-                            }##Failure end
-                        }
-                    }
-                }
-                if ($servicestovalidate.locationType.'#text'.Trim() -eq 'All') {
-                    foreach ($AppServer in $Config.AllAppServerList) {
-                        $results = Invoke-Command -ComputerName $AppServer -ScriptBlock { Get-service $servicetovalidate } 
-                        if ($results.Status -eq "Running") {
+                } 
+            } ## Advanced Weburl End
+        }##End of All Custom WebURL
+        $servicestovalidate = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.Dependencies.ServerDependencies.Dependency | Where-Object { $_.Type.'#text'.Trim() -eq "service" }
+        foreach ($servicetovalidate in $servicestovalidate) {
+            ##Services Start
+            if ($servicestovalidate.locationType.'#text'.Trim() -eq 'AXSF') {
+                foreach ($AXSfServerName in $Config.AXSFServerNames) {
+                    $results = Invoke-Command -ComputerName $AXSfServerName -ScriptBlock { Get-service $servicetovalidate } | ForEach-Object -Process { `
+                            if ($results.Status -eq "Running") {
                             $results | ForEach-Object -Process { `
                                     New-Object -TypeName PSObject -Property `
                                 @{'Source'           = $env:COMPUTERNAME ;
@@ -272,45 +161,155 @@ function Get-D365LBDDependencyHealth {
                     }
                 }
             }
-
-            $processestovalidate = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.Dependencies.ServerDependencies.Dependency | Where-Object { $_.Type.'#text'.Trim() -eq "process" }
-            ##Process
-            foreach ($processtovalidate in $processestovalidate) {
-                if ($processtovalidate.locationType.'#text'.Trim() -eq 'AXSF') {
-                    foreach ($AXSfServerName in $Config.AXSFServerNames) {
-                        Invoke-Command -ComputerName $AXSfServerName -ScriptBlock { Get-process -name  $processtovalidate | Select-Object -First 1 } | ForEach-Object -Process { `
-                        }
-                    }
-                }
-                if ($processtovalidate.locationType.'#text'.Trim() -eq 'SSRS') {
-                    foreach ($SSRSClusterServerName in $Config.SSRSClusterServerNames) {
-                        Invoke-Command -ComputerName $SSRSClusterServerName -ScriptBlock { Get-process -name  $processtovalidate | Select-Object -First 1 } | ForEach-Object -Process { `
-                        }
-                    }
-                }
-                if ($processtovalidate.locationType.'#text'.Trim() -eq 'SQLDB') {
-                    foreach ($DatabaseClusterServerName in $config.DatabaseClusterServerNames) {
-                        Invoke-Command -ComputerName $DatabaseClusterServerName -ScriptBlock { Get-process -name  $processtovalidate | Select-Object -First 1 } | ForEach-Object -Process { `
-                        }
-                    }
-                }
-                if ($processtovalidate.locationType.'#text'.Trim() -eq 'ManagementReporter') {
-                    foreach ($ManagementReporterServer in $ManagementReporterServers) {
-                        Invoke-Command -ComputerName $ManagementReporterServer -ScriptBlock { Get-process -name  $processtovalidate | Select-Object -First 1 } | ForEach-Object -Process { `
-                        }
-                    }
-                }
-                if ($processtovalidate.locationType.'#text'.Trim() -eq 'All') {
-                    foreach ($AppServer in $Config.AllAppServerList) {
-                        Invoke-Command -ComputerName $AppServer -ScriptBlock { Get-process -name $processtovalidate | Select-Object -First 1 } | ForEach-Object -Process { `
-                        }
+            if ($servicestovalidate.locationType.'#text'.Trim() -eq 'SSRS') {
+                foreach ($SSRSClusterServerName in $Config.SSRSClusterServerNames) {
+                    $results = Invoke-Command -ComputerName $SSRSClusterServerName -ScriptBlock { Get-service $servicetovalidate } | ForEach-Object -Process { `
+                            if ($results.Status -eq "Running") {
+                            $results | ForEach-Object -Process { `
+                                    New-Object -TypeName PSObject -Property `
+                                @{'Source'           = $env:COMPUTERNAME ;
+                                    'DependencyType' = "Service";
+                                    'Name'           = "$servicetovalidate"; 
+                                    'State'          = "Operational";
+                                    'ExtraInfo'      = $_.StartType;
+                                }
+                            }
+                        } ##Operational start
+                        else {
+                            $results | ForEach-Object -Process { `
+                                    New-Object -TypeName PSObject -Property `
+                                @{'Source'           = $env:COMPUTERNAME ;
+                                    'DependencyType' = "Service";
+                                    'Name'           = "$servicetovalidate"; 
+                                    'State'          = "Down";
+                                    'ExtraInfo'      = $_.StartType;
+                                }
+                            }
+                        }##Failure end
                     }
                 }
             }
-            ##Database
+            if ($servicestovalidate.locationType.'#text'.Trim() -eq 'SQLDB') {
+                foreach ($DatabaseClusterServerName in $config.DatabaseClusterServerNames) {
+                    $results = Invoke-Command -ComputerName $DatabaseClusterServerName -ScriptBlock { Get-service $servicetovalidate } | ForEach-Object -Process { `
+                            if ($results.Status -eq "Running") {
+                            $results | ForEach-Object -Process { `
+                                    New-Object -TypeName PSObject -Property `
+                                @{'Source'           = $env:COMPUTERNAME ;
+                                    'DependencyType' = "Service";
+                                    'Name'           = "$servicetovalidate"; 
+                                    'State'          = "Operational";
+                                    'ExtraInfo'      = $_.StartType;
+                                }
+                            }
+                        } ##Operational start
+                        else {
+                            $results | ForEach-Object -Process { `
+                                    New-Object -TypeName PSObject -Property `
+                                @{'Source'           = $env:COMPUTERNAME ;
+                                    'DependencyType' = "Service";
+                                    'Name'           = "$servicetovalidate"; 
+                                    'State'          = "Down";
+                                    'ExtraInfo'      = $_.StartType;
+                                }
+                            }
+                        }##Failure end
+                    }
+                }
+            }
+            if ($servicestovalidate.locationType.'#text'.Trim() -eq 'ManagementReporter') {
+                foreach ($ManagementReporterServer in $ManagementReporterServers) {
+                    $results = Invoke-Command -ComputerName $ManagementReporterServer -ScriptBlock { Get-service $servicetovalidate } | ForEach-Object -Process { `
+                            if ($results.Status -eq "Running") {
+                            $results | ForEach-Object -Process { `
+                                    New-Object -TypeName PSObject -Property `
+                                @{'Source'           = $env:COMPUTERNAME ;
+                                    'DependencyType' = "Service";
+                                    'Name'           = "$servicetovalidate"; 
+                                    'State'          = "Operational";
+                                    'ExtraInfo'      = $_.StartType;
+                                }
+                            }
+                        } ##Operational start
+                        else {
+                            $results | ForEach-Object -Process { `
+                                    New-Object -TypeName PSObject -Property `
+                                @{'Source'           = $env:COMPUTERNAME ;
+                                    'DependencyType' = "Service";
+                                    'Name'           = "$servicetovalidate"; 
+                                    'State'          = "Down";
+                                    'ExtraInfo'      = $_.StartType;
+                                }
+                            }
+                        }##Failure end
+                    }
+                }
+            }
+            if ($servicestovalidate.locationType.'#text'.Trim() -eq 'All') {
+                foreach ($AppServer in $Config.AllAppServerList) {
+                    $results = Invoke-Command -ComputerName $AppServer -ScriptBlock { Get-service $servicetovalidate } 
+                    if ($results.Status -eq "Running") {
+                        $results | ForEach-Object -Process { `
+                                New-Object -TypeName PSObject -Property `
+                            @{'Source'           = $env:COMPUTERNAME ;
+                                'DependencyType' = "Service";
+                                'Name'           = "$servicetovalidate"; 
+                                'State'          = "Operational";
+                                'ExtraInfo'      = $_.StartType;
+                            }
+                        }
+                    } ##Operational start
+                    else {
+                        $results | ForEach-Object -Process { `
+                                New-Object -TypeName PSObject -Property `
+                            @{'Source'           = $env:COMPUTERNAME ;
+                                'DependencyType' = "Service";
+                                'Name'           = "$servicetovalidate"; 
+                                'State'          = "Down";
+                                'ExtraInfo'      = $_.StartType;
+                            }
+                        }
+                    }##Failure end
+                }
+            }
+        }##Services End
 
-    
+        $processestovalidate = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.Dependencies.ServerDependencies.Dependency | Where-Object { $_.Type.'#text'.Trim() -eq "process" }
+        ##Process
+        foreach ($processtovalidate in $processestovalidate) {
+            if ($processtovalidate.locationType.'#text'.Trim() -eq 'AXSF') {
+                foreach ($AXSfServerName in $Config.AXSFServerNames) {
+                    Invoke-Command -ComputerName $AXSfServerName -ScriptBlock { Get-process -name  $processtovalidate | Select-Object -First 1 } | ForEach-Object -Process { `
+                    }
+                }
+            }
+            if ($processtovalidate.locationType.'#text'.Trim() -eq 'SSRS') {
+                foreach ($SSRSClusterServerName in $Config.SSRSClusterServerNames) {
+                    Invoke-Command -ComputerName $SSRSClusterServerName -ScriptBlock { Get-process -name  $processtovalidate | Select-Object -First 1 } | ForEach-Object -Process { `
+                    }
+                }
+            }
+            if ($processtovalidate.locationType.'#text'.Trim() -eq 'SQLDB') {
+                foreach ($DatabaseClusterServerName in $config.DatabaseClusterServerNames) {
+                    Invoke-Command -ComputerName $DatabaseClusterServerName -ScriptBlock { Get-process -name  $processtovalidate | Select-Object -First 1 } | ForEach-Object -Process { `
+                    }
+                }
+            }
+            if ($processtovalidate.locationType.'#text'.Trim() -eq 'ManagementReporter') {
+                foreach ($ManagementReporterServer in $ManagementReporterServers) {
+                    Invoke-Command -ComputerName $ManagementReporterServer -ScriptBlock { Get-process -name  $processtovalidate | Select-Object -First 1 } | ForEach-Object -Process { `
+                    }
+                }
+            }
+            if ($processtovalidate.locationType.'#text'.Trim() -eq 'All') {
+                foreach ($AppServer in $Config.AllAppServerList) {
+                    Invoke-Command -ComputerName $AppServer -ScriptBlock { Get-process -name $processtovalidate | Select-Object -First 1 } | ForEach-Object -Process { `
+                    }
+                }
+            }
         }
-
-        END {}
+        ##Database
     }
+
+    END {}
+}
