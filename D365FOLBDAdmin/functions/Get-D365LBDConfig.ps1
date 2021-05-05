@@ -240,12 +240,12 @@
             $SFClusterCertificate = ($jsonClusterConfig | ConvertFrom-Json).properties.security.certificateinformation.clustercertificate.Thumbprint
             $FinancialReportingCertificate = $($AXServiceConfigXML.configuration.claimIssuerRestrictions.issuerrestrictions.add | Where-Object { $_.alloweduserids -eq "FRServiceUser" }).name
 
-            if (test-path \\$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml) {
+            if (test-path $AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml) {
                 Write-PSFMessage -Level Verbose -Message "Found AdditionalEnvironmentDetails config"
-                $EnvironmentAdditionalConfig = get-childitem  "\\$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
+                $EnvironmentAdditionalConfig = get-childitem  "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
             }
             else {
-                Write-PSFFunction -Message "Warning: Can't find additional Environment Config. Not needed but recommend making one" -level warning  
+                Write-PSFMessage -Message "Warning: Can't find additional Environment Config. Not needed but recommend making one" -level warning  
             }
 
             if ($EnvironmentAdditionalConfig) {
@@ -258,7 +258,7 @@
                     @{'DatabaseEncryptionCertificates' = $_.DatabaseEncryptionThumbprint } }
             }
            
-            if (test-path \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt -and !$EnvironmentAdditionalConfig) {
+            if ((test-path \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt) -and !$EnvironmentAdditionalConfig) {
                 Write-PSFMessage -Level Verbose -Message "Found DataEncipherment config"
                 $DataEnciphermentCertificate = Get-Content \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt
             }
@@ -266,7 +266,7 @@
                 Write-PSFMessage -Level Warning -Message "Warning: No Encipherment Cert found run the function use Add-D365LBDDataEnciphermentCertConfig to add"
             }
 
-            if (test-path \\$ComputerName\c$\ProgramData\SF\DatabaseDetailsandCert.txt -and !$EnvironmentAdditionalConfig) {
+            if ((test-path \\$ComputerName\c$\ProgramData\SF\DatabaseDetailsandCert.txt) -and !$EnvironmentAdditionalConfig) {
                 $DatabaseDetailsandCertConfig = Get-Content \\$ComputerName\c$\ProgramData\SF\DatabaseDetailsandCert.txt
                 Write-PSFMessage -Level Verbose -Message "Found DatabaseDetailsandCert config additional details added to config data"
                 $DatabaseEncryptionCertificate = $DatabaseDetailsandCertConfig[1]
