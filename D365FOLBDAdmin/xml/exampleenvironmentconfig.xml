@@ -189,7 +189,7 @@
    <Dependencies>
       <CustomWebURLDependencies>
          <CustomWebURL>
-            <URI>http://internalIntegrationtest1.com/websitesimpleresponse</URI>
+            <URI>https://Google.com</URI>
             <Type>
                <!--Basic or Advanced-->
                Basic
@@ -200,49 +200,60 @@
             <AdvancedCustomContentType></AdvancedCustomContentType>
          </CustomWebURL>
          <CustomWebURL>
-            <URI>http://internalIntegrationtest2.com/websitehealth</URI>
+            <URI>https://api.eva.pingutil.com/email?email=test@mail7.io</URI>
             <Type>
                <!--Basic or Advanced-->
                Advanced
             </Type>
             <AdvancedCustomHeaders></AdvancedCustomHeaders>
             <AdvancedCustomBody></AdvancedCustomBody>
-            <AdvancedCustomSuccessResponse>Healthy</AdvancedCustomSuccessResponse>
+            <AdvancedCustomSuccessResponse>
+               <data>
+               <email_address>
+               test@mail7.io
+               </email_address>
+               <deliverable>
+               True</deliverable>
+               </data>
+            </AdvancedCustomSuccessResponse>
             <AdvancedCustomContentType></AdvancedCustomContentType>
+            <AdvancedCustomMethod>Get</AdvancedCustomMethod>
          </CustomWebURL>
       </CustomWebURLDependencies>
-      <Dependency>
-         <Type>
-            <!--Service, Process, Database-->
+      <ServerDependencies>
+         <Dependency>
+            <Type>
+               <!--Service, Process, Database-->
             Service
-         </Type>
-         <Name>MSDtsServer130</Name>
-         <LocationType>
-            <!--AXSF, All, ManagementReporter, SSRS, SQLDB-->
+            </Type>
+            <Name>MSDtsServer130</Name>
+            <LocationType>
+               <!--AXSF, All, ManagementReporter, SSRS, SQLDB-->
             AXSF
-         </LocationType>
-      </Dependency>
-      <Dependency>
-         <Type>
-            <!--Service, Process, Database-->
+            </LocationType>
+         </Dependency>
+         <Dependency>
+            <Type>
+               <!--Service, Process, Database-->
             Process
-         </Type>
-         <Name>AXService.exe</Name>
-         <LocationType>
-            <!--AXSF, All, ManagementReporter, SSRS, SQLDB-->
+            </Type>
+            <Name>AXService.exe</Name>
+            <LocationType>
+               <!--AXSF, All, ManagementReporter, SSRS, SQLDB-->
             AXSF
-         </LocationType>
-      </Dependency>
-      <Dependency>
-         <Type>
-            <!--Service, Process, Database-->
+            </LocationType>
+         </Dependency>
+         <Dependency>
+            <Type>
+               <!--Service, Process, Database-->
             Database
-         </Type>
-         <Name>AXBDCloneForReporting</Name>
-         <LocationType>
-            <!--AXSF, All, ManagementReporter, SSRS, SQLDB-->
+            </Type>
+            <Name>AXBDCloneForReporting</Name>
+            <LocationType>
+               <!--AXSF, All, ManagementReporter, SSRS, SQLDB-->
             SQLDB
-         </LocationType>
-      </Dependency>
+            </LocationType>
+         </Dependency>
+      </ServerDependencies>
    </Dependencies>
 </D365LBDEnvironment>

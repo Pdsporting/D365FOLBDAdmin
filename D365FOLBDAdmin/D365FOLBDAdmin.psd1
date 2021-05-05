@@ -65,7 +65,8 @@
 		'Get-D365LBDEnvironmentHealth',
 		'Remove-D365LBDSFOldAssets',
 		'Remove-D365LBDSFLogs',
-		'Send-D365LBDUpdateMSTeams'
+		'Send-D365LBDUpdateMSTeams',
+		'Get-D365LBDDependencyHealth'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
@@ -95,7 +96,8 @@
 	'Set-D365PreDeploymentOptions',
 	'Remove-D365SFOldAssets',
 	'Remove-D365SFLogs',
-	'Send-D365UpdateMSTeams')
+	'Send-D365UpdateMSTeams',
+	'Get-D365DependencyHealth')
 	
 	# List of all modules packaged with this module
 	ModuleList = @()

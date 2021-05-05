@@ -239,8 +239,26 @@
             $jsonClusterConfig = get-content "\\$AXSFConfigServerName\C$\ProgramData\SF\clusterconfig.json"
             $SFClusterCertificate = ($jsonClusterConfig | ConvertFrom-Json).properties.security.certificateinformation.clustercertificate.Thumbprint
             $FinancialReportingCertificate = $($AXServiceConfigXML.configuration.claimIssuerRestrictions.issuerrestrictions.add | Where-Object { $_.alloweduserids -eq "FRServiceUser" }).name
+
+            if (test-path \\$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml) {
+                Write-PSFMessage -Level Verbose -Message "Found AdditionalEnvironmentDetails config"
+                $EnvironmentAdditionalConfig = get-childitem  "\\$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
+            }
+            else {
+                Write-PSFFunction -Message "Warning: Can't find additional Environment Config. Not needed but recommend making one" -level warning  
+            }
+
+            if ($EnvironmentAdditionalConfig) {
+                Write-PSFMessage -Message "Reading  $EnvironmentAdditionalConfig " -Level Verbose
+                [xml]$EnvironmentAdditionalConfigXML = get-content  $EnvironmentAdditionalConfig
+                $EnvironmentType = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentType.'#text'.Trim()
+                $DatabaseClusterServerNames = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.SQLDetails.SQLServer | ForEach-Object -Process { New-Object -TypeName psobject -Property `
+                    @{'DatabaseClusterServerNames' = $_.ServerName } }
+                $DatabaseEncryptionThumprints = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.SQLDetails.SQLServer | ForEach-Object -Process { New-Object -TypeName psobject -Property `
+                    @{'DatabaseEncryptionCertificates' = $_.DatabaseEncryptionThumbprint } }
+            }
            
-            if (test-path \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt) {
+            if (test-path \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt -and !$EnvironmentAdditionalConfig) {
                 Write-PSFMessage -Level Verbose -Message "Found DataEncipherment config"
                 $DataEnciphermentCertificate = Get-Content \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt
             }
@@ -248,7 +266,7 @@
                 Write-PSFMessage -Level Warning -Message "Warning: No Encipherment Cert found run the function use Add-D365LBDDataEnciphermentCertConfig to add"
             }
 
-            if (test-path \\$ComputerName\c$\ProgramData\SF\DatabaseDetailsandCert.txt) {
+            if (test-path \\$ComputerName\c$\ProgramData\SF\DatabaseDetailsandCert.txt -and !$EnvironmentAdditionalConfig) {
                 $DatabaseDetailsandCertConfig = Get-Content \\$ComputerName\c$\ProgramData\SF\DatabaseDetailsandCert.txt
                 Write-PSFMessage -Level Verbose -Message "Found DatabaseDetailsandCert config additional details added to config data"
                 $DatabaseEncryptionCertificate = $DatabaseDetailsandCertConfig[1]
@@ -414,12 +432,10 @@ ORDER BY [rh].[restore_date] DESC"
                 $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Trim("@{backup_start_date=")
                 $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Substring(0, $AXDatabaseBackupStartDate.Length - 1)
 
-
                 $AXDatabaseBackupFileUsedForRestoreSQL = $SqlresultsToGetRefreshinfo | Select-Object backup_file_used_for_restore
                 [string]$AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestoreSQL
                 $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Trim("@{backup_file_used_for_restore=")
                 $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Substring(0, $AXDatabaseBackupFileUsedForRestore.Length - 1)
-       
 
                 $SQLQueryToGetConfigMode = "select * from SQLSYSTEMVARIABLES Where PARM = 'CONFIGURATIONMODE'"
                 try {
@@ -455,7 +471,6 @@ ORDER BY [rh].[restore_date] DESC"
                 Write-PSFMessage -Level VeryVerbose -Message "Can't find SQL results with query. Check if database is up and permissions are set for $whoami. Server: $OrchdatabaseServer - DatabaseName: $OrchDatabase."
             }
             else {
-           
                 $OrchestratorJobSQL = $SqlresultsToGetOrchestratorDataOrchestratorJob | Select-Object State
                 [string]$OrchestratorDataOrchestratorJobStateString = $OrchestratorJobSQL
                 $OrchestratorDataOrchestratorJobStateString = $OrchestratorDataOrchestratorJobStateString.Trim("@{State=")
@@ -523,7 +538,7 @@ ORDER BY [rh].[restore_date] DESC"
                 }
             }
             if (!$HighLevelOnly) {
-                ##Found which server is Getting latest database sync  using winevent end
+                ##Found which server is getting the latest database sync using winevent end
                 Write-PSFMessage -Level VeryVerbose -Message "Gathering Database Logs from $ServerWithLatestLog"
                 $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -computername $ServerWithLatestLog -maxevents 100  | 
                 ForEach-Object -Process { `
@@ -618,6 +633,8 @@ ORDER BY [rh].[restore_date] DESC"
                 'DeploymentAssetIDinWPFolder'                = $DeploymentAssetIDinWPFolder
                 'OrchestratorJobRunBookState'                = $OrchestratorJobRunBookState
                 'OrchestratorJobState'                       = $OrchestratorJobState
+                'D365FOLBDAdminEnvironmentType'              = $EnvironmentType
+                'DatabaseEncryptionThumprints'               = $DatabaseEncryptionThumprints
             }
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
             $CertificateExpirationHash = @{}
@@ -693,7 +710,6 @@ ORDER BY [rh].[restore_date] DESC"
                 $Output
             }
             $FinalOutput = $CertificateExpirationHash, $Properties | Merge-Hashtables
-            #$FinalOutput = $Properties, $CertificateExpirationHash
             ##Sends Custom Object to Pipeline
             [PSCustomObject] $FinalOutput
         }
