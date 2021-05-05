@@ -577,7 +577,7 @@ ORDER BY [rh].[restore_date] DESC"
             $WPAssetIDTXT = Get-ChildItem $AgentShareLocation\wp\*\AssetID.txt |  Sort-Object LastWriteTime | Select-Object -First 1
             $WPAssetIDTXTContent = Get-Content $WPAssetIDTXT.FullName
             $DeploymentAssetIDinWPFolder = $WPAssetIDTXTContent[0] -replace "AssetID: ", ""
-
+            $SSRSClusterServerNames = $ReportServerServerName
             # Collect information into a hashtable Add any new field to Get-D365TestConfigData
             # Make sure to add Certification to Cert list below properties if adding cert
             $Properties = @{
@@ -635,7 +635,10 @@ ORDER BY [rh].[restore_date] DESC"
                 'OrchestratorJobState'                       = $OrchestratorJobState
                 'D365FOLBDAdminEnvironmentType'              = $EnvironmentType
                 'DatabaseEncryptionThumprints'               = $DatabaseEncryptionThumprints
+                'ManagementReporterServers'                  = $ManagementReporterServers
+                'SSRSClusterServerNames'                     = $SSRSClusterServerNames
             }
+
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
             $CertificateExpirationHash = @{}
             if ($HighLevelOnly) {
