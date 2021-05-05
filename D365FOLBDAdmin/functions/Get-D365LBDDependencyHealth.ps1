@@ -31,7 +31,8 @@ function Get-D365LBDDependencyHealth {
             ValueFromPipeline = $True)]
         [psobject]$Config,
         [string]$CustomModuleName,
-        [switch]$WebsiteChecksOnly
+        [switch]$WebsiteChecksOnly,
+        [switch]$SendAlertIfIssue
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
@@ -55,7 +56,7 @@ function Get-D365LBDDependencyHealth {
                 ##Basic WebURL Start
                 $results = Invoke-WebRequest -Uri $_.uri -UseBasicParsing
                 if ($results.statusCode -eq 200 -or $results.statusCode -eq 203 -or $results.statusCode -eq 204 ) {
-                    New-Object -TypeName PSObject -Property `
+                    $Output += New-Object -TypeName PSObject -Property `
                     @{'Source'           = $env:COMPUTERNAME ;
                         'DependencyType' = "Web Service/Page";
                         'Name'           = $_.uri ;
@@ -64,7 +65,7 @@ function Get-D365LBDDependencyHealth {
                     }
                 }
                 else {
-                    New-Object -TypeName PSObject -Property `
+                    $Output += New-Object -TypeName PSObject -Property `
                     @{'Source'           = $env:COMPUTERNAME ;
                         'DependencyType' = "Web Service/Page";
                         'Name'           = $_.uri ;
@@ -85,7 +86,7 @@ function Get-D365LBDDependencyHealth {
                     $diff = Compare-Object $results -DifferenceObject $($childnodes.'#text'.Trim())
                     if ($diff) {
                         Write-PSFMessage -message "Found differences $diff" -Level VeryVerbose
-                        New-Object -TypeName PSObject -Property `
+                        $Output += New-Object -TypeName PSObject -Property `
                         @{'Source'           = $env:COMPUTERNAME ;
                             'DependencyType' = "Web Service/Page";
                             'Name'           = $_.uri ;
@@ -95,7 +96,7 @@ function Get-D365LBDDependencyHealth {
                     }
                     else {
                         ##no differences found so success
-                        New-Object -TypeName PSObject -Property `
+                        $Output += New-Object -TypeName PSObject -Property `
                         @{'Source'           = $env:COMPUTERNAME ;
                             'DependencyType' = "Web Service/Page";
                             'Name'           = $_.uri ;
@@ -109,7 +110,7 @@ function Get-D365LBDDependencyHealth {
                         $diff = compare-object $results.data.$property -DifferenceObject $childnodes.$property.trim()
                         if ($diff) {
                             Write-PSFMessage -message "Found differences $diff" -Level VeryVerbose
-                            New-Object -TypeName PSObject -Property `
+                            $Output += New-Object -TypeName PSObject -Property `
                             @{'Source'           = $env:COMPUTERNAME ;
                                 'DependencyType' = "Web Service/Page";
                                 'Name'           = $_.uri ;
@@ -118,7 +119,7 @@ function Get-D365LBDDependencyHealth {
                             }
                         }
                         else {
-                            New-Object -TypeName PSObject -Property `
+                            $Output += New-Object -TypeName PSObject -Property `
                             @{'Source'           = $env:COMPUTERNAME ;
                                 'DependencyType' = "Web Service/Page";
                                 'Name'           = $_.uri ;
@@ -130,7 +131,7 @@ function Get-D365LBDDependencyHealth {
                 } 
             } ## Advanced Weburl End
         }##End of All Custom WebURL
-        if (!$WebsiteChecksOnly) {
+        if ($WebsiteChecksOnly) {
             Write-PSFMessage -Level VeryVerbose -Message "Only Checking Websites"
         }
         else {
@@ -143,7 +144,7 @@ function Get-D365LBDDependencyHealth {
                         $results = Invoke-Command -ComputerName $AXSfServerName -ScriptBlock { Get-service $servicetovalidate } | ForEach-Object -Process { `
                                 if ($results.Status -eq "Running") {
                                 $results | ForEach-Object -Process { `
-                                        New-Object -TypeName PSObject -Property `
+                                        $Output += New-Object -TypeName PSObject -Property `
                                     @{'Source'           = $env:COMPUTERNAME ;
                                         'DependencyType' = "Service";
                                         'Name'           = "$servicetovalidate"; 
@@ -154,7 +155,7 @@ function Get-D365LBDDependencyHealth {
                             } ##Operational start
                             else {
                                 $results | ForEach-Object -Process { `
-                                        New-Object -TypeName PSObject -Property `
+                                        $Output += New-Object -TypeName PSObject -Property `
                                     @{'Source'           = $env:COMPUTERNAME ;
                                         'DependencyType' = "Service";
                                         'Name'           = "$servicetovalidate"; 
@@ -171,7 +172,7 @@ function Get-D365LBDDependencyHealth {
                         $results = Invoke-Command -ComputerName $SSRSClusterServerName -ScriptBlock { Get-service $servicetovalidate } | ForEach-Object -Process { `
                                 if ($results.Status -eq "Running") {
                                 $results | ForEach-Object -Process { `
-                                        New-Object -TypeName PSObject -Property `
+                                        $Output += New-Object -TypeName PSObject -Property `
                                     @{'Source'           = $env:COMPUTERNAME ;
                                         'DependencyType' = "Service";
                                         'Name'           = "$servicetovalidate"; 
@@ -182,7 +183,7 @@ function Get-D365LBDDependencyHealth {
                             } ##Operational start
                             else {
                                 $results | ForEach-Object -Process { `
-                                        New-Object -TypeName PSObject -Property `
+                                        $Output += New-Object -TypeName PSObject -Property `
                                     @{'Source'           = $env:COMPUTERNAME ;
                                         'DependencyType' = "Service";
                                         'Name'           = "$servicetovalidate"; 
@@ -199,7 +200,7 @@ function Get-D365LBDDependencyHealth {
                         $results = Invoke-Command -ComputerName $DatabaseClusterServerName -ScriptBlock { Get-service $servicetovalidate } | ForEach-Object -Process { `
                                 if ($results.Status -eq "Running") {
                                 $results | ForEach-Object -Process { `
-                                        New-Object -TypeName PSObject -Property `
+                                        $Output += New-Object -TypeName PSObject -Property `
                                     @{'Source'           = $env:COMPUTERNAME ;
                                         'DependencyType' = "Service";
                                         'Name'           = "$servicetovalidate"; 
@@ -210,7 +211,7 @@ function Get-D365LBDDependencyHealth {
                             } ##Operational start
                             else {
                                 $results | ForEach-Object -Process { `
-                                        New-Object -TypeName PSObject -Property `
+                                        $Output += New-Object -TypeName PSObject -Property `
                                     @{'Source'           = $env:COMPUTERNAME ;
                                         'DependencyType' = "Service";
                                         'Name'           = "$servicetovalidate"; 
@@ -227,7 +228,7 @@ function Get-D365LBDDependencyHealth {
                         $results = Invoke-Command -ComputerName $ManagementReporterServer -ScriptBlock { Get-service $servicetovalidate } | ForEach-Object -Process { `
                                 if ($results.Status -eq "Running") {
                                 $results | ForEach-Object -Process { `
-                                        New-Object -TypeName PSObject -Property `
+                                        $Output += New-Object -TypeName PSObject -Property `
                                     @{'Source'           = $env:COMPUTERNAME ;
                                         'DependencyType' = "Service";
                                         'Name'           = "$servicetovalidate"; 
@@ -238,7 +239,7 @@ function Get-D365LBDDependencyHealth {
                             } ##Operational start
                             else {
                                 $results | ForEach-Object -Process { `
-                                        New-Object -TypeName PSObject -Property `
+                                        $Output += New-Object -TypeName PSObject -Property `
                                     @{'Source'           = $env:COMPUTERNAME ;
                                         'DependencyType' = "Service";
                                         'Name'           = "$servicetovalidate"; 
@@ -255,7 +256,7 @@ function Get-D365LBDDependencyHealth {
                         $results = Invoke-Command -ComputerName $AppServer -ScriptBlock { Get-service $servicetovalidate } 
                         if ($results.Status -eq "Running") {
                             $results | ForEach-Object -Process { `
-                                    New-Object -TypeName PSObject -Property `
+                                    $Output += New-Object -TypeName PSObject -Property `
                                 @{'Source'           = $env:COMPUTERNAME ;
                                     'DependencyType' = "Service";
                                     'Name'           = "$servicetovalidate"; 
@@ -266,7 +267,7 @@ function Get-D365LBDDependencyHealth {
                         } ##Operational start
                         else {
                             $results | ForEach-Object -Process { `
-                                    New-Object -TypeName PSObject -Property `
+                                    $Output += New-Object -TypeName PSObject -Property `
                                 @{'Source'           = $env:COMPUTERNAME ;
                                     'DependencyType' = "Service";
                                     'Name'           = "$servicetovalidate"; 
@@ -315,6 +316,16 @@ function Get-D365LBDDependencyHealth {
             }
             ##Database
         }
+        foreach ($scanneditem in $Output) {
+            if ($scanneditem.State -eq "Down") {
+                Write-PSFMessage -Message "Found an item down" -Level VeryVerbose
+                if ($SendAlertIfIssue) {
+                    Send-MailMessage -to "$environmentowner" -Body "$output" -Verbose -SmtpServer "$SMTPServer" 
+                }
+            }
+        }
+
+        [PSCustomObject] $Output
     }
 
     END {}
