@@ -1,7 +1,7 @@
 function Remove-D365SFClusterExtraFiles {
     <#
    .SYNOPSIS
-
+Use Get-D365LBDConfig -ConfigImportFromFile to get config
   #>
     [alias("Remove-D365ClusterExtraFiles")]
     param
@@ -20,7 +20,7 @@ function Remove-D365SFClusterExtraFiles {
         {
             Invoke-Command -ScriptBlock { $SFFolder = Get-ChildItem "C:\ProgramData" -Directory |Where-Object {$_.Name -eq "SF"};
         if ($SFFolder.Count -eq 1 ){
-            $items.FullName | Remove-Item -Recurse -Force -Confirm
+            $items.FullName | Remove-Item -Recurse -Force -Confirm -Verbose
             Write-PSFMessage -Level VeryVerbose -Message "Cleaned SF Folder on $AppServer "
         }
         else {
