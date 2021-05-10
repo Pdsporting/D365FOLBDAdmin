@@ -66,7 +66,8 @@
 		'Remove-D365LBDSFOldAssets',
 		'Remove-D365LBDSFLogs',
 		'Send-D365LBDUpdateMSTeams',
-		'Get-D365LBDDependencyHealth'
+		'Get-D365LBDDependencyHealth',
+		'Remove-D365SFClusterExtraFiles'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
