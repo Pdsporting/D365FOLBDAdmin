@@ -32,7 +32,8 @@ function Get-D365LBDConfigTemplate {
         [Parameter(ParameterSetName = 'Config',
             ValueFromPipeline = $True)]
         [psobject]$Config,
-        [string]$infrastructurescriptspath
+        [string]$infrastructurescriptspath,
+        [switch]$Createcopy
     )
     BEGIN {
     } 
@@ -68,8 +69,14 @@ function Get-D365LBDConfigTemplate {
                 Write-PSFMessage -Level VeryVerbose "Warning: Can't find the Thumbprint $Cert on specific machine"
             }
         }
-
-
+IF ($Createcopy){
+        ##Create Archive folder inside of config template
+        If (!(Test-path $infrastructurescriptspath/Archive)){
+            New-Item -ItemType Directory -Force -Path $infrastructurescriptspath/Archive
+        }
+        $name = "Config$((Get-Date).ToString('yyyy-MM-dd')).xml"
+        Copy-Item $path.fullname -Destination "$infrastructurescriptspath/Archive/$name"
+    }
      
     }
     END {
