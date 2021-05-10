@@ -42,7 +42,7 @@ function Get-D365LBDConfigTemplate {
         }
         $path = Join-Path $infrastructurescriptspath -ChildPath "Configtemplate.xml"
         [xml]$Configtemplatexml = get-content $path.fullname
-        $Certs = $Configtemplatexml.COnfig.Certificates.Certificate
+        $Certs = $Configtemplatexml.Config.Certificates.Certificate
         foreach ($Cert in $Certs)
         {
             $parent = $Cert.ParentNode
@@ -56,14 +56,17 @@ function Get-D365LBDConfigTemplate {
             }
             if ($CertinStore)
             {
-                $CertinStore | Select-Object FriendlyName, Thumbprint, NotAfter, Location
+                if ($CertinStore.NotAfter -lt $(get-date))
+                {
+                    Write-PSFMessage -Level Warning -Message "$CertNameinConfig with Thumbprint $($Cert.Thumbprint) is expired! $($Cert.PSPath)"
+                }
+                $CertinStore | Select-Object FriendlyName, Thumbprint, NotAfter
             }
             else {
                 $parent = $Cert.ParentNode
                 $parent.Cert
                 Write-PSFMessage -Level VeryVerbose "Warning: Can't find the Thumbprint $Cert on specific machine"
             }
-
         }
 
 
