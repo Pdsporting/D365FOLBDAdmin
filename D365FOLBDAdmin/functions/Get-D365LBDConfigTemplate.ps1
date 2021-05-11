@@ -32,7 +32,8 @@ function Get-D365LBDConfigTemplate {
         foreach ($Cert in $Certs) {
             $parent = $Cert.ParentNode
             $CertNameinConfig = $parent.Certificate | Where-Object { $_.Thumbprint -eq $Cert.Thumbprint }
-            Write-PSFMessage -Level VeryVerbose -Message "Looking for $CertNameinConfig with a thumbprint of $Cert"
+            $CertName = $CertNameinConfig.Name
+            Write-PSFMessage -Level VeryVerbose -Message "Looking for $CertName with a thumbprint of $Cert"
             $CertinStore = Get-ChildItem "Cert:\Currentuser\My" | Where-Object { $_.Thumbprint -eq $Cert.Thumbprint }
             if (!$CertinStore) {
                 Write-PSFMessage -Level VeryVerbose "Can't find Cert $Cert in CurrentUser Checking local machine"
@@ -40,14 +41,14 @@ function Get-D365LBDConfigTemplate {
             }
             if ($CertinStore) {
                 if ($CertinStore.NotAfter -lt $(get-date)) {
-                    Write-PSFMessage -Level Warning -Message "$CertNameinConfig with Thumbprint $($Cert.Thumbprint) is expired! $($Cert.PSPath)"
+                    Write-PSFMessage -Level Warning -Message "$CertName with Thumbprint $($Cert.Thumbprint) is expired! $($Cert.PSPath)"
                 }
                 $CertinStore | Select-Object FriendlyName, Thumbprint, NotAfter
             }
             else {
                 $parent = $Cert.ParentNode
                 $parent.Cert
-                Write-PSFMessage -Level VeryVerbose "Warning: Can't find the Thumbprint $Cert on specific machine"
+                Write-PSFMessage -Level VeryVerbose "Warning: Can't find the Thumbprint $Cert on specific machine for $CertName"
             }
         }
         IF ($Createcopy) {
@@ -56,7 +57,7 @@ function Get-D365LBDConfigTemplate {
                 New-Item -ItemType Directory -Force -Path $infrastructurescriptspath/Archive
             }
             $name = "Config$((Get-Date).ToString('yyyy-MM-dd')).xml"
-            Copy-Item $path.fullname -Destination "$infrastructurescriptspath/Archive/$name"
+            Copy-Item $path -Destination "$infrastructurescriptspath/Archive/$name"
         }
     }
     END {

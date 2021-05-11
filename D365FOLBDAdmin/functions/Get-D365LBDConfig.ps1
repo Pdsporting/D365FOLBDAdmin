@@ -486,19 +486,19 @@ ORDER BY [rh].[restore_date] DESC"
                 [int]$OrchestratorDataRunBookStateInt = $OrchestratorDataRunBookStateString
 
                 switch ( $OrchestratorDataRunBookStateInt) {
-                    0 { $OrchestratorJobRunBookState = 'Running' }
-                    1 { $OrchestratorJobRunBookState = 'Unknown Status' }
-                    2 { $OrchestratorJobRunBookState = 'Succeeded' }
+                    0 { $OrchestratorJobRunBookState = 'Not Started' }
+                    1 { $OrchestratorJobRunBookState = 'In Progress' }
+                    2 { $OrchestratorJobRunBookState = 'Successful' }
                     3 { $OrchestratorJobRunBookState = 'Failed' }
-                    4 { $OrchestratorJobRunBookState = 'Unknown Status' }
+                    4 { $OrchestratorJobRunBookState = 'Cancelled' }
                     5 { $OrchestratorJobRunBookState = 'Unknown Status' }
                 }
                 switch ($OrchestratorDataOrchestratorJobStateInt ) {
-                    0 { $OrchestratorJobState = 'Running' }
-                    1 { $OrchestratorJobState = 'Unknown Status' }
-                    2 { $OrchestratorJobState = 'Succeeded' }
-                    3 { $OrchestratorJobState = 'Failed' }
-                    4 { $OrchestratorJobState = 'Unknown Status' }
+                    0 { $OrchestratorJobRunBookState = 'Not Started' }
+                    1 { $OrchestratorJobRunBookState = 'In Progress' }
+                    2 { $OrchestratorJobRunBookState = 'Successful' }
+                    3 { $OrchestratorJobRunBookState = 'Failed' }
+                    4 { $OrchestratorJobRunBookState = 'Cancelled' }
                     5 { $OrchestratorJobState = 'Unknown Status' }
                 }
             }
