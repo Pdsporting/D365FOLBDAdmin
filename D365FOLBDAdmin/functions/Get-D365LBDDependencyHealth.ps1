@@ -305,31 +305,31 @@ function Get-D365LBDDependencyHealth {
                 $ProcessName = $processtovalidate.name
                 if ($processtovalidate.locationType.'#text'.Trim() -eq 'AXSF') {
                     foreach ($AXSfServerName in $Config.AXSFServerNames) {
-                        Invoke-Command -ComputerName $AXSfServerName -ScriptBlock { Get-process -name $Using:ProcessName | Select-Object -First 1 } | ForEach-Object -Process { `
+                        Invoke-Command -ComputerName $AXSfServerName -ScriptBlock { Get-process | where-object {$_.Name -eq $Using:ProcessName} | Select-Object -First 1 } | ForEach-Object -Process { `
                         }
                     }
                 }
                 if ($processtovalidate.locationType.'#text'.Trim() -eq 'SSRS') {
                     foreach ($SSRSClusterServerName in $Config.SSRSClusterServerNames) {
-                        Invoke-Command -ComputerName $SSRSClusterServerName -ScriptBlock { Get-process -name $Using:ProcessName  | Select-Object -First 1 } | ForEach-Object -Process { `
+                        Invoke-Command -ComputerName $SSRSClusterServerName -ScriptBlock { Get-process | where-object {$_.Name -eq $Using:ProcessName}  | Select-Object -First 1 } | ForEach-Object -Process { `
                         }
                     }
                 }
                 if ($processtovalidate.locationType.'#text'.Trim() -eq 'SQLDB') {
                     foreach ($DatabaseClusterServerName in $config.DatabaseClusterServerNames) {
-                        Invoke-Command -ComputerName $DatabaseClusterServerName -ScriptBlock { Get-process -name $Using:ProcessName  | Select-Object -First 1 } | ForEach-Object -Process { `
+                        Invoke-Command -ComputerName $DatabaseClusterServerName -ScriptBlock { Get-process | where-object {$_.Name -eq $Using:ProcessName} | Select-Object -First 1 } | ForEach-Object -Process { `
                         }
                     }
                 }
                 if ($processtovalidate.locationType.'#text'.Trim() -eq 'ManagementReporter') {
                     foreach ($ManagementReporterServer in $ManagementReporterServers) {
-                        Invoke-Command -ComputerName $ManagementReporterServer -ScriptBlock { Get-process -name $Using:ProcessName | Select-Object -First 1 } | ForEach-Object -Process { `
+                        Invoke-Command -ComputerName $ManagementReporterServer -ScriptBlock { Get-process | where-object {$_.Name -eq $Using:ProcessName} | Select-Object -First 1 } | ForEach-Object -Process { `
                         }
                     }
                 }
                 if ($processtovalidate.locationType.'#text'.Trim() -eq 'All') {
                     foreach ($AppServer in $Config.AllAppServerList) {
-                        Invoke-Command -ComputerName $AppServer -ScriptBlock { Get-process -name $Using:ProcessName  | Select-Object -First 1 } | ForEach-Object -Process { `
+                        Invoke-Command -ComputerName $AppServer -ScriptBlock { Get-process | where-object {$_.Name -eq $Using:ProcessName}  | Select-Object -First 1 } | ForEach-Object -Process { `
                         }
                     }
                 }
