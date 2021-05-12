@@ -254,8 +254,11 @@
                 $EnvironmentType = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentType.'#text'.Trim()
                 $DatabaseClusterServerNames = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.SQLDetails.SQLServer | ForEach-Object -Process { New-Object -TypeName psobject -Property `
                     @{'DatabaseClusterServerNames' = $_.ServerName } }
-                $DatabaseEncryptionThumprints = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.SQLDetails.SQLServer | ForEach-Object -Process { New-Object -TypeName psobject -Property `
+                $DatabaseEncryptionThumbprints = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.SQLDetails.SQLServer | ForEach-Object -Process { New-Object -TypeName psobject -Property `
                     @{'DatabaseEncryptionCertificates' = $_.DatabaseEncryptionThumbprint } }
+                $DatabaseEncryptionThumbprints = $DatabaseEncryptionThumbprints.DatabaseEncryptionThumprints
+                $DatabaseClusterServerNames = $DatabaseClusterServerNames.DatabaseClusterServerNames
+
             }
            
             if ((test-path \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt) -and !$EnvironmentAdditionalConfig) {
@@ -634,7 +637,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'OrchestratorJobRunBookState'                = $OrchestratorJobRunBookState
                 'OrchestratorJobState'                       = $OrchestratorJobState
                 'D365FOLBDAdminEnvironmentType'              = $EnvironmentType
-                'DatabaseEncryptionThumprints'               = $DatabaseEncryptionThumprints
+                'DatabaseEncryptionThumbprints'              = $DatabaseEncryptionThumbprints
                 'ManagementReporterServers'                  = $ManagementReporterServers
                 'SSRSClusterServerNames'                     = $SSRSClusterServerNames
             }
