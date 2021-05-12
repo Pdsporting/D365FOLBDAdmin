@@ -395,8 +395,13 @@
                 if ($CustomModuleName) {
                     $path = Get-ChildItem "$agentsharelocation\wp\*\StandaloneSetup-*\Apps\AOS\AXServiceApp\AXSF\InstallationRecords\MetadataModelInstallationRecords" | Select-Object -first 1 -ExpandProperty FullName
                     $pathtoxml = "$path\$CustomModuleName.xml"
+                    if ($path){
                     [xml]$xml = Get-Content $pathtoxml
                     $CustomModuleVersioninAgentShare = $xml.MetadataModelInstallationInfo.Version
+                }
+                else{
+                    Write-PSFMessage -Level Warning -Message "Can't find $path\$CustomModuleName.xml to get Version in Agent Share "
+                }
                 }
             }
             catch {}
@@ -578,8 +583,10 @@ ORDER BY [rh].[restore_date] DESC"
                 }
             }
             $WPAssetIDTXT = Get-ChildItem $AgentShareLocation\wp\*\AssetID.txt |  Sort-Object LastWriteTime | Select-Object -First 1
+            if ($WPAssetIDTXT){
             $WPAssetIDTXTContent = Get-Content $WPAssetIDTXT.FullName
             $DeploymentAssetIDinWPFolder = $WPAssetIDTXTContent[0] -replace "AssetID: ", ""
+        }
             $SSRSClusterServerNames = $ReportServerServerName
             # Collect information into a hashtable Add any new field to Get-D365TestConfigData
             # Make sure to add Certification to Cert list below properties if adding cert
