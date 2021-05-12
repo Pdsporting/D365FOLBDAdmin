@@ -156,7 +156,7 @@ function Get-D365LBDDependencyHealth {
                                         $Output = New-Object -TypeName PSObject -Property `
                                     @{'Source'           = $env:COMPUTERNAME ;
                                         'DependencyType' = "Service";
-                                        'Name'           = "$Using:servicetovalidateName"; 
+                                        'Name'           = "$servicetovalidateName"; 
                                         'State'          = "Operational";
                                         'ExtraInfo'      = $_.StartType;
                                     }
@@ -168,7 +168,7 @@ function Get-D365LBDDependencyHealth {
                                         $Output = New-Object -TypeName PSObject -Property `
                                     @{'Source'           = $env:COMPUTERNAME ;
                                         'DependencyType' = "Service";
-                                        'Name'           = "$Using:servicetovalidateName"; 
+                                        'Name'           = "$servicetovalidateName"; 
                                         'State'          = "Down";
                                         'ExtraInfo'      = $_.StartType;
                                     }
@@ -186,7 +186,7 @@ function Get-D365LBDDependencyHealth {
                                         $Output = New-Object -TypeName PSObject -Property `
                                     @{'Source'           = $env:COMPUTERNAME ;
                                         'DependencyType' = "Service";
-                                        'Name'           = "$Using:servicetovalidateName"; 
+                                        'Name'           = "$servicetovalidateName"; 
                                         'State'          = "Operational";
                                         'ExtraInfo'      = $_.StartType;
                                     }
@@ -198,7 +198,7 @@ function Get-D365LBDDependencyHealth {
                                         $Output = New-Object -TypeName PSObject -Property `
                                     @{'Source'           = $env:COMPUTERNAME ;
                                         'DependencyType' = "Service";
-                                        'Name'           = "$Using:servicetovalidateName"; 
+                                        'Name'           = "$servicetovalidateName"; 
                                         'State'          = "Down";
                                         'ExtraInfo'      = $_.StartType;
                                     }
@@ -216,7 +216,7 @@ function Get-D365LBDDependencyHealth {
                                         $Output = New-Object -TypeName PSObject -Property `
                                     @{'Source'           = $env:COMPUTERNAME ;
                                         'DependencyType' = "Service";
-                                        'Name'           = "$Using:servicetovalidateName"; 
+                                        'Name'           = "$servicetovalidateName"; 
                                         'State'          = "Operational";
                                         'ExtraInfo'      = $_.StartType;
                                     }
@@ -228,7 +228,7 @@ function Get-D365LBDDependencyHealth {
                                         $Output = New-Object -TypeName PSObject -Property `
                                     @{'Source'           = $env:COMPUTERNAME ;
                                         'DependencyType' = "Service";
-                                        'Name'           = "$Using:servicetovalidateName"; 
+                                        'Name'           = "$servicetovalidateName"; 
                                         'State'          = "Down";
                                         'ExtraInfo'      = $_.StartType;
                                     }
@@ -246,7 +246,7 @@ function Get-D365LBDDependencyHealth {
                                         $Output = New-Object -TypeName PSObject -Property `
                                     @{'Source'           = $env:COMPUTERNAME ;
                                         'DependencyType' = "Service";
-                                        'Name'           = "$Using:servicetovalidateName"; 
+                                        'Name'           = "$servicetovalidateName"; 
                                         'State'          = "Operational";
                                         'ExtraInfo'      = $_.StartType;
                                     }
@@ -258,7 +258,7 @@ function Get-D365LBDDependencyHealth {
                                         $Output = New-Object -TypeName PSObject -Property `
                                     @{'Source'           = $env:COMPUTERNAME ;
                                         'DependencyType' = "Service";
-                                        'Name'           = "$Using:servicetovalidateName"; 
+                                        'Name'           = "$servicetovalidateName"; 
                                         'State'          = "Down";
                                         'ExtraInfo'      = $_.StartType;
                                     }
@@ -276,7 +276,7 @@ function Get-D365LBDDependencyHealth {
                                     $Output = New-Object -TypeName PSObject -Property `
                                 @{'Source'           = $env:COMPUTERNAME ;
                                     'DependencyType' = "Service";
-                                    'Name'           = "$Using:servicetovalidateName"; 
+                                    'Name'           = "$servicetovalidateName"; 
                                     'State'          = "Operational";
                                     'ExtraInfo'      = $_.StartType;
                                 }
@@ -288,7 +288,7 @@ function Get-D365LBDDependencyHealth {
                                     $Output = New-Object -TypeName PSObject -Property `
                                 @{'Source'           = $env:COMPUTERNAME ;
                                     'DependencyType' = "Service";
-                                    'Name'           = "$Using:servicetovalidateName"; 
+                                    'Name'           = "$servicetovalidateName"; 
                                     'State'          = "Down";
                                     'ExtraInfo'      = $_.StartType;
                                 }
