@@ -395,13 +395,13 @@
                 if ($CustomModuleName) {
                     $path = Get-ChildItem "$agentsharelocation\wp\*\StandaloneSetup-*\Apps\AOS\AXServiceApp\AXSF\InstallationRecords\MetadataModelInstallationRecords" | Select-Object -first 1 -ExpandProperty FullName
                     $pathtoxml = "$path\$CustomModuleName.xml"
-                    if ($path){
-                    [xml]$xml = Get-Content $pathtoxml
-                    $CustomModuleVersioninAgentShare = $xml.MetadataModelInstallationInfo.Version
-                }
-                else{
-                    Write-PSFMessage -Level Warning -Message "Can't find $path\$CustomModuleName.xml to get Version in Agent Share "
-                }
+                    if ($path) {
+                        [xml]$xml = Get-Content $pathtoxml
+                        $CustomModuleVersioninAgentShare = $xml.MetadataModelInstallationInfo.Version
+                    }
+                    else {
+                        Write-PSFMessage -Level Warning -Message "Can't find $path\$CustomModuleName.xml to get Version in Agent Share "
+                    }
                 }
             }
             catch {}
@@ -583,10 +583,16 @@ ORDER BY [rh].[restore_date] DESC"
                 }
             }
             $WPAssetIDTXT = Get-ChildItem $AgentShareLocation\wp\*\AssetID.txt |  Sort-Object LastWriteTime | Select-Object -First 1
-            if ($WPAssetIDTXT){
-            $WPAssetIDTXTContent = Get-Content $WPAssetIDTXT.FullName
-            $DeploymentAssetIDinWPFolder = $WPAssetIDTXTContent[0] -replace "AssetID: ", ""
-        }
+            if ($WPAssetIDTXT) {
+                $WPAssetIDTXTContent = Get-Content $WPAssetIDTXT.FullName
+                $DeploymentAssetIDinWPFolder = $WPAssetIDTXTContent[0] -replace "AssetID: ", ""
+            }
+            try {
+                $RunningAXCodeFolder = Invoke-Command -ComputerName $AXSFConfigServerName -ScriptBlock { $(Split-Path $(Get-Process | Where-Object { $_.Name -eq "AXService" } | select *).Path -Parent) }
+            }
+            catch {
+
+            }
             $SSRSClusterServerNames = $ReportServerServerName
             # Collect information into a hashtable Add any new field to Get-D365TestConfigData
             # Make sure to add Certification to Cert list below properties if adding cert
@@ -647,6 +653,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'DatabaseEncryptionThumbprints'              = $DatabaseEncryptionThumbprints
                 'ManagementReporterServers'                  = $ManagementReporterServers
                 'SSRSClusterServerNames'                     = $SSRSClusterServerNames
+                'RunningAXCodeFolder'                        = $RunningAXCodeFolder 
             }
 
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
