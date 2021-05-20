@@ -77,6 +77,7 @@
             }
             Write-PSFMessage -Message "Reading $ClusterManifestXMLFile" -Level Verbose
             [xml]$xml = get-content $ClusterManifestXMLFile
+            $SFClusterCertificate = $(($($xml.ClusterManifest.FabricSettings.Section | Where-Object {$_.Name -eq "Security"})).Parameter | Where-Object {$_.Name -eq "ClusterCertThumbprints"}).value
 
             $OrchestratorServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'OrchestratorType' }).NodeName
             $AXSFServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'AOSNodeType' }).NodeName
@@ -237,7 +238,7 @@
             $AOSKernelVersion = $AOSKerneldll.VersionInfo.ProductVersion
 
             $jsonClusterConfig = get-content "\\$AXSFConfigServerName\C$\ProgramData\SF\clusterconfig.json"
-            $SFClusterCertificate = ($jsonClusterConfig | ConvertFrom-Json).properties.security.certificateinformation.clustercertificate.Thumbprint
+            #$SFClusterCertificate = ($jsonClusterConfig | ConvertFrom-Json).properties.security.certificateinformation.clustercertificate.Thumbprint ## invalid if new deployment after
             $FinancialReportingCertificate = $($AXServiceConfigXML.configuration.claimIssuerRestrictions.issuerrestrictions.add | Where-Object { $_.alloweduserids -eq "FRServiceUser" }).name
 
             if (test-path $AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml) {
@@ -284,6 +285,7 @@
                 $currentclustermanifestxmlfile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\clustermanifest.current.xml" | Sort-Object { $_.CreationTime } | Select-Object -First 1
                 [xml]$currentclustermanifestxml = Get-Content $currentclustermanifestxmlfile
                 $AXSFServerListToCompare = $currentclustermanifestxml.clusterManifest.Infrastructure.NodeList.Node | Where-Object { $_.NodeTypeRef -eq 'AOSNodeType' -or $_.NodeTypeRef -eq 'PrimaryNodeType' }
+                $SFClusterCertificate = $(($($currentclustermanifestxml.ClusterManifest.FabricSettings.Section | Where-Object {$_.Name -eq "Security"})).Parameter | Where-Object {$_.Name -eq "ClusterCertThumbprints"}).value
                 foreach ($Node in $AXSFServerListToCompare) {
                     if (($AXSFServerNames -contains $Node) -eq $false) {
                         $AXSFServerNames += $Node
