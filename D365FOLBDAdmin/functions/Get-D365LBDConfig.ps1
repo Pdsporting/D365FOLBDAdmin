@@ -39,7 +39,8 @@
         [Parameter(Mandatory = $false)][string]$ConfigImportFromFile,
         [Parameter(Mandatory = $false)][string]$ConfigExportToFile,
         [Parameter(Mandatory = $false)][string]$CustomModuleName,
-        [switch]$HighLevelOnly
+        [switch]$HighLevelOnly,
+        [switch]$GetGuids
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
@@ -314,6 +315,21 @@
                     $invalidnodescount = $invalidnodes.count
                     if (!$invalidnodes -and $invalidnodescount -ne 0 ) {
                         Write-PSFMessage -Level Warning -Message "Warning: Invalid Node found. Suggest running Update-ServiceFabricD365ClusterConfig to help fix. $invalidnodes"
+                    }
+
+                    If ($GetGuids) {
+                        $ServiceFabricPartitionIdForAXSF = $(get-servicefabricpartition -servicename 'fabric:/AXSF/AXService').PartitionId
+                        foreach ($node in $nodes)
+                        {
+                            $nodename = $node.Nodename
+                            $replicainstanceIdofnode = $(get-servicefabricreplica -partition $ServiceFabricPartitionIdForAXSF | Where-Object {$_.NodeName -eq "$NodeName"}).InstanceId
+                            $ReplicaDetails = Get-Servicefabricreplicadetail -nodename $nodename -partitionid $ServiceFabricPartitionIdForAXSF -ReplicaOrInstanceId $replicainstanceIdofnode -replicatordetail
+                            $endpoints = $ReplicaDetails.deployedservicereplicainstance.address | ConvertFrom-Json
+                            $deployedinstancespecificguid = $($endpoints.Endpoints |Get-Member | Where-Object {$_.MemberType -eq "NoteProperty"}).Name
+                            $httpsurl = $endpoints.Endpoints.$deployedinstancespecificguid
+                            Write-PSFMessage -Level VeryVerbose -Message "$NodeName is accessible via $httpsurl with a guid $deployedinstancespecificguid "
+                        }
+
                     }
                 }
                 catch {
