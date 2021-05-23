@@ -78,7 +78,7 @@
             }
             Write-PSFMessage -Message "Reading $ClusterManifestXMLFile" -Level Verbose
             [xml]$xml = get-content $ClusterManifestXMLFile
-            $SFClusterCertificate = $(($($xml.ClusterManifest.FabricSettings.Section | Where-Object {$_.Name -eq "Security"})).Parameter | Where-Object {$_.Name -eq "ClusterCertThumbprints"}).value
+            $SFClusterCertificate = $(($($xml.ClusterManifest.FabricSettings.Section | Where-Object { $_.Name -eq "Security" })).Parameter | Where-Object { $_.Name -eq "ClusterCertThumbprints" }).value
 
             $OrchestratorServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'OrchestratorType' }).NodeName
             $AXSFServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'AOSNodeType' }).NodeName
@@ -286,7 +286,7 @@
                 $currentclustermanifestxmlfile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\clustermanifest.current.xml" | Sort-Object { $_.CreationTime } | Select-Object -First 1
                 [xml]$currentclustermanifestxml = Get-Content $currentclustermanifestxmlfile
                 $AXSFServerListToCompare = $currentclustermanifestxml.clusterManifest.Infrastructure.NodeList.Node | Where-Object { $_.NodeTypeRef -eq 'AOSNodeType' -or $_.NodeTypeRef -eq 'PrimaryNodeType' }
-                $SFClusterCertificate = $(($($currentclustermanifestxml.ClusterManifest.FabricSettings.Section | Where-Object {$_.Name -eq "Security"})).Parameter | Where-Object {$_.Name -eq "ClusterCertThumbprints"}).value
+                $SFClusterCertificate = $(($($currentclustermanifestxml.ClusterManifest.FabricSettings.Section | Where-Object { $_.Name -eq "Security" })).Parameter | Where-Object { $_.Name -eq "ClusterCertThumbprints" }).value
                 foreach ($Node in $AXSFServerListToCompare) {
                     if (($AXSFServerNames -contains $Node) -eq $false) {
                         $AXSFServerNames += $Node
@@ -305,6 +305,16 @@
                     $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
                     $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                     $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
+                    if (!$connection) {
+                        try {
+                            $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint 
+                        }
+                        catch {
+                            
+                        }
+                    }
+                    $NumberOfAppsinServicefabric = $($(get-servicefabricclusterhealth | select ApplicationHealthState).ApplicationHealthState.Count) - 1
+                    $AggregatedSFState = get-servicefabricclusterhealth | select AggregatedHealthState
                     $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") } 
                     Write-PSFMessage -message "Service Fabric connected. Grabbing nodes to validate status" -Level Verbose
                     $appservers = $nodes.NodeName | Sort-Object
@@ -319,13 +329,12 @@
 
                     If ($GetGuids) {
                         $ServiceFabricPartitionIdForAXSF = $(get-servicefabricpartition -servicename 'fabric:/AXSF/AXService').PartitionId
-                        foreach ($node in $nodes)
-                        {
+                        foreach ($node in $nodes) {
                             $nodename = $node.Nodename
-                            $replicainstanceIdofnode = $(get-servicefabricreplica -partition $ServiceFabricPartitionIdForAXSF | Where-Object {$_.NodeName -eq "$NodeName"}).InstanceId
+                            $replicainstanceIdofnode = $(get-servicefabricreplica -partition $ServiceFabricPartitionIdForAXSF | Where-Object { $_.NodeName -eq "$NodeName" }).InstanceId
                             $ReplicaDetails = Get-Servicefabricreplicadetail -nodename $nodename -partitionid $ServiceFabricPartitionIdForAXSF -ReplicaOrInstanceId $replicainstanceIdofnode -replicatordetail
                             $endpoints = $ReplicaDetails.deployedservicereplicainstance.address | ConvertFrom-Json
-                            $deployedinstancespecificguid = $($endpoints.Endpoints |Get-Member | Where-Object {$_.MemberType -eq "NoteProperty"}).Name
+                            $deployedinstancespecificguid = $($endpoints.Endpoints | Get-Member | Where-Object { $_.MemberType -eq "NoteProperty" }).Name
                             $httpsurl = $endpoints.Endpoints.$deployedinstancespecificguid
                             Write-PSFMessage -Level VeryVerbose -Message "$NodeName is accessible via $httpsurl with a guid $deployedinstancespecificguid "
                         }
@@ -672,6 +681,9 @@ ORDER BY [rh].[restore_date] DESC"
                 'ManagementReporterServers'                  = $ManagementReporterServers
                 'SSRSClusterServerNames'                     = $SSRSClusterServerNames
                 'RunningAXCodeFolder'                        = $RunningAXCodeFolder 
+                'AggregatedSFState'                          = $AggregatedSFState
+                'NumberOfAppsinServicefabric'                = $NumberOfAppsinServicefabric
+
             }
 
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
