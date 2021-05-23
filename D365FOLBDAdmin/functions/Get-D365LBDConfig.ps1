@@ -305,14 +305,31 @@
                     $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
                     $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                     $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
-                    if (!$connection) {
-                        try {
-                            $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint 
-                        }
-                        catch {
-                            
-                        }
-                    }
+                    <#NewConnection logic start#>
+                    $count = 0
+                    while (!$connection) {
+                        do {
+                            $OrchestratorServerName = $OrchestratorServerNames | Select-Object -First 1 -Skip $count
+                            Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName to try and connect to the service fabric" -Level Verbose
+                            $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
+                            if (!$module) {
+                                $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
+                            }
+                            $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                            if (!$connection) {
+                                $trialEndpoint = "https://$OrchestratorServerName" + ":198000"
+                                $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                            }
+                            if (!$connection) {
+                            $connection = Connect-ServiceFabricCluster
+                            }
+                            $count = $count + 1
+                            if (!$connection) {
+                                Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
+                            }
+                        } until ($connection -or ($count -eq $($OrchestratorServerNames).Count))
+ <#NewConnection logic end#>
+                   
                     $NumberOfAppsinServicefabric = $($(get-servicefabricclusterhealth | select ApplicationHealthState).ApplicationHealthState.Count) - 1
                     $AggregatedSFState = get-servicefabricclusterhealth | select AggregatedHealthState
                     $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") } 
@@ -442,55 +459,58 @@ inner join msdb..backupmediafamily bmf on [bs].[media_set_id] = [bmf].[media_set
 inner join sys.databases sd on [sd].[name] = [rh].[destination_database_name]
 where [rh].[destination_database_name] = '$AXDatabaseName'
 ORDER BY [rh].[restore_date] DESC"
-
-            try {
-                $SqlresultsToGetRefreshinfo = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQueryToGetRefreshinfo
-            }
-            catch {}
-            if ($SqlresultsToGetRefreshinfo.Count -eq 0) {
-                $whoami = whoami
-                Write-PSFMessage -Level VeryVerbose -Message "Can't find SQL results with query. Check if database is up and permissions are set for $whoami. Server: $AXDatabaseServer - DatabaseName: $AXDatabaseName."
-            }
-            else {
-                $AXDatabaseRestoreDateSQL = $SqlresultsToGetRefreshinfo | Select-Object restore_date
-                [string]$AXDatabaseRestoreDate = $AXDatabaseRestoreDateSQL
-                $AXDatabaseRestoreDate = $AXDatabaseRestoreDate.Trim("@{restore_date=")
-                $AXDatabaseRestoreDate = $AXDatabaseRestoreDate.Substring(0, $AXDatabaseRestoreDate.Length - 1)
-
-                $AXDatabaseCreationDateSQL = $SqlresultsToGetRefreshinfo | Select-Object create_date
-                [string]$AXDatabaseCreationDate = $AXDatabaseCreationDateSQL
-                $AXDatabaseCreationDate = $AXDatabaseCreationDate.Trim("@{create_date=")
-                $AXDatabaseCreationDate = $AXDatabaseCreationDate.Substring(0, $AXDatabaseCreationDate.Length - 1)
-
-                $AXDatabaseBackupStartDateSQL = $SqlresultsToGetRefreshinfo | Select-Object backup_start_date
-                [string]$AXDatabaseBackupStartDate = $AXDatabaseBackupStartDateSQL 
-                $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Trim("@{backup_start_date=")
-                $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Substring(0, $AXDatabaseBackupStartDate.Length - 1)
-
-                $AXDatabaseBackupFileUsedForRestoreSQL = $SqlresultsToGetRefreshinfo | Select-Object backup_file_used_for_restore
-                [string]$AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestoreSQL
-                $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Trim("@{backup_file_used_for_restore=")
-                $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Substring(0, $AXDatabaseBackupFileUsedForRestore.Length - 1)
-
-                $SQLQueryToGetConfigMode = "select * from SQLSYSTEMVARIABLES Where PARM = 'CONFIGURATIONMODE'"
+            if ($AXDatabaseServer) {
                 try {
-                    $SqlresultsToGetConfigMode = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQueryToGetConfigMode
+                    $SqlresultsToGetRefreshinfo = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQueryToGetRefreshinfo
                 }
                 catch {}
-                $ConfigurationModeSQL = $SqlresultsToGetConfigMode | Select-Object value
-                [string]$ConfigurationModeString = $ConfigurationModeSQL
-                $ConfigurationModeString = $ConfigurationModeString.Trim("@{value=")
-                $ConfigurationModeString = $ConfigurationModeString.Trim("VALUE=")
-                $ConfigurationModeString = $ConfigurationModeString.Substring(0, $ConfigurationModeString.Length - 1)
-                [int]$configurationmode = $ConfigurationModeString 
-                if ($configurationmode -eq 1) {
-                    Write-PSFMessage -Level VeryVerbose -Message "Warning: Found that Maintenance Mode is On"
-                    $ConfigurationModeEnabledDisabled = 'Enabled'
+                if ($SqlresultsToGetRefreshinfo.Count -eq 0) {
+                    $whoami = whoami
+                    Write-PSFMessage -Level VeryVerbose -Message "Can't find SQL results with query. Check if database is up and permissions are set for $whoami. Server: $AXDatabaseServer - DatabaseName: $AXDatabaseName."
                 }
-                if ($configurationmode -eq 0)
-                { $ConfigurationModeEnabledDisabled = 'Disabled' }
+                else {
+                    $AXDatabaseRestoreDateSQL = $SqlresultsToGetRefreshinfo | Select-Object restore_date
+                    [string]$AXDatabaseRestoreDate = $AXDatabaseRestoreDateSQL
+                    $AXDatabaseRestoreDate = $AXDatabaseRestoreDate.Trim("@{restore_date=")
+                    $AXDatabaseRestoreDate = $AXDatabaseRestoreDate.Substring(0, $AXDatabaseRestoreDate.Length - 1)
+
+                    $AXDatabaseCreationDateSQL = $SqlresultsToGetRefreshinfo | Select-Object create_date
+                    [string]$AXDatabaseCreationDate = $AXDatabaseCreationDateSQL
+                    $AXDatabaseCreationDate = $AXDatabaseCreationDate.Trim("@{create_date=")
+                    $AXDatabaseCreationDate = $AXDatabaseCreationDate.Substring(0, $AXDatabaseCreationDate.Length - 1)
+
+                    $AXDatabaseBackupStartDateSQL = $SqlresultsToGetRefreshinfo | Select-Object backup_start_date
+                    [string]$AXDatabaseBackupStartDate = $AXDatabaseBackupStartDateSQL 
+                    $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Trim("@{backup_start_date=")
+                    $AXDatabaseBackupStartDate = $AXDatabaseBackupStartDate.Substring(0, $AXDatabaseBackupStartDate.Length - 1)
+
+                    $AXDatabaseBackupFileUsedForRestoreSQL = $SqlresultsToGetRefreshinfo | Select-Object backup_file_used_for_restore
+                    [string]$AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestoreSQL
+                    $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Trim("@{backup_file_used_for_restore=")
+                    $AXDatabaseBackupFileUsedForRestore = $AXDatabaseBackupFileUsedForRestore.Substring(0, $AXDatabaseBackupFileUsedForRestore.Length - 1)
+
+                    $SQLQueryToGetConfigMode = "select * from SQLSYSTEMVARIABLES Where PARM = 'CONFIGURATIONMODE'"
+                    try {
+                        $SqlresultsToGetConfigMode = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQueryToGetConfigMode
+                    }
+                    catch {}
+                    $ConfigurationModeSQL = $SqlresultsToGetConfigMode | Select-Object value
+                    [string]$ConfigurationModeString = $ConfigurationModeSQL
+                    $ConfigurationModeString = $ConfigurationModeString.Trim("@{value=")
+                    $ConfigurationModeString = $ConfigurationModeString.Trim("VALUE=")
+                    $ConfigurationModeString = $ConfigurationModeString.Substring(0, $ConfigurationModeString.Length - 1)
+                    [int]$configurationmode = $ConfigurationModeString 
+                    if ($configurationmode -eq 1) {
+                        Write-PSFMessage -Level VeryVerbose -Message "Warning: Found that Maintenance Mode is On"
+                        $ConfigurationModeEnabledDisabled = 'Enabled'
+                    }
+                    if ($configurationmode -eq 0)
+                    { $ConfigurationModeEnabledDisabled = 'Disabled' }
+                }
             }
-            
+            else {
+                Write-PSFMessage "$AXDatabaseServer not found so cant get database details" -Level Verbose
+            }
             $SQLQueryToGetOrchestratorDataOrchestratorJob = "select top 1 State, QueuedDateTime, LastProcessedDateTime, EndDateTime,JobId, DeploymentInstanceId from OrchestratorJob order by ScheduledDateTime desc"
             $SQLQueryToGetOrchestratorDataRunBook = "select top 1 RunBookTaskId, Name, Description, State, StartDateTime, EndDateTime, OutputMessage from RunBookTask"
             try {
@@ -615,6 +635,7 @@ ORDER BY [rh].[restore_date] DESC"
                 $DeploymentAssetIDinWPFolder = $WPAssetIDTXTContent[0] -replace "AssetID: ", ""
             }
             try {
+                Write-PSFMessage -Level Verbose -Message "Looking for process AXService $AXSFConfigServerName to get the running folder"
                 $RunningAXCodeFolder = Invoke-Command -ComputerName $AXSFConfigServerName -ScriptBlock { $(Split-Path $(Get-Process | Where-Object { $_.Name -eq "AXService" } | select *).Path -Parent) }
             }
             catch {
