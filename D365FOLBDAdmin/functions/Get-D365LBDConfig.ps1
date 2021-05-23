@@ -331,7 +331,11 @@
  <#NewConnection logic end#>
                    
                     $NumberOfAppsinServicefabric = $($(get-servicefabricclusterhealth | select ApplicationHealthState).ApplicationHealthState.Count) - 1
-                    $AggregatedSFState = get-servicefabricclusterhealth | select AggregatedHealthState
+                    if ($NumberOfAppsinServicefabric -eq -1)
+                    {
+                        $NumberOfAppsinServicefabric = $null
+                    }
+                    $AggregatedSFState = $(get-servicefabricclusterhealth | select AggregatedHealthState).AggregatedHealthStaate
                     $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") } 
                     Write-PSFMessage -message "Service Fabric connected. Grabbing nodes to validate status" -Level Verbose
                     $appservers = $nodes.NodeName | Sort-Object
