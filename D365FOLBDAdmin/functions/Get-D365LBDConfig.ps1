@@ -307,7 +307,7 @@
                     $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
                     <#NewConnection logic start#>
                     $count = 0
-                    while (!$connection) {
+                    if (!$connection) {
                         do {
                             $OrchestratorServerName = $OrchestratorServerNames | Select-Object -First 1 -Skip $count
                             Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName to try and connect to the service fabric" -Level Verbose
@@ -328,6 +328,7 @@
                                 Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
                             }
                         } until ($connection -or ($count -eq $($OrchestratorServerNames).Count))
+                    }
  <#NewConnection logic end#>
                    
                     $NumberOfAppsinServicefabric = $($(get-servicefabricclusterhealth | select ApplicationHealthState).ApplicationHealthState.Count) - 1
