@@ -68,6 +68,7 @@
                 if ($(Test-Path "\\$ComputerName\C$\ProgramData\SF\clusterManifest.xml") -eq $False) {
                     Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
                 }
+
                 $ClusterManifestXMLFile = get-childitem "\\$ComputerName\C$\ProgramData\SF\clusterManifest.xml"
             }
             if (!($ClusterManifestXMLFile)) {
@@ -112,12 +113,12 @@
                 $ClusterManifestXMLFile = get-childitem "$fabricfolder\clusterManifest.current.xml"
                 [xml]$xml = get-content $ClusterManifestXMLFile
             }
-            
+            Write-PSFMessage -Message "Reading $ClusterManifestXMLFile" -Level Verbose ##
             $AXSFServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'AOSNodeType' }).NodeName
             $ReportServerServerName = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).NodeName 
             $ReportServerServerip = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).IPAddressOrFQDN
             $SFClusterCertificate = $(($($xml.ClusterManifest.FabricSettings.Section | Where-Object { $_.Name -eq "Security" })).Parameter | Where-Object { $_.Name -eq "ClusterCertThumbprints" }).value
-
+            $ServerCertificate = $SFClusterCertificate | select -First 1
             if (!$OrchServiceLocalAgentConfigXML) {
                 Stop-PSFFunction -Message "Error: Can't find any Local Agent file on the Orchestrator Node" -EnableException $true -Cmdlet $PSCmdlet
             }
@@ -139,8 +140,9 @@
             $ClientCert = $($ServiceFabricConnectionDetails | Where-Object { $_.Name -eq "ClientCertificate" }).value
             $ClusterID = $($ServiceFabricConnectionDetails | Where-Object { $_.Name -eq "ClusterID" }).value
             $ConnectionEndpoint = $($ServiceFabricConnectionDetails | Where-Object { $_.Name -eq "ConnectionEndpoint" }).value
-            $ServerCertificate = $($ServiceFabricConnectionDetails | Where-Object { $_.Name -eq "ServerCertificate" }).value
-    
+            if (!$ServerCertificate){
+            $ServerCertificate = $($ServiceFabricConnectionDetails | Where-Object { $_.Name -eq "ServerCertificate" }).value ##
+        }
             ## With Orch Server config get more details for automation
             [int]$count = 1
             $AXSFConfigServerName = $AXSFServerNames | Select-Object -First $count
@@ -294,6 +296,7 @@
                 [xml]$currentclustermanifestxml = Get-Content $currentclustermanifestxmlfile
                 $AXSFServerListToCompare = $currentclustermanifestxml.clusterManifest.Infrastructure.NodeList.Node | Where-Object { $_.NodeTypeRef -eq 'AOSNodeType' -or $_.NodeTypeRef -eq 'PrimaryNodeType' }
                 $SFClusterCertificate = $(($($currentclustermanifestxml.ClusterManifest.FabricSettings.Section | Where-Object { $_.Name -eq "Security" })).Parameter | Where-Object { $_.Name -eq "ClusterCertThumbprints" }).value
+                $ServerCertificate = $SFClusterCertificate |select -First 1
                 foreach ($Node in $AXSFServerListToCompare) {
                     if (($AXSFServerNames -contains $Node) -eq $false) {
                         $AXSFServerNames += $Node
