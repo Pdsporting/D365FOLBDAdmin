@@ -76,14 +76,11 @@
             if ($(test-path $ClusterManifestXMLFile) -eq $false) {
                 Stop-PSFFunction -Message "Error: This is not an Local Business Data server. Can't find Cluster Manifest. Stopping" -EnableException $true -Cmdlet $PSCmdlet
             }
+                        
             Write-PSFMessage -Message "Reading $ClusterManifestXMLFile" -Level Verbose
             [xml]$xml = get-content $ClusterManifestXMLFile
-            $SFClusterCertificate = $(($($xml.ClusterManifest.FabricSettings.Section | Where-Object { $_.Name -eq "Security" })).Parameter | Where-Object { $_.Name -eq "ClusterCertThumbprints" }).value
-
+           
             $OrchestratorServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'OrchestratorType' }).NodeName
-            $AXSFServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'AOSNodeType' }).NodeName
-            $ReportServerServerName = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).NodeName 
-            $ReportServerServerip = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).IPAddressOrFQDN
 
             if (($null -eq $OrchestratorServerNames) -or (!$OrchestratorServerNames)) {
                 $OrchestratorServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'PrimaryNodeType' }).NodeName
@@ -109,6 +106,18 @@
                     }
                 }
             }
+            $fabricfolder = get-childitem "\\$OrchestratorServerName\C$\ProgramData\SF\*\Fabric" | Sort-Object { $_.LastWriteTime } | select -First 1
+            if ($(Test-Path "$fabricfolder\clusterManifest.current.xml") -eq $True) {
+                Write-PSFMessage -Message "Gathering Current Manifest from $ComputerName as it exists"
+                $ClusterManifestXMLFile = get-childitem "$fabricfolder\clusterManifest.current.xml"
+                [xml]$xml = get-content $ClusterManifestXMLFile
+            }
+            
+            $AXSFServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'AOSNodeType' }).NodeName
+            $ReportServerServerName = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).NodeName 
+            $ReportServerServerip = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).IPAddressOrFQDN
+            $SFClusterCertificate = $(($($xml.ClusterManifest.FabricSettings.Section | Where-Object { $_.Name -eq "Security" })).Parameter | Where-Object { $_.Name -eq "ClusterCertThumbprints" }).value
+
             if (!$OrchServiceLocalAgentConfigXML) {
                 Stop-PSFFunction -Message "Error: Can't find any Local Agent file on the Orchestrator Node" -EnableException $true -Cmdlet $PSCmdlet
             }
@@ -315,13 +324,13 @@
                             if (!$module) {
                                 $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                             }
-                            $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                            $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
                             if (!$connection) {
                                 $trialEndpoint = "https://$OrchestratorServerName" + ":198000"
-                                $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                                $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
                             }
                             if (!$connection) {
-                            $connection = Connect-ServiceFabricCluster
+                                $connection = Connect-ServiceFabricCluster
                             }
                             $count = $count + 1
                             if (!$connection) {
@@ -329,11 +338,10 @@
                             }
                         } until ($connection -or ($count -eq $($OrchestratorServerNames).Count))
                     }
- <#NewConnection logic end#>
+                    <#NewConnection logic end#>
                    
                     $NumberOfAppsinServicefabric = $($(get-servicefabricclusterhealth | select ApplicationHealthState).ApplicationHealthState.Count) - 1
-                    if ($NumberOfAppsinServicefabric -eq -1)
-                    {
+                    if ($NumberOfAppsinServicefabric -eq -1) {
                         $NumberOfAppsinServicefabric = $null
                     }
                     $AggregatedSFState = $(get-servicefabricclusterhealth | select AggregatedHealthState).AggregatedHealthStaate
