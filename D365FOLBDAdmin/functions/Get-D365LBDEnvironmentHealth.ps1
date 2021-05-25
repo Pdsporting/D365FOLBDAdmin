@@ -121,7 +121,8 @@ function Get-D365LBDEnvironmentHealth {
             $HDErrorValue = $CheckForHardDriveDetails.HardDriveError
             $HDWarningValue = $CheckForHardDriveDetails.HardDriveWarning
 
-            if ($CheckForHardDriveDetails.Enabled -eq $true) { ##check HD Start
+            if ($CheckForHardDriveDetails.Enabled -eq $true) {
+                ##check HD Start
                 Write-PSFMessage -Message "Checking Hard drive free space" -Level Verbose
                 foreach ($ApplicationServer in $config.AllAppServerList) {
                     $HardDrives = Get-WmiObject -Class "Win32_LogicalDisk" -Namespace "root\CIMV2" -ComputerName $ApplicationServer
@@ -144,12 +145,12 @@ function Get-D365LBDEnvironmentHealth {
 
         }##additional details end
 
-    }
-    else {
-        Write-PSFMessage -Message "Warning: Can't find additional Environment Config. Not needed but recommend making one" -level warning  
-    }
+    
+        else {
+            Write-PSFMessage -Message "Warning: Can't find additional Environment Config. Not needed but recommend making one" -level warning  
+        }
 
-}
-END {
-}
+    }
+    END {
+    }
 }
