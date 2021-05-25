@@ -69,7 +69,8 @@
 		'Get-D365LBDDependencyHealth',
 		'Remove-D365SFClusterExtraFiles',
 		'Get-D365LBDConfigTemplate',
-		'Get-D365LBDOrchestratorLastRunBookDetails'
+		'Get-D365LBDOrchestratorLastRunBookDetails',
+		'Restart-D365LBDOrchestratorLastJob'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
@@ -102,7 +103,8 @@
 	'Send-D365UpdateMSTeams',
 	'Get-D365DependencyHealth',
 	'Get-D365ConfigTemplate',
-	'Get-D365OrchestratorLastRunBookDetails')
+	'Get-D365OrchestratorLastRunBookDetails',
+	"Restart-D365OrchestratorLastJob")
 	
 	# List of all modules packaged with this module
 	ModuleList = @()

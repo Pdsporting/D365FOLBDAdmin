@@ -109,7 +109,47 @@ function Get-D365LBDEnvironmentHealth {
             }
             New-Object -TypeName psobject -Property $Properties
         }
+        $AgentShareLocation = $config.AgentShareLocation
+        if (test-path $AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml) {
+            ##additional details start
+            Write-PSFMessage -Level Verbose -Message "Found AdditionalEnvironmentDetails config"
+            $EnvironmentAdditionalConfig = get-childitem  "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
+
+
+            [xml]$XMLAdditionalConfig = Get-Content "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
+            $CheckForHardDriveDetails = $XMLAdditionalConfig.d365LBDEnvironment.Automation.CheckForHealthIssues.CheckAllHardDisks
+            $HDErrorValue = $CheckForHardDriveDetails.HardDriveError
+            $HDWarningValue = $CheckForHardDriveDetails.HardDriveWarning
+
+            if ($CheckForHardDriveDetails.Enabled -eq $true) { ##check HD Start
+                Write-PSFMessage -Message "Checking Hard drive free space" -Level Verbose
+                foreach ($ApplicationServer in $config.AllAppServerList) {
+                    $HardDrives = Get-WmiObject -Class "Win32_LogicalDisk" -Namespace "root\CIMV2" -ComputerName $ApplicationServer
+                    foreach ($HardDrive in $HardDrives) {
+                        $FreeSpace = (($HardDrive.freespace / $HardDrive.size) * 100)
+                        if ($FreeSpace -lt $HDErrorValue) {
+                            Write-PSFMessage -Message "ERROR: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Warning
+                        }
+                        elseif ($FreeSpace -lt $HDWarningValue) {
+                            Write-PSFMessage -Message "WARNING: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Warning
+                        }
+                        else {
+                            Write-PSFMessage -Message  "VERBOSE: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Verbose
+                        }
+        
+                    }
+                }
+            }##Check HD end
+
+
+        }##additional details end
+
     }
-    END {
+    else {
+        Write-PSFMessage -Message "Warning: Can't find additional Environment Config. Not needed but recommend making one" -level warning  
     }
+
+}
+END {
+}
 }

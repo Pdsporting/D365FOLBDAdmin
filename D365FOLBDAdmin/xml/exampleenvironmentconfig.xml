@@ -17,8 +17,6 @@
          </SQLServer>
       </SQLDetails>
       <DataEnciphermentCertThumbprint>420F09C7DC2642759E7E1264D417175F5C9AC5A2</DataEnciphermentCertThumbprint>
-      <DriveSpaceWarningPercentage>15</DriveSpaceWarningPercentage>
-      <DriveSpaceErrorPercentage>3</DriveSpaceErrorPercentage>
       <ModifiedInfrastructureScriptsfolderLocation>//myshare/environment/InfrastureScripts-33627</ModifiedInfrastructureScriptsfolderLocation>
       <LBDAdminOrchestrationServers></LBDAdminOrchestrationServers>
    </EnvironmentAdditionalConfig>
@@ -44,7 +42,10 @@
          <Frequency>5</Frequency>
          <IfIssuesEmail Enabled="true" />
          <IfIssuesWebhookAll Enabled="true" />
-         <CheckAllHardDisks Enabled="true" />
+         <CheckAllHardDisks Enabled="true">
+         <HardDriveWarning>10</HardDriveWarning>
+         <HardDriveError>3</HardDriveError>
+         </CheckAllHardDisks>
       </CheckForHealthIssues>
       <DeploymentHeadsUpCommunication Enabled="false">
          <CreateMeetingRequest Enabled="false">
