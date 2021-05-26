@@ -115,7 +115,6 @@ function Get-D365LBDEnvironmentHealth {
             Write-PSFMessage -Level Verbose -Message "Found AdditionalEnvironmentDetails config"
             $EnvironmentAdditionalConfig = get-childitem  "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
 
-
             [xml]$XMLAdditionalConfig = Get-Content "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
             $CheckForHardDriveDetails = $XMLAdditionalConfig.d365LBDEnvironment.Automation.CheckForHealthIssues.CheckAllHardDisks
             $HDErrorValue = $CheckForHardDriveDetails.HardDriveError
@@ -137,19 +136,13 @@ function Get-D365LBDEnvironmentHealth {
                         else {
                             Write-PSFMessage -Message  "VERBOSE: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Verbose
                         }
-        
                     }
                 }
             }##Check HD end
-
-
         }##additional details end
-
-    
         else {
-            Write-PSFMessage -Message "Warning: Can't find additional Environment Config. Not needed but recommend making one" -level warning  
+            Write-PSFMessage -Message "Warning: Can't find additional environment Config. Not needed but recommend making one" -level warning  
         }
-
     }
     END {
     }

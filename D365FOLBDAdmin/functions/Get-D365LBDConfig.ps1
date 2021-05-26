@@ -140,9 +140,9 @@
             $ClientCert = $($ServiceFabricConnectionDetails | Where-Object { $_.Name -eq "ClientCertificate" }).value
             $ClusterID = $($ServiceFabricConnectionDetails | Where-Object { $_.Name -eq "ClusterID" }).value
             $ConnectionEndpoint = $($ServiceFabricConnectionDetails | Where-Object { $_.Name -eq "ConnectionEndpoint" }).value
-            if (!$ServerCertificate){
-            $ServerCertificate = $($ServiceFabricConnectionDetails | Where-Object { $_.Name -eq "ServerCertificate" }).value ##
-        }
+            if (!$ServerCertificate) {
+                $ServerCertificate = $($ServiceFabricConnectionDetails | Where-Object { $_.Name -eq "ServerCertificate" }).value ##
+            }
             ## With Orch Server config get more details for automation
             [int]$count = 1
             $AXSFConfigServerName = $AXSFServerNames | Select-Object -First $count
@@ -296,7 +296,7 @@
                 [xml]$currentclustermanifestxml = Get-Content $currentclustermanifestxmlfile
                 $AXSFServerListToCompare = $currentclustermanifestxml.clusterManifest.Infrastructure.NodeList.Node | Where-Object { $_.NodeTypeRef -eq 'AOSNodeType' -or $_.NodeTypeRef -eq 'PrimaryNodeType' }
                 $SFClusterCertificate = $(($($currentclustermanifestxml.ClusterManifest.FabricSettings.Section | Where-Object { $_.Name -eq "Security" })).Parameter | Where-Object { $_.Name -eq "ClusterCertThumbprints" }).value
-                $ServerCertificate = $SFClusterCertificate |select -First 1
+                $ServerCertificate = $SFClusterCertificate | select -First 1
                 foreach ($Node in $AXSFServerListToCompare) {
                     if (($AXSFServerNames -contains $Node) -eq $false) {
                         $AXSFServerNames += $Node
@@ -570,6 +570,14 @@ ORDER BY [rh].[restore_date] DESC"
                     4 { $OrchestratorJobRunBookState = 'Cancelled' }
                     5 { $OrchestratorJobState = 'Unknown Status' }
                 }
+                $OrchJobQuery = 'select top 1 JobId,State from OrchestratorJob order by ScheduledDateTime desc'
+                $RunBookQuery = 'select top 1 RunbookTaskId, State from RunBookTask order by StartDateTime desc'
+                $OrchJobQueryResults = Invoke-SQL -dataSource $OrchDatabaseServer -database $OrchDatabase -sqlCommand $OrchJobQuery
+                $RunBookQueryResults = Invoke-SQL -dataSource $OrchDatabaseServer -database $OrchDatabas -sqlCommand $RunBookQuery 
+                $LastOrchJobId = $($OrchJobQueryResults | select JobId).JobId
+               
+                $LastRunbookTaskId = $($RunBookQueryResults | select RunbookTaskId).RunbookTaskId
+                
             }
 
             if ($CustomModuleName) {
@@ -718,6 +726,9 @@ ORDER BY [rh].[restore_date] DESC"
                 'RunningAXCodeFolder'                        = $RunningAXCodeFolder 
                 'AggregatedSFState'                          = $AggregatedSFState
                 'NumberOfAppsinServicefabric'                = $NumberOfAppsinServicefabric
+                'LastOrchJobId'                              = $LastOrchJobId
+                'LastRunbookTaskId'                          = $LastRunbookTaskId
+
 
             }
 

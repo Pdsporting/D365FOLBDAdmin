@@ -36,13 +36,13 @@ function Set-D365LBDOptions {
         if (!$Config) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly   
         }
-        if ($PreDeployment)
-        {
+        if ($PreDeployment) {
             Write-PSFMessage -Level Verbose -Message "PreDeployment Selected"
+            $filenameprename = "PREDeployment"
         }
-        if ($PostDeployment)
-        {
+        if ($PostDeployment) {
             Write-PSFMessage -Level Verbose -Message "PostDeployment Selected"
+            $filenameprename = "PostDeployment"
         }
         if ($Config) {
             $agentsharelocation = $Config.AgentShareLocation
@@ -50,7 +50,19 @@ function Set-D365LBDOptions {
             $AXDatabaseName = $Config.AXDatabaseName
             $LCSEnvironmentName = $Config.LCSEnvironmentName
             $clienturl = $Config.clienturl
+            $LastRunbookTaskId = $Config.LastRunbookTaskId
         }
+        if (Test-Path $agentsharelocation\scripts\D365FOLBDAdmin -eq $false) {
+            new-item -path "$agentsharelocation\scripts\" -Name "D365FOLBDAdmin"  -ItemType "directory"
+        }
+        if ($null -eq $LastRunbookTaskId)
+        {
+            $newfile = New-Item $agentsharelocation -path $agentsharelocation\scripts\D365FOLBDAdmin -Name "$filenameprename.txt"
+        }
+        else{
+            $newfile = New-Item -path $agentsharelocation\scripts\D365FOLBDAdmin -Name "$filenameprename$LastRunbookTaskId.txt"
+        }
+        
         if ($RemoveMR) {
             Write-PSFMessage -Level Verbose -Message "Attempting to Remove MR"
             if ($PreDeployment -eq $True) {
@@ -60,9 +72,11 @@ function Set-D365LBDOptions {
                 $json = Get-Content $JsonLocation.FullName -Raw | ConvertFrom-Json
                 $json.components = $json.components | Where-Object { $_.name -ne 'financialreporting' }
                 $json | ConvertTo-Json -Depth 100 | Out-File $JsonLocationRoot\Setupmodules.json -Force -Verbose
+                "Removed MR - Successfully " | Out-file $newfile.FullName -Append
             }
             else {
                 Write-PSFMessage -Message "Error: Can't remove MR during anything other than PreDeployment" -Level VeryVerbose
+                "Removed MR - Failed " | Out-file $newfile.FullName -Append
             }
         }
         function Invoke-SQL {
@@ -88,6 +102,7 @@ function Set-D365LBDOptions {
             $dataSet.Tables
 
         }
+
         if ($MaintenanceModeOn) {
             Write-PSFMessage -Message "Turning On Maintenance Mode" -Level Verbose
             $SQLQuery = "update SQLSYSTEMVARIABLES SET VALUE = 1 Where PARM = 'CONFIGURATIONMODE'"
@@ -98,7 +113,7 @@ function Set-D365LBDOptions {
                 }
             }
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
-
+            "Turned On Maintenance Mode - Successfully " | Out-file $newfile.FullName -Append
         }
         if ($MaintenanceModeOff) {
             Write-PSFMessage -Message "Turning Off Maintenance Mode" -Level Verbose
@@ -110,11 +125,12 @@ function Set-D365LBDOptions {
                 }
             }
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
+            "Turned Off Maintenance Mode - Successfully " | Out-file $newfile.FullName -Append
         }
         if ($EnableUserid) {
 
             ##Trim 8 characters
-            $EnableUserid = $EnableUserid.SubString(0,8)
+            $EnableUserid = $EnableUserid.SubString(0, 8)
             Write-PSFMessage -Message "Enabling $EnableUserid. Note: User must already exist in system" -Level Verbose
             $SQLQuery = "update userinfo SET Enable = 1 Where id = '$EnableUserid'"
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
@@ -123,17 +139,18 @@ function Set-D365LBDOptions {
 
         }
         if ($DisableUserid) {
-            $DisableUserid = $DisableUserid.SubString(0,8)
+            $DisableUserid = $DisableUserid.SubString(0, 8)
             Write-PSFMessage -Message "Disabling $DisableUserid. Note: User must already exist in system" -Level Verbose
             $SQLQuery = "update userinfo SET Enable = 1 Where id = '$DisableUserid'"
-            $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
-            
+            $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery 
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
+            "Disabled User ID - Successfully " | Out-file $newfile.FullName -Append
 
         }
         if ($SQLQueryToRun) {
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
+            "Run SQL Script $SQLQuery - Successfully " | Out-file $newfile.FullName -Append
         }
         if ($MSTeamsURI) {
             if ($PreDeployment) {

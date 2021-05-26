@@ -30,9 +30,9 @@ function Remove-D365LBDStuckApps {
         }
         else {
             Write-PSFMessage -Message "Archive folder already exists" -Level Verbose
-            Get-ChildItem $environmentwp.FullName -Recurse | Remove-Item 
+            Get-ChildItem $environmentwp.FullName -Recurse | Remove-Item -Force
         }
-        Move-Item -Path $environmentwp.FullName -Destination $archivefolder -Force -Verbose
+        
         Write-PSFMessage -Message "Deleting applications" -Level Verbose
 
         $applicationNamesToIgnore = @('fabric:/LocalAgent', 'fabric:/Agent-Monitoring', 'fabric:/Agent-LBDTelemetry')
@@ -45,6 +45,9 @@ function Remove-D365LBDStuckApps {
         Get-ServiceFabricApplicationType | `
             Where-Object { $_.ApplicationTypeName -notin $applicationTypeNamesToIgnore } | `
             Unregister-ServiceFabricApplicationType -Force
+
+            Write-PSFMessage "Moving $($environmentwp.FullName) to $archivefolder " -Level VeryVerbose
+        Move-Item -Path $environmentwp.FullName -Destination $archivefolder -Force -Verbose
     
         Write-PSFMessage -Level Verbose -Message "Trigger deployment/retry in LCS"
     }
