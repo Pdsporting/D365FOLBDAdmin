@@ -62,6 +62,10 @@
                     Stop-PSFFunction -Message "Error: This is not an Local Business Data server or no config is found (import config if you have to). Stopping" -EnableException $true -Cmdlet $PSCmdlet
                 }
                 $ClusterManifestXMLFile = get-childitem "C:\ProgramData\SF\clusterManifest.xml" 
+                if (Test-path "C:\ProgramData\SF\$env:COMPUTERNAME\ClusterManifest.current.xml") {
+                    $ClusterManifestXMLFile = "C:\ProgramData\SF\$env:COMPUTERNAME\ClusterManifest.current.xml"
+                }
+                
             }
             else {
                 Write-PSFMessage -Message "Connecting to admin share on $ComputerName for cluster config" -Level Verbose
@@ -86,9 +90,9 @@
             if (($null -eq $OrchestratorServerNames) -or (!$OrchestratorServerNames)) {
                 $OrchestratorServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'PrimaryNodeType' }).NodeName
                 $AXSFServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'PrimaryNodeType' }).NodeName
-                $ReportServerServerName = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).NodeName 
-                $ReportServerServerip = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).IPAddressOrFQDN
             }
+            $ReportServerServerName = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).NodeName 
+            $ReportServerServerip = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).IPAddressOrFQDN
             foreach ($OrchestratorServerName in $OrchestratorServerNames) {
                 if (!$OrchServiceLocalAgentConfigXML) {
                     Write-PSFMessage -Message "Verbose: Connecting to $OrchestratorServerName for Orchestrator config" -Level Verbose
@@ -111,10 +115,12 @@
             if ($(Test-Path "$fabricfolder\clusterManifest.current.xml") -eq $True) {
                 Write-PSFMessage -Message "Gathering Current Manifest from $ComputerName as it exists"
                 $ClusterManifestXMLFile = get-childitem "$fabricfolder\clusterManifest.current.xml"
-                [xml]$xml = get-content $ClusterManifestXMLFile
+                
             }
+            [xml]$xml = get-content $ClusterManifestXMLFile
             Write-PSFMessage -Message "Reading $ClusterManifestXMLFile" -Level Verbose ##
-            $AXSFServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'AOSNodeType' }).NodeName
+            $AXSFServerNames = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'AOSNodeType' -or $_.NodeTypeRef -contains 'PrimaryNodeType' }).NodeName
+        
             $ReportServerServerName = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).NodeName 
             $ReportServerServerip = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).IPAddressOrFQDN
             $SFClusterCertificate = $(($($xml.ClusterManifest.FabricSettings.Section | Where-Object { $_.Name -eq "Security" })).Parameter | Where-Object { $_.Name -eq "ClusterCertThumbprints" }).value
@@ -269,7 +275,6 @@
                     @{'DatabaseEncryptionCertificates' = $_.DatabaseEncryptionThumbprint } }
                 $DatabaseEncryptionThumbprints = $DatabaseEncryptionThumbprints.DatabaseEncryptionThumprints
                 $DatabaseClusterServerNames = $DatabaseClusterServerNames.DatabaseClusterServerNames
-
             }
            
             if ((test-path \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt) -and !$EnvironmentAdditionalConfig) {
@@ -326,17 +331,27 @@
                                 $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                             }
                             $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
+                            if ($connection){
+                                Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My"
+                            }
                             if (!$connection) {
                                 $trialEndpoint = "https://$OrchestratorServerName" + ":198000"
                                 $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
+                                if ($connection){
+                                    Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My"
+                                }
                             }
                             if (!$connection) {
                                 $connection = Connect-ServiceFabricCluster
+                                if ($connection){
+                                    Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster"
+                                }
                             }
                             $count = $count + 1
                             if (!$connection) {
                                 Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
                             }
+                            
                         } until ($connection -or ($count -eq $($OrchestratorServerNames).Count))
                     }
                     <#NewConnection logic end#>
@@ -573,9 +588,8 @@ ORDER BY [rh].[restore_date] DESC"
                 $OrchJobQuery = 'select top 1 JobId,State from OrchestratorJob order by ScheduledDateTime desc'
                 $RunBookQuery = 'select top 1 RunbookTaskId, State from RunBookTask order by StartDateTime desc'
                 $OrchJobQueryResults = Invoke-SQL -dataSource $OrchDatabaseServer -database $OrchDatabase -sqlCommand $OrchJobQuery
-                $RunBookQueryResults = Invoke-SQL -dataSource $OrchDatabaseServer -database $OrchDatabas -sqlCommand $RunBookQuery 
+                $RunBookQueryResults = Invoke-SQL -dataSource $OrchDatabaseServer -database $OrchDatabase -sqlCommand $RunBookQuery 
                 $LastOrchJobId = $($OrchJobQueryResults | select JobId).JobId
-               
                 $LastRunbookTaskId = $($RunBookQueryResults | select RunbookTaskId).RunbookTaskId
                 
             }
