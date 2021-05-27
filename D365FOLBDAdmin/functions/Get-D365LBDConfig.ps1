@@ -65,7 +65,6 @@
                 if (Test-path "C:\ProgramData\SF\$env:COMPUTERNAME\ClusterManifest.current.xml") {
                     $ClusterManifestXMLFile = "C:\ProgramData\SF\$env:COMPUTERNAME\ClusterManifest.current.xml"
                 }
-                
             }
             else {
                 Write-PSFMessage -Message "Connecting to admin share on $ComputerName for cluster config" -Level Verbose

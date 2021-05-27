@@ -25,24 +25,28 @@ Restarts the state of the orchestratorjob and runbooktaskid tables last executed
         if (!$Config -and !$OrchDatabaseServer) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
         }
-        if ($null -eq $Config.OrchDatabaseServer) {
-            Write-PSFMessage -Level Verbose -Message "Can't find OrchDatabaseServer. Suggest running the command using the parameter set directly"
-        }
         else {
-            $OrchDatabaseServer = $Config.OrchDatabaseServer 
-            if ($null -eq $Config.OrchDatabaseName) {
-                $OrchDatabaseName = $Config.OrchDatabaseName 
+            if (!$config) {
+                if ($OrchDatabaseName) {
+                    Write-PSFMessage -Message "No DatabaseName specified trying OrchestratorData" -Level VeryVerbose
+                    $OrchDatabaseName = 'OrchestratorData'
+                }
             }
             else {
-                Write-PSFMessage -Message "No DatabaseName specified trying OrchestratorData" -Level VeryVerbose
+                ##Using Config
+                Write-PSFMessage -Message "Using Config for execution" -Level Verbose
+                $OrchDatabaseName = $Config.OrchDatabaseName
+                $OrchestratorServerName = $Config.OrchestratorServerName
             }
         }
 
-
+        if ($null -eq $OrchDatabaseServer) {
+            Stop-PSFFunction -Message "Error: Can't Find OrchDatabaseServer. Stopping. Suggest running the command using the parameter set directly" -EnableException $true -Cmdlet $PSCmdlet
+        }
+  
         $OrchJobQuery = 'select top 1 JobId,State from OrchestratorJob order by ScheduledDateTime desc'
         $RunBookQuery = 'select top 1 RunbookTaskId, State from RunBookTask order by StartDateTime desc'
-
-       
+   
         function Invoke-SQL {
             param(
                 [string] $dataSource = ".\SQLEXPRESS",
@@ -85,7 +89,6 @@ Restarts the state of the orchestratorjob and runbooktaskid tables last executed
             Invoke-SQL -dataSource $OrchDatabaseServer -database $OrchDatabaseName -sqlCommand $RestartQuery1 
             Write-PSFMessage -Level VeryVerbose -Message "$RestartQuery2 Running on $OrchDatabaseServer against $OrchDatabaseName"
             Invoke-SQL -dataSource $OrchDatabaseServer -database $OrchDatabaseName -sqlCommand $RestartQuery2 
-
         }
 
         if (!$Config) {
