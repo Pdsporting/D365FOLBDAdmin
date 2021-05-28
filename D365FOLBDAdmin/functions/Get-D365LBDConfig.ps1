@@ -101,7 +101,7 @@
                 if (!$OrchServiceLocalAgentVersionNumber) {
                     Write-PSFMessage -Message "Verbose: Connecting to $OrchestratorServerName for Orchestrator Local Agent version" -Level Verbose
                     $OrchServiceLocalAgentVersionNumber = $(get-childitem "\\$OrchestratorServerName\C$\ProgramData\SF\*\Fabric\work\Applications\LocalAgentType_App*\OrchestrationServicePkg.Code.*\OrchestrationService.exe").VersionInfo.Fileversion
-                }-t
+                }
                 If (!$SFVersionNumber) {
                     try {
                         $SFVersionNumber = Invoke-Command -ScriptBlock { Get-ItemPropertyValue 'HKLM:\SOFTWARE\Microsoft\Service Fabric\' -Name FabricVersion } -ComputerName $OrchestratorServerName
@@ -673,7 +673,7 @@ ORDER BY [rh].[restore_date] DESC"
             }
             try {
                 Write-PSFMessage -Level Verbose -Message "Looking for process AXService $AXSFConfigServerName to get the running folder"
-                $RunningAXCodeFolder = Invoke-Command -ComputerName $AXSFConfigServerName -ScriptBlock { $(Split-Path $(Get-Process | Where-Object { $_.Name -eq "AXService" } | select *).Path -Parent) }
+                $RunningAXCodeFolder = Invoke-Command -ComputerName $AXSFConfigServerName -ScriptBlock { $($process = Get-Process | Where-Object { $_.Name -eq "AXService" }; if ($process){split-path $($process|select *).Path -Parent })}
             }
             catch {
 
