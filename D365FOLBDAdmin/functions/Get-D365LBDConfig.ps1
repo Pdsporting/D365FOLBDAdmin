@@ -92,6 +92,7 @@
             }
             $ReportServerServerName = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).NodeName 
             $ReportServerServerip = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).IPAddressOrFQDN
+            $ManagementReporterServerName = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'MRType' }).NodeName 
             foreach ($OrchestratorServerName in $OrchestratorServerNames) {
                 if (!$OrchServiceLocalAgentConfigXML) {
                     Write-PSFMessage -Message "Verbose: Connecting to $OrchestratorServerName for Orchestrator config" -Level Verbose
@@ -100,7 +101,7 @@
                 if (!$OrchServiceLocalAgentVersionNumber) {
                     Write-PSFMessage -Message "Verbose: Connecting to $OrchestratorServerName for Orchestrator Local Agent version" -Level Verbose
                     $OrchServiceLocalAgentVersionNumber = $(get-childitem "\\$OrchestratorServerName\C$\ProgramData\SF\*\Fabric\work\Applications\LocalAgentType_App*\OrchestrationServicePkg.Code.*\OrchestrationService.exe").VersionInfo.Fileversion
-                }
+                }-t
                 If (!$SFVersionNumber) {
                     try {
                         $SFVersionNumber = Invoke-Command -ScriptBlock { Get-ItemPropertyValue 'HKLM:\SOFTWARE\Microsoft\Service Fabric\' -Name FabricVersion } -ComputerName $OrchestratorServerName
@@ -355,11 +356,11 @@
                     }
                     <#NewConnection logic end#>
                    
-                    $NumberOfAppsinServicefabric = $($(get-servicefabricclusterhealth | select ApplicationHealthState).ApplicationHealthState.Count) - 1
+                    $NumberOfAppsinServicefabric = $($(get-servicefabricclusterhealth | select ApplicationHealthStates).ApplicationHealthStates.Count) - 1
                     if ($NumberOfAppsinServicefabric -eq -1) {
                         $NumberOfAppsinServicefabric = $null
                     }
-                    $AggregatedSFState = $(get-servicefabricclusterhealth | select AggregatedHealthState).AggregatedHealthStaate
+                    $AggregatedSFState = $(get-servicefabricclusterhealth | select AggregatedHealthState).AggregatedHealthState
                     $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") } 
                     Write-PSFMessage -message "Service Fabric connected. Grabbing nodes to validate status" -Level Verbose
                     $appservers = $nodes.NodeName | Sort-Object
@@ -601,6 +602,7 @@ ORDER BY [rh].[restore_date] DESC"
                     $version = ($versionfile -replace $CustomModuleName) -replace ".xml"
                     $versions += $version
                 }
+                $versions = $versions | Where-Object {$_}
                 $CustomModuleVersionFullPreppedinAgentShare = $versions | Sort-Object { $_.CreationTime } -Descending | Select-Object -First 1
                 $CustomModuleVersionFullPreppedinAgentShare = $CustomModuleVersionFullPreppedinAgentShare.trim()
             }
@@ -715,7 +717,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'InvalidSFServers'                           = $invalidnodes
                 'DisabledSFServers'                          = $disablednodes
                 'AOSKernelVersion'                           = $AOSKernelVersion
-                'DatabaseEncryptionCertificate'              = $DatabaseEncryptionCertificate 
+                'DatabaseEncryptionCertificates'              = $DatabaseEncryptionCertificates 
                 'DatabaseClusteredStatus'                    = $DatabaseClusteredStatus
                 'DatabaseClusterServerNames'                 = $DatabaseClusterServerNames
                 'SourceAXSFServer'                           = $AXSFConfigServerName
@@ -733,8 +735,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'OrchestratorJobRunBookState'                = $OrchestratorJobRunBookState
                 'OrchestratorJobState'                       = $OrchestratorJobState
                 'D365FOLBDAdminEnvironmentType'              = $EnvironmentType
-                'DatabaseEncryptionThumbprints'              = $DatabaseEncryptionThumbprints
-                'ManagementReporterServers'                  = $ManagementReporterServers
+                'ManagementReporterServers'                  = $ManagementReporterServerName 
                 'SSRSClusterServerNames'                     = $SSRSClusterServerNames
                 'RunningAXCodeFolder'                        = $RunningAXCodeFolder 
                 'AggregatedSFState'                          = $AggregatedSFState

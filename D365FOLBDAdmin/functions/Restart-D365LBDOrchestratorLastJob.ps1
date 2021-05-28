@@ -36,7 +36,7 @@ Restarts the state of the orchestratorjob and runbooktaskid tables last executed
                 ##Using Config
                 Write-PSFMessage -Message "Using Config for execution" -Level Verbose
                 $OrchDatabaseName = $Config.OrchDatabaseName
-                $OrchestratorServerName = $Config.OrchestratorServerName
+                $OrchDatabaseServer = $Config.OrchDatabaseServer
             }
         }
 
