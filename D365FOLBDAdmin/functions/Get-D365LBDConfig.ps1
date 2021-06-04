@@ -136,6 +136,10 @@
 
             $RetrievedXMLData = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -eq 'Data' } 
             $OrchDBConnectionString = $RetrievedXMLData.Parameter
+            $sb = New-Object System.Data.Common.DbConnectionStringBuilder
+                $sb.set_ConnectionString($($OrchDBConnectionString.Value))
+                $OrchDatabase = $sb.'initial catalog'
+                $OrchdatabaseServer = $sb.'data source'
     
             $RetrievedXMLData = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -eq 'Download' } 
             $downloadfolderLocation = $RetrievedXMLData.Parameter
@@ -192,10 +196,7 @@
                 $SMBStorage = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -EQ 'SmbStorage' }
                 $SharedAccessSMBCertificate = $($SMBStorage.Parameter | Where-Object { $_.Name -eq 'SharedAccessThumbprint' }).value
        
-                $sb = New-Object System.Data.Common.DbConnectionStringBuilder
-                $sb.set_ConnectionString($($OrchDBConnectionString.Value))
-                $OrchDatabase = $sb.'initial catalog'
-                $OrchdatabaseServer = $sb.'data source'
+                
             }
 
             $AgentShareLocation = $downloadfolderLocation.Value
@@ -569,6 +570,14 @@ ORDER BY [rh].[restore_date] DESC"
                 $OrchestratorDataRunBookStateString = $OrchestratorDataRunBookStateString.Substring(0, $OrchestratorDataRunBookStateString.Length - 1)
                 [int]$OrchestratorDataRunBookStateInt = $OrchestratorDataRunBookStateString
 
+                switch ($OrchestratorDataOrchestratorJobStateInt ) {
+                    0 { $OrchestratorJobState = 'Not Started' }
+                    1 { $OrchestratorJobState = 'In Progress' }
+                    2 { $OrchestratorJobState = 'Successful' }
+                    3 { $OrchestratorJobState = 'Failed' }
+                    4 { $OrchestratorJobState = 'Cancelled' }
+                    5 { $OrchestratorJobState = 'Unknown Status' }
+                }
                 switch ( $OrchestratorDataRunBookStateInt) {
                     0 { $OrchestratorJobRunBookState = 'Not Started' }
                     1 { $OrchestratorJobRunBookState = 'In Progress' }
@@ -576,14 +585,6 @@ ORDER BY [rh].[restore_date] DESC"
                     3 { $OrchestratorJobRunBookState = 'Failed' }
                     4 { $OrchestratorJobRunBookState = 'Cancelled' }
                     5 { $OrchestratorJobRunBookState = 'Unknown Status' }
-                }
-                switch ($OrchestratorDataOrchestratorJobStateInt ) {
-                    0 { $OrchestratorJobRunBookState = 'Not Started' }
-                    1 { $OrchestratorJobRunBookState = 'In Progress' }
-                    2 { $OrchestratorJobRunBookState = 'Successful' }
-                    3 { $OrchestratorJobRunBookState = 'Failed' }
-                    4 { $OrchestratorJobRunBookState = 'Cancelled' }
-                    5 { $OrchestratorJobState = 'Unknown Status' }
                 }
                 $OrchJobQuery = 'select top 1 JobId,State from OrchestratorJob order by ScheduledDateTime desc'
                 $RunBookQuery = 'select top 1 RunbookTaskId, State from RunBookTask order by StartDateTime desc'
