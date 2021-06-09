@@ -137,9 +137,9 @@
             $RetrievedXMLData = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -eq 'Data' } 
             $OrchDBConnectionString = $RetrievedXMLData.Parameter
             $sb = New-Object System.Data.Common.DbConnectionStringBuilder
-                $sb.set_ConnectionString($($OrchDBConnectionString.Value))
-                $OrchDatabase = $sb.'initial catalog'
-                $OrchdatabaseServer = $sb.'data source'
+            $sb.set_ConnectionString($($OrchDBConnectionString.Value))
+            $OrchDatabase = $sb.'initial catalog'
+            $OrchdatabaseServer = $sb.'data source'
     
             $RetrievedXMLData = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -eq 'Download' } 
             $downloadfolderLocation = $RetrievedXMLData.Parameter
@@ -276,6 +276,7 @@
                     @{'DatabaseEncryptionCertificates' = $_.DatabaseEncryptionThumbprint } }
                 $DatabaseEncryptionThumbprints = $DatabaseEncryptionThumbprints.DatabaseEncryptionThumprints
                 $DatabaseClusterServerNames = $DatabaseClusterServerNames.DatabaseClusterServerNames
+                $DataEnciphermentCertificate = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.DataEnciphermentCertThumbprint
             }
            
             if ((test-path \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt) -and !$EnvironmentAdditionalConfig) {
@@ -332,19 +333,19 @@
                                 $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                             }
                             $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
-                            if ($connection){
+                            if ($connection) {
                                 Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My"
                             }
                             if (!$connection) {
                                 $trialEndpoint = "https://$OrchestratorServerName" + ":198000"
                                 $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
-                                if ($connection){
+                                if ($connection) {
                                     Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My"
                                 }
                             }
                             if (!$connection) {
                                 $connection = Connect-ServiceFabricCluster
-                                if ($connection){
+                                if ($connection) {
                                     Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster"
                                 }
                             }
@@ -603,9 +604,11 @@ ORDER BY [rh].[restore_date] DESC"
                     $version = ($versionfile -replace $CustomModuleName) -replace ".xml"
                     $versions += $version
                 }
-                $versions = $versions | Where-Object {$_}
+                $versions = $versions | Where-Object { $_ }
                 $CustomModuleVersionFullPreppedinAgentShare = $versions | Sort-Object { $_.CreationTime } -Descending | Select-Object -First 1
-                $CustomModuleVersionFullPreppedinAgentShare = $CustomModuleVersionFullPreppedinAgentShare.trim()
+                if ($CustomModuleVersionFullPreppedinAgentShare) {
+                    $CustomModuleVersionFullPreppedinAgentShare = $CustomModuleVersionFullPreppedinAgentShare.trim()
+                }
             }
             ##Getting DB Sync Status using winevent Start
             Foreach ($AXSFServerName in $AXSFServerNames) {
@@ -674,11 +677,15 @@ ORDER BY [rh].[restore_date] DESC"
             }
             try {
                 Write-PSFMessage -Level Verbose -Message "Looking for process AXService $AXSFConfigServerName to get the running folder"
-                $RunningAXCodeFolder = Invoke-Command -ComputerName $AXSFConfigServerName -ScriptBlock { $($process = Get-Process | Where-Object { $_.Name -eq "AXService" }; if ($process){split-path $($process|select *).Path -Parent })}
+                $RunningAXCodeFolder = Invoke-Command -ComputerName $AXSFConfigServerName -ScriptBlock { $($process = Get-Process | Where-Object { $_.Name -eq "AXService" }; if ($process) { split-path $($process | select *).Path -Parent }) }
             }
             catch {
 
             }
+            $WPFolder = join-path $AgentShareLocation "wp\$LCSEnvironmentName"
+            $SetupJson = Get-ChildItem "$WPFolder\StandaloneSetup-*\setupmodules.json" | select -First 1
+            $json = Get-Content $SetupJson.FullName -Raw | ConvertFrom-Json 
+            $componentsinsetupmodule = $json.components.name
             $SSRSClusterServerNames = $ReportServerServerName
             # Collect information into a hashtable Add any new field to Get-D365TestConfigData
             # Make sure to add Certification to Cert list below properties if adding cert
@@ -718,7 +725,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'InvalidSFServers'                           = $invalidnodes
                 'DisabledSFServers'                          = $disablednodes
                 'AOSKernelVersion'                           = $AOSKernelVersion
-                'DatabaseEncryptionCertificates'              = $DatabaseEncryptionCertificates 
+                'DatabaseEncryptionCertificates'             = $DatabaseEncryptionCertificates 
                 'DatabaseClusteredStatus'                    = $DatabaseClusteredStatus
                 'DatabaseClusterServerNames'                 = $DatabaseClusterServerNames
                 'SourceAXSFServer'                           = $AXSFConfigServerName
@@ -743,7 +750,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'NumberOfAppsinServicefabric'                = $NumberOfAppsinServicefabric
                 'LastOrchJobId'                              = $LastOrchJobId
                 'LastRunbookTaskId'                          = $LastRunbookTaskId
-
+                'Componentsinsetupmodule'                    = $componentsinsetupmodule
 
             }
 
