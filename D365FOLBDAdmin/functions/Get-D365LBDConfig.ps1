@@ -111,7 +111,7 @@
                     }
                 }
             }
-            $fabricfolder = get-childitem "\\$OrchestratorServerName\C$\ProgramData\SF\*\Fabric" | Sort-Object { $_.LastWriteTime } | select -First 1
+            $fabricfolder = get-childitem "\\$OrchestratorServerName\C$\ProgramData\SF\*\Fabric" | Sort-Object { $_.LastWriteTime } | Select-Object -First 1
             if ($(Test-Path "$fabricfolder\clusterManifest.current.xml") -eq $True) {
                 Write-PSFMessage -Message "Gathering Current Manifest from $ComputerName as it exists"
                 $ClusterManifestXMLFile = get-childitem "$fabricfolder\clusterManifest.current.xml"
@@ -124,7 +124,7 @@
             $ReportServerServerName = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).NodeName 
             $ReportServerServerip = $($xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node | Where-Object { $_.NodeTypeRef -contains 'ReportServerType' }).IPAddressOrFQDN
             $SFClusterCertificate = $(($($xml.ClusterManifest.FabricSettings.Section | Where-Object { $_.Name -eq "Security" })).Parameter | Where-Object { $_.Name -eq "ClusterCertThumbprints" }).value
-            $ServerCertificate = $SFClusterCertificate | select -First 1
+            $ServerCertificate = $SFClusterCertificate | Select-Object -First 1
             if (!$OrchServiceLocalAgentConfigXML) {
                 Stop-PSFFunction -Message "Error: Can't find any Local Agent file on the Orchestrator Node" -EnableException $true -Cmdlet $PSCmdlet
             }
@@ -267,14 +267,14 @@
             }
 
             if ($EnvironmentAdditionalConfig) {
-                Write-PSFMessage -Message "Reading  $EnvironmentAdditionalConfig " -Level Verbose
+                Write-PSFMessage -Message "Reading $EnvironmentAdditionalConfig" -Level Verbose
                 [xml]$EnvironmentAdditionalConfigXML = get-content  $EnvironmentAdditionalConfig
                 $EnvironmentType = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentType.'#text'.Trim()
                 $DatabaseClusterServerNames = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.SQLDetails.SQLServer | ForEach-Object -Process { New-Object -TypeName psobject -Property `
                     @{'DatabaseClusterServerNames' = $_.ServerName } }
                 $DatabaseEncryptionThumbprints = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.SQLDetails.SQLServer | ForEach-Object -Process { New-Object -TypeName psobject -Property `
                     @{'DatabaseEncryptionCertificates' = $_.DatabaseEncryptionThumbprint } }
-                $DatabaseEncryptionThumbprints = $DatabaseEncryptionThumbprints.DatabaseEncryptionThumprints
+                $DatabaseEncryptionThumbprints = $DatabaseEncryptionThumbprints.DatabaseEncryptionCertificates
                 $DatabaseClusterServerNames = $DatabaseClusterServerNames.DatabaseClusterServerNames
                 $DataEnciphermentCertificate = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.DataEnciphermentCertThumbprint
                 if ($DatabaseClusterServerNames.Count -gt 1) {
