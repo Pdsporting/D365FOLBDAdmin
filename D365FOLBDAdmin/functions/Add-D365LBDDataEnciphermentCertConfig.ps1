@@ -1,4 +1,4 @@
-function Add-D365LBDDataEnciphermentCertConfig {
+<#function Add-D365LBDDataEnciphermentCertConfig {
     <#
     .SYNOPSIS
    Adds the Encipherment Cert into the D365 Servers for the configuration of the local business data environment.
@@ -17,7 +17,7 @@ function Add-D365LBDDataEnciphermentCertConfig {
     .PARAMETER Config
     Custom PSObject
     Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
-   #>
+   #><#DEPRECATED
     [alias("Add-D365DataEnciphermentCertConfig")]
     [CmdletBinding()]
     param([Parameter(ValueFromPipeline = $True,
@@ -49,4 +49,4 @@ function Add-D365LBDDataEnciphermentCertConfig {
     END {
       
     }
-}
+}#>

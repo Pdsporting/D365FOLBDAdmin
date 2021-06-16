@@ -52,11 +52,9 @@
 		'Export-D365Certificates',
 		'Get-D365LBDTestConfigData',
 		'Start-MonitorD365Deployment',
-		'Add-D365LBDDataEnciphermentCertConfig',
 		"New-D365LBDAXSFNode",
 		"Update-ServiceFabricD365ClusterConfig",
 		"Get-D365LBDDBEvents",
-		'Add-D365LBDDatabaseDetailsandCert',
 		'Enable-D365LBDSFAppServers',
 		'Disable-D365LBDSFAppServers',
 		'Export-D365LBDConfigReport',
@@ -80,8 +78,7 @@
 	VariablesToExport = ''
 	
 	# Aliases to export from this module
-	AliasesToExport = @('Add-D365DataEnciphermentCertConfig',
-	"Export-D365AssetModuleVersion",
+	AliasesToExport = @("Export-D365AssetModuleVersion",
 	"Export-D365FOLBDAssetModuleVersion", 
 	"Get-D365CertsFromConfig",
 	"Get-D365Config",
@@ -95,7 +92,6 @@
 	"Start-D365DBSync",
 	"Start-D365FOLBDDBSync",
 	"Get-D365DBEvents",
-	'Add-D365DatabaseDetailsandCert',
 	'Disable-D365SFAppServers',
 	'Enable-D365SFAppServers',
 	'Set-D365PreDeploymentOptions',

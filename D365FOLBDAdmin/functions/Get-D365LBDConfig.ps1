@@ -196,7 +196,6 @@
                 $SMBStorage = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -EQ 'SmbStorage' }
                 $SharedAccessSMBCertificate = $($SMBStorage.Parameter | Where-Object { $_.Name -eq 'SharedAccessThumbprint' }).value
        
-                
             }
 
             $AgentShareLocation = $downloadfolderLocation.Value
@@ -838,9 +837,11 @@ ORDER BY [rh].[restore_date] DESC"
             }
             $FinalOutput = $CertificateExpirationHash, $Properties | Merge-Hashtables
             ##Sends Custom Object to Pipeline
+            Remove-PSSession -Session $SFModuleSession  
             [PSCustomObject] $FinalOutput
         }
     }
+    
     END {
         if ($ConfigExportToFile) {
             $FinalOutput | Export-Clixml -Path $ConfigExportToFile

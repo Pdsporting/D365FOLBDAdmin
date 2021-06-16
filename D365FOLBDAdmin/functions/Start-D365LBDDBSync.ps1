@@ -86,7 +86,7 @@ function Start-D365LBDDBSync {
             $AXSFCodeBinFolder = Join-Path $AXSFCodeFolder "\bin"
             $D365DeploymentExe = Get-ChildItem $AXSFCodeBinFolder | Where-Object { $_.Name -eq "Microsoft.Dynamics.AX.Deployment.Setup.exe" }
 
-            $CommandLineArgs = '-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd {5} --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser, $SQLUserPassword
+            $CommandLineArgs = '--metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd {5} --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser, $SQLUserPassword
             
             Write-PSFMessage -Level Verbose -Message "$($D365DeploymentExe.FullName)"
             Write-PSFMessage -Level Verbose -Message '-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd removed --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser
@@ -120,10 +120,10 @@ function Start-D365LBDDBSync {
                 $D365DeploymentExe = Get-ChildItem $AXSFCodeBinFolder | Where-Object { $_.Name -eq "Microsoft.Dynamics.AX.Deployment.Setup.exe" }
                 $D365DeploymentExe
             }
-            Write-PSFMessage -Level Verbose -Message '-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd removed --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser
-             
-            Enter-PSSession -ComputerName $AXSFServer
-            $CommandLineArgs = '-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd {5} --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $using:AXSFCodePackagesFolder, $using:AXSFCodePackagesFolder, $using:AXDatabaseServer, $using:AXDatabaseName, $using:SQLUser, $using:SQLUserPassword
+            Write-PSFMessage -Level Verbose -Message "$('-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd removed --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser)"
+             $session = New-PSSession -ComputerName $AXSFServer
+            invoke-command -SessionName $session -ScriptBlock {
+            $CommandLineArgs = '--metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd {5} --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $using:AXSFCodePackagesFolder, $using:AXSFCodePackagesFolder, $using:AXDatabaseServer, $using:AXDatabaseName, $using:SQLUser, $using:SQLUserPassword
             if ($using:Wait) {
                 $DBSyncProcess = Start-Process -file $using:D365DeploymentExe.fullname -ArgumentList "$CommandLineArgs" -Wait
             }
@@ -131,7 +131,8 @@ function Start-D365LBDDBSync {
                 Start-Process -file $using:D365DeploymentExe.fullname -ArgumentList "$CommandLineArgs" -Wait
                 Start-Sleep -Seconds 5
             }
-           Exit-PSSession 
+        } -ArgumentList $D365DeploymentExe, $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser, $SQLUserPassword, $Wait
+           Remove-PSSession $session
  
         }
         $currtime = Get-date
