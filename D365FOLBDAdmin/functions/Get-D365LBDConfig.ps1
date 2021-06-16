@@ -277,6 +277,12 @@
                 $DatabaseEncryptionThumbprints = $DatabaseEncryptionThumbprints.DatabaseEncryptionThumprints
                 $DatabaseClusterServerNames = $DatabaseClusterServerNames.DatabaseClusterServerNames
                 $DataEnciphermentCertificate = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.DataEnciphermentCertThumbprint
+                if ($DatabaseClusterServerNames.Count -gt 1) {
+                    $DatabaseClusteredStatus = 'Clustered'
+                }
+                else {
+                    $DatabaseClusteredStatus = 'NonClustered'
+                }
             }
            
             if ((test-path \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt) -and !$EnvironmentAdditionalConfig) {
@@ -286,7 +292,7 @@
             else {
                 Write-PSFMessage -Level Warning -Message "Warning: No Encipherment Cert found run the function use Add-D365LBDDataEnciphermentCertConfig to add"
             }
-
+            <#Deprecated
             if ((test-path \\$ComputerName\c$\ProgramData\SF\DatabaseDetailsandCert.txt) -and !$EnvironmentAdditionalConfig) {
                 $DatabaseDetailsandCertConfig = Get-Content \\$ComputerName\c$\ProgramData\SF\DatabaseDetailsandCert.txt
                 Write-PSFMessage -Level Verbose -Message "Found DatabaseDetailsandCert config additional details added to config data"
@@ -296,7 +302,7 @@
             }
             else {
                 Write-PSFMessage -Level Warning -Message "Warning: No additional Database config Details found use Add-D365LBDDatabaseDetailsandCert to add"
-            }
+            }#>
             ##checking for after deployment added servers
             try {
                 $currentclustermanifestxmlfile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\clustermanifest.current.xml" | Sort-Object { $_.CreationTime } | Select-Object -First 1
@@ -725,7 +731,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'InvalidSFServers'                           = $invalidnodes
                 'DisabledSFServers'                          = $disablednodes
                 'AOSKernelVersion'                           = $AOSKernelVersion
-                'DatabaseEncryptionCertificates'             = $DatabaseEncryptionCertificates 
+                'DatabaseEncryptionCertificates'             = $DatabaseEncryptionThumbprints
                 'DatabaseClusteredStatus'                    = $DatabaseClusteredStatus
                 'DatabaseClusterServerNames'                 = $DatabaseClusterServerNames
                 'SourceAXSFServer'                           = $AXSFConfigServerName
@@ -750,7 +756,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'NumberOfAppsinServicefabric'                = $NumberOfAppsinServicefabric
                 'LastOrchJobId'                              = $LastOrchJobId
                 'LastRunbookTaskId'                          = $LastRunbookTaskId
-                'Componentsinsetupmodule'                    = $componentsinsetupmodule
+                'ComponentsinSetupModule'                    = $componentsinsetupmodule
 
             }
 
@@ -785,11 +791,14 @@ ORDER BY [rh].[restore_date] DESC"
                                 $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\Trust | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value
                             }
                             if ($cert -eq 'DatabaseEncryptionCertificate' -and !$certexpiration) {
-                                $DatabaseClusterServerName = $DatabaseClusterServerNames | Select-Object -First 1
                                 try {
-                                    $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value -ErrorAction Stop
-                                    if (!$certexpiration) {
-                                        $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value -ErrorAction Stop
+                                    foreach ($DatabaseClusterServerName in $DatabaseClusterServerNames) {
+                                        if (!$certexpiration) {
+                                            $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value -ErrorAction Stop
+                                        }
+                                        if (!$certexpiration) {
+                                            $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value -ErrorAction Stop
+                                        }
                                     }
                                 }
                                 catch {

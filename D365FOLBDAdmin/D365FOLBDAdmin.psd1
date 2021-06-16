@@ -26,7 +26,7 @@
 	# Modules that must be imported into the global environment prior to importing
 	# this module
 	RequiredModules = @(
-		@{ ModuleName='PSFramework'; ModuleVersion='1.1.59' }
+		@{ ModuleName='PSFramework'; ModuleVersion='1.6.201' }
 	)
 	
 	# Assemblies that must be loaded prior to importing this module
