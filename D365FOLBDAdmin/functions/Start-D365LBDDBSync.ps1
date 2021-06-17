@@ -75,7 +75,8 @@ function Start-D365LBDDBSync {
         if ($Config) {
             $AXDatabaseServer = $Config.AXDatabaseServer
             $AXDatabaseName = $Config.AXDatabaseName
-            $AXSFServer = $Config.AXSFServer
+            $AXSFServer = $Config.SourceAXSFServer
+            Write-PSFMessage -Level VeryVerbose -Message "Sync will be using AXSF Server: $AXSFServer and Database Server: $AXDatabaseServer DB: $AXDatabaseName "
         }
         $LatestEventinLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents 1 -computername $AXSFServer -ErrorAction Stop).TimeCreated
         if (($AXSFServer.IsLocalhost) -or ($AXSFServer -eq $env:COMPUTERNAME) -or ($AXSFServer -eq "$env:COMPUTERNAME.$env:UserDNSDOMAINNAME")) {
@@ -122,7 +123,7 @@ function Start-D365LBDDBSync {
             }
             Write-PSFMessage -Level Verbose -Message "$('-metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd removed --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $AXSFCodePackagesFolder, $AXSFCodePackagesFolder, $AXDatabaseServer, $AXDatabaseName, $SQLUser)"
              $session = New-PSSession -ComputerName $AXSFServer
-            invoke-command -SessionName $session -ScriptBlock {
+            invoke-command -Session $session -ScriptBlock {
             $CommandLineArgs = '--metadatadir {0} --bindir {1} --sqlserver {2} --sqldatabase {3} --sqluser {4} --sqlpwd {5} --setupmode sync --syncmode fullall --isazuresql false --verbose true' -f $using:AXSFCodePackagesFolder, $using:AXSFCodePackagesFolder, $using:AXDatabaseServer, $using:AXDatabaseName, $using:SQLUser, $using:SQLUserPassword
             if ($using:Wait) {
                 $DBSyncProcess = Start-Process -file $using:D365DeploymentExe.fullname -ArgumentList "$CommandLineArgs" -Wait

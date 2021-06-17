@@ -52,15 +52,33 @@ function Set-D365LBDOptions {
             $clienturl = $Config.clienturl
             $LastRunbookTaskId = $Config.LastRunbookTaskId
         }
-        if (Test-Path $agentsharelocation\scripts\D365FOLBDAdmin -eq $false) {
+        if ((Test-Path $agentsharelocation\scripts\D365FOLBDAdmin) -eq $false) {
+            
             new-item -path "$agentsharelocation\scripts\" -Name "D365FOLBDAdmin"  -ItemType "directory"
         }
-        if ($null -eq $LastRunbookTaskId)
-        {
-            $newfile = New-Item $agentsharelocation -path $agentsharelocation\scripts\D365FOLBDAdmin -Name "$filenameprename.txt"
+        if ($null -eq $LastRunbookTaskId) {
+            $norunbooktaskid = get-date -Format MMddyy
+            if ((Test-Path $agentsharelocation\scripts\D365FOLBDAdmin\$filenameprename$norunbooktaskid.xml) -eq $false) {
+                #$newfile = New-Item $agentsharelocation -path $agentsharelocation\scripts\D365FOLBDAdmin -Name "$filenameprename$norunbooktaskid.xml"
+                @{} | Export-Clixml "$agentsharelocation\scripts\D365FOLBDAdmin\$filenameprename$norunbooktaskid.xml"
+
+            }
+            else {
+                Write-PSFMessage -Level VeryVerbose -Message "$filenameprename$LastRunbookTaskId.xml already exists"
+            }
         }
-        else{
-            $newfile = New-Item -path $agentsharelocation\scripts\D365FOLBDAdmin -Name "$filenameprename$LastRunbookTaskId.txt"
+        else {
+            if ((Test-Path $agentsharelocation\scripts\D365FOLBDAdmin\$filenameprename$LastRunbookTaskId.xml) -eq $false) {
+                $newfile = New-Item -path $agentsharelocation\scripts\D365FOLBDAdmin -Name "$filenameprename$LastRunbookTaskId.xml"
+                @{} | Export-Clixml "$agentsharelocation\scripts\D365FOLBDAdmin\$filenameprename$LastRunbookTaskId.xml"
+                $CLIXML = Import-Clixml "$agentsharelocation\scripts\D365FOLBDAdmin\$filenameprename$LastRunbookTaskId.xml"
+            }
+            else {
+                Write-PSFMessage -Level VeryVerbose -Message "$agentsharelocation\scripts\D365FOLBDAdmin\$filenameprename$LastRunbookTaskId.xml already exists"
+                $newfile = Get-ChildItem $agentsharelocation\scripts\D365FOLBDAdmin\$filenameprename$LastRunbookTaskId.xml
+                $CLIXML = Import-Clixml "$agentsharelocation\scripts\D365FOLBDAdmin\$filenameprename$LastRunbookTaskId.xml"
+                
+            } 
         }
         
         if ($RemoveMR) {
@@ -72,11 +90,11 @@ function Set-D365LBDOptions {
                 $json = Get-Content $JsonLocation.FullName -Raw | ConvertFrom-Json
                 $json.components = $json.components | Where-Object { $_.name -ne 'financialreporting' }
                 $json | ConvertTo-Json -Depth 100 | Out-File $JsonLocationRoot\Setupmodules.json -Force -Verbose
-                "Removed MR - Successfully " | Out-file $newfile.FullName -Append
+                $CLIXML += @{'Removed MR' = 'Success' }  
             }
             else {
                 Write-PSFMessage -Message "Error: Can't remove MR during anything other than PreDeployment" -Level VeryVerbose
-                "Removed MR - Failed " | Out-file $newfile.FullName -Append
+                $CLIXML += @{'Removed MR' = 'Failed - Cant run outside of predeployment' }
             }
         }
         function Invoke-SQL {
@@ -100,7 +118,6 @@ function Set-D365LBDOptions {
 
             $connection.Close()
             $dataSet.Tables
-
         }
 
         if ($MaintenanceModeOn) {
@@ -113,8 +130,14 @@ function Set-D365LBDOptions {
                 }
             }
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
-            "Turned On Maintenance Mode - Successfully " | Out-file $newfile.FullName -Append
+            if ($Sqlresults) {
+                $CLIXML += @{'Turned On Maintenance Mode' = "Success - $SQLQuery" }  
+            }
+            else {
+                $CLIXML += @{'Turned Off Maintenance Mode' = "Success - $SQLQuery" }  
+            }
         }
+
         if ($MaintenanceModeOff) {
             Write-PSFMessage -Message "Turning Off Maintenance Mode" -Level Verbose
             $SQLQuery = "update SQLSYSTEMVARIABLES SET VALUE = 0 Where PARM = 'CONFIGURATIONMODE'"
@@ -125,34 +148,70 @@ function Set-D365LBDOptions {
                 }
             }
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
-            "Turned Off Maintenance Mode - Successfully " | Out-file $newfile.FullName -Append
+            if ($Sqlresults) {
+                $CLIXML += @{'Turned Off Maintenance Mode' = "Success - $SQLQuery" }  
+            }
+            else {
+                $CLIXML += @{'Turned Off Maintenance Mode' = "Failed - $SQLQuery" }  
+            }
         }
-        if ($EnableUserid) {
 
+        if ($EnableUserid) {
             ##Trim 8 characters
             $EnableUserid = $EnableUserid.SubString(0, 8)
             Write-PSFMessage -Message "Enabling $EnableUserid. Note: User must already exist in system" -Level Verbose
             $SQLQuery = "update userinfo SET Enable = 1 Where id = '$EnableUserid'"
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
-            
+            if ($Sqlresults) {
+                $CLIXML += @{'Enable User' = "Success - $SQLQuery" }  
+            }
+            else {
+                $CLIXML += @{'Enable User' = "Failed - $SQLQuery" }  
+            }
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
-
         }
+
         if ($DisableUserid) {
             $DisableUserid = $DisableUserid.SubString(0, 8)
             Write-PSFMessage -Message "Disabling $DisableUserid. Note: User must already exist in system" -Level Verbose
             $SQLQuery = "update userinfo SET Enable = 1 Where id = '$DisableUserid'"
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery 
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
-            "Disabled User ID - Successfully " | Out-file $newfile.FullName -Append
-
+            if ($Sqlresults) {
+                $CLIXML += @{'Disable User' = "Success - $SQLQuery" }  
+            }
+            else {
+                $CLIXML += @{'Disable User' = "Failed - $SQLQuery" }  
+            }
         }
+
         if ($SQLQueryToRun) {
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
-            "Run SQL Script $SQLQuery - Successfully " | Out-file $newfile.FullName -Append
+            $CountofSQLScripts = $($CLIXML.GetEnumerator() | Where-Object { $_.Name -like "SQL*" }).Count
+            $CountOfSQLScripts = $CountofSQLScripts + 1
+            if ($Sqlresults) {
+                $CLIXML += @{"SQL$CountOfSQLScripts" = "Success - $SQLQuery" }  
+            }
+            else {
+                $CLIXML += @{"SQL$CountOfSQLScripts" = "Failed - $SQLQuery" }  
+            }
         }
+        ##EXPORT FILE AFTER CHANGES
+        $CLIXML | Export-Clixml $newfile.FullName
+
         if ($MSTeamsURI) {
+            $MSTeamsFormmatedJSONofCLIItems = ""
+            foreach ($XMLItem in $CLIXML.GetEnumerator()) {
+                $WorkingJSON = @"
+{
+"name": "$($XMLItem.Name)",
+"value": $($XMLItem.Value)"
+}   
+"@
+                $MSTeamsFormmatedJSONofCLIItems += $WorkingJSON
+            }
+
             if ($PreDeployment) {
                 $status = 'PreDeployment Started'
             }
@@ -162,30 +221,84 @@ function Set-D365LBDOptions {
             if ($MSTeamsCustomStatus) {
                 $status = "$MSTeamsCustomStatus"
             }
-            $bodyjson = @"
-{
-    "@type": "MessageCard",
-    "@context": "http://schema.org/extensions",
-    "themeColor": "ff0000",
-    "title": "D365 $LCSEnvironmentName $status",
-    "summary": "D365 $LCSEnvironmentName $status",
-    "sections": [{
-        "facts": [{
-            "name": "Environment",
-            "value": "[$LCSEnvironmentName]($clienturl)"
-        },{
-            "name": "Build Version/Name",
-            "value": "$MSTeamsBuildName"
-        },{
-            "name": "Status",
-            "value": "$status"
-        }],
-        "markdown": true
-    }]
-}            
-"@
-            if ($MSTeamsExtraDetails) {
+            if ($MSTeamsFormmatedJSONofCLIItems) {
                 $bodyjson = @"
+                {
+                    "@type": "MessageCard",
+                    "@context": "http://schema.org/extensions",
+                    "themeColor": "ff0000",
+                    "title": "D365 $LCSEnvironmentName $status",
+                    "summary": "D365 $LCSEnvironmentName $status",
+                    "sections": [{
+                        "facts": [{
+                            "name": "Environment",
+                            "value": "[$LCSEnvironmentName]($clienturl)"
+                        },{
+                            "name": "Build Version/Name",
+                            "value": "$MSTeamsBuildName"
+                        },{
+                            "name": "Status",
+                            "value": "$status"
+                        },$MSTeamsFormmatedJSONofCLIItems],
+                        "markdown": true
+                    }]
+                }            
+"@
+            }
+            else {
+                $bodyjson = @"
+                {
+                    "@type": "MessageCard",
+                    "@context": "http://schema.org/extensions",
+                    "themeColor": "ff0000",
+                    "title": "D365 $LCSEnvironmentName $status",
+                    "summary": "D365 $LCSEnvironmentName $status",
+                    "sections": [{
+                        "facts": [{
+                            "name": "Environment",
+                            "value": "[$LCSEnvironmentName]($clienturl)"
+                        },{
+                            "name": "Build Version/Name",
+                            "value": "$MSTeamsBuildName"
+                        },{
+                            "name": "Status",
+                            "value": "$status"
+                        }],
+                        "markdown": true
+                    }]
+                }            
+"@
+            }
+            if ($MSTeamsExtraDetails) {
+                if ($MSTeamsFormmatedJSONofCLIItems) {
+                    $bodyjson = @"
+                    {
+                        "@type": "MessageCard",
+                        "@context": "http://schema.org/extensions",
+                        "themeColor": "ff0000",
+                        "title": "D365 $LCSEnvironmentName $status",
+                        "summary": "D365 $LCSEnvironmentName $status",
+                        "sections": [{
+                            "facts": [{
+                                "name": "Environment",
+                                "value": "[$LCSEnvironmentName]($clienturl)"
+                            },{
+                                "name": "Build Version",
+                                "value": "$MSTeamsBuildName"
+                            },{
+                                "name": "Details",
+                                "value": "[$MSTeamsExtraDetails]($MSTeamsExtraDetailsURI)"
+                            },{
+                                "name": "Status",
+                                "value": "$status"
+                            },$MSTeamsFormmatedJSONofCLIItems],
+                            "markdown": true
+                        }]
+                    }            
+"@
+                }
+                else {
+                    $bodyjson = @"
 {
     "@type": "MessageCard",
     "@context": "http://schema.org/extensions",
@@ -210,6 +323,7 @@ function Set-D365LBDOptions {
     }]
 }            
 "@
+                }
             }
             Write-PSFMessage -Message "Calling $MSTeamsURI with Post of $bodyjson " -Level VeryVerbose
             $WebRequestResults = Invoke-WebRequest -uri $MSTeamsURI -ContentType 'application/json' -Body $bodyjson -UseBasicParsing -Method Post -Verbose

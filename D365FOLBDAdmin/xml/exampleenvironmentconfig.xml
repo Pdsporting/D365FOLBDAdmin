@@ -19,6 +19,7 @@
       <DataEnciphermentCertThumbprint>420F09C7DC2642759E7E1264D417175F5C9AC5A2</DataEnciphermentCertThumbprint>
       <ModifiedInfrastructureScriptsfolderLocation>//myshare/environment/InfrastureScripts-33627</ModifiedInfrastructureScriptsfolderLocation>
       <LBDAdminOrchestrationServers></LBDAdminOrchestrationServers>
+      <CustomModuleName>MYMod</CustomModuleName>
    </EnvironmentAdditionalConfig>
    <Automation>
       <AutomaticDeployments Enabled="true">

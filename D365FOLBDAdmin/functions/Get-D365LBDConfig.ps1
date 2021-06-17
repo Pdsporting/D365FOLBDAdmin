@@ -282,33 +282,24 @@
                 else {
                     $DatabaseClusteredStatus = 'NonClustered'
                 }
+                if (!$CustomModuleName)
+                {
+                    $CustomModuleNameinConfig = $($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName.'#text').TrimStart()
+                    $CustomModuleNameinConfig = $CustomModuleNameinConfig.TrimEnd()
+                    if ($CustomModuleNameinConfig.Length -gt 0)
+                    {
+                        $CustomModuleName = $CustomModuleNameinConfig
+                    }
+                }
             }
            
-            if ((test-path \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt) -and !$EnvironmentAdditionalConfig) {
-                Write-PSFMessage -Level Verbose -Message "Found DataEncipherment config"
-                $DataEnciphermentCertificate = Get-Content \\$ComputerName\c$\ProgramData\SF\DataEnciphermentCert.txt
-            }
-            else {
-                Write-PSFMessage -Level Warning -Message "Warning: No Encipherment Cert found run the function use Add-D365LBDDataEnciphermentCertConfig to add"
-            }
-            <#Deprecated
-            if ((test-path \\$ComputerName\c$\ProgramData\SF\DatabaseDetailsandCert.txt) -and !$EnvironmentAdditionalConfig) {
-                $DatabaseDetailsandCertConfig = Get-Content \\$ComputerName\c$\ProgramData\SF\DatabaseDetailsandCert.txt
-                Write-PSFMessage -Level Verbose -Message "Found DatabaseDetailsandCert config additional details added to config data"
-                $DatabaseEncryptionCertificate = $DatabaseDetailsandCertConfig[1]
-                $DatabaseClusteredStatus = $DatabaseDetailsandCertConfig[0]
-                $DatabaseClusterServerNames = $DatabaseDetailsandCertConfig[2]
-            }
-            else {
-                Write-PSFMessage -Level Warning -Message "Warning: No additional Database config Details found use Add-D365LBDDatabaseDetailsandCert to add"
-            }#>
             ##checking for after deployment added servers
             try {
                 $currentclustermanifestxmlfile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\clustermanifest.current.xml" | Sort-Object { $_.CreationTime } | Select-Object -First 1
                 [xml]$currentclustermanifestxml = Get-Content $currentclustermanifestxmlfile
                 $AXSFServerListToCompare = $currentclustermanifestxml.clusterManifest.Infrastructure.NodeList.Node | Where-Object { $_.NodeTypeRef -eq 'AOSNodeType' -or $_.NodeTypeRef -eq 'PrimaryNodeType' }
                 $SFClusterCertificate = $(($($currentclustermanifestxml.ClusterManifest.FabricSettings.Section | Where-Object { $_.Name -eq "Security" })).Parameter | Where-Object { $_.Name -eq "ClusterCertThumbprints" }).value
-                $ServerCertificate = $SFClusterCertificate | select -First 1
+                $ServerCertificate = $SFClusterCertificate | Select-Object -First 1
                 foreach ($Node in $AXSFServerListToCompare) {
                     if (($AXSFServerNames -contains $Node) -eq $false) {
                         $AXSFServerNames += $Node
