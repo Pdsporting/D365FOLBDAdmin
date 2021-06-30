@@ -77,7 +77,6 @@ function Set-D365LBDOptions {
                 Write-PSFMessage -Level VeryVerbose -Message "$agentsharelocation\scripts\D365FOLBDAdmin\$filenameprename$LastRunbookTaskId.xml already exists"
                 $newfile = Get-ChildItem $agentsharelocation\scripts\D365FOLBDAdmin\$filenameprename$LastRunbookTaskId.xml
                 $CLIXML = Import-Clixml "$agentsharelocation\scripts\D365FOLBDAdmin\$filenameprename$LastRunbookTaskId.xml"
-                
             } 
         }
         
@@ -186,21 +185,22 @@ function Set-D365LBDOptions {
         }
 
         if ($SQLQueryToRun) {
-            $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
+            $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQueryToRun
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
             $CountofSQLScripts = $($CLIXML.GetEnumerator() | Where-Object { $_.Name -like "SQL*" }).Count
             $CountOfSQLScripts = $CountofSQLScripts + 1
             if ($Sqlresults) {
-                $CLIXML += @{"SQL$CountOfSQLScripts" = "Success - $SQLQuery" }  
+                $CLIXML += @{"SQL$CountOfSQLScripts" = "Success - $SQLQueryToRun" }  
             }
             else {
-                $CLIXML += @{"SQL$CountOfSQLScripts" = "Failed - $SQLQuery" }  
+                $CLIXML += @{"SQL$CountOfSQLScripts" = "Failed - $SQLQueryToRun" }  
             }
         }
         ##EXPORT FILE AFTER CHANGES
         $CLIXML | Export-Clixml $newfile.FullName
 
         if ($MSTeamsURI) {
+            Write-PSFMessage -Level VeryVerbose -Message "MSTeamsURI defined sending message"
             $MSTeamsFormmatedJSONofCLIItems = ""
             foreach ($XMLItem in $CLIXML.GetEnumerator()) {
                 $WorkingJSON = @"
@@ -325,7 +325,7 @@ function Set-D365LBDOptions {
 "@
                 }
             }
-            Write-PSFMessage -Message "Calling $MSTeamsURI with Post of $bodyjson " -Level VeryVerbose
+            Write-PSFMessage -Message "Calling $MSTeamsURI with Post of $bodyjson" -Level VeryVerbose
             $WebRequestResults = Invoke-WebRequest -uri $MSTeamsURI -ContentType 'application/json' -Body $bodyjson -UseBasicParsing -Method Post -Verbose
             Write-PSFMessage -Message "$WebRequestResults" -Level VeryVerbose
         }
