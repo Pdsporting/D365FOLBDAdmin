@@ -204,9 +204,9 @@ function Set-D365LBDOptions {
             $MSTeamsFormmatedJSONofCLIItems = ""
             foreach ($XMLItem in $CLIXML.GetEnumerator()) {
                 $WorkingJSON = @"
-{
+,{
 "name": "$($XMLItem.Name)",
-"value": $($XMLItem.Value)"
+"value": "$($XMLItem.Value)"
 }   
 "@
                 $MSTeamsFormmatedJSONofCLIItems += $WorkingJSON
@@ -239,7 +239,7 @@ function Set-D365LBDOptions {
                         },{
                             "name": "Status",
                             "value": "$status"
-                        },$MSTeamsFormmatedJSONofCLIItems],
+                        }$MSTeamsFormmatedJSONofCLIItems],
                         "markdown": true
                     }]
                 }            
@@ -291,7 +291,7 @@ function Set-D365LBDOptions {
                             },{
                                 "name": "Status",
                                 "value": "$status"
-                            },$MSTeamsFormmatedJSONofCLIItems],
+                            }$MSTeamsFormmatedJSONofCLIItems],
                             "markdown": true
                         }]
                     }            
