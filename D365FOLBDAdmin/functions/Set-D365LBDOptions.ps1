@@ -27,7 +27,10 @@ function Set-D365LBDOptions {
         [string]$MSTeamsExtraDetails,
         [string]$MSTeamsBuildName,
         [string]$MSTeamsCustomStatus,
-        [string]$SQLQueryToRun
+        [string]$SQLQueryToRun,
+        [string]$EnableUserid,
+        [string]$DisableUserid
+
 
     )
     BEGIN {
@@ -160,12 +163,14 @@ function Set-D365LBDOptions {
             $EnableUserid = $EnableUserid.SubString(0, 8)
             Write-PSFMessage -Message "Enabling $EnableUserid. Note: User must already exist in system" -Level Verbose
             $SQLQuery = "update userinfo SET Enable = 1 Where id = '$EnableUserid'"
-            $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
+            $SQLQuery2 = "select * from userinfo where enable = 1 and id = '$EnableUserid'"
+            $SqlresultsUpdate = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
+            $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery2 
             if ($Sqlresults) {
-                $CLIXML += @{'Enable User' = "Success - $SQLQuery" }  
+                $CLIXML += @{"Enable User $EnableUserid" = "Success - $SQLQuery" }  
             }
             else {
-                $CLIXML += @{'Enable User' = "Failed - $SQLQuery" }  
+                $CLIXML += @{"Enable User $EnableUserid" = "Failed - $SQLQuery" }  
             }
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
         }
@@ -173,7 +178,9 @@ function Set-D365LBDOptions {
         if ($DisableUserid) {
             $DisableUserid = $DisableUserid.SubString(0, 8)
             Write-PSFMessage -Message "Disabling $DisableUserid. Note: User must already exist in system" -Level Verbose
-            $SQLQuery = "update userinfo SET Enable = 1 Where id = '$DisableUserid'"
+            $SQLQuery = "update userinfo SET Enable = 0 Where id = '$DisableUserid'"
+            $SQLQuery2 = "select * from userinfo where enable = 0 and id = '$EnableUserid'"
+            $SqlresultsUpdate = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery 
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery 
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
             if ($Sqlresults) {
