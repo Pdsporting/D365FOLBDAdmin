@@ -318,6 +318,9 @@
                     $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
                     $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                     $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
+                    if ($connection){
+                        Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My" -Level VeryVerbose
+                    }
                     <#NewConnection logic start#>
                     $count = 0
                     if (!$connection) {
