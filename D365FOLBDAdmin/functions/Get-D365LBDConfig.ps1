@@ -201,6 +201,7 @@
             $AgentShareLocation = $downloadfolderLocation.Value
             $AgentShareWPConfigJson = Get-ChildItem "$AgentShareLocation\wp\*\StandaloneSetup-*\config.json" | Sort-Object { $_.CreationTime } | Select-Object -First 1
 
+
             if ($AgentShareWPConfigJson) {
                 Write-PSFMessage -Message "Verbose: Using AgentShare config at $AgentShareWPConfigJson to get Environment ID, EnvironmentName and TenantID." -Level Verbose
                 $jsonconfig = get-content $AgentShareWPConfigJson
@@ -214,6 +215,7 @@
                 $TenantID = ""
                 $LCSEnvironmentName = ""
             }
+            $LCSProjectID = $(Get-ChildItem $AgentShareLocation\assets\$LCSEnvironmentID\* | Sort-Object { $_.CreationTime } | Select -First 1).Name
             try {
                 $reportconfig = Get-ChildItem "\\$ReportServerServerName\C$\ProgramData\SF\*\Fabric\work\Applications\ReportingService_*\ReportingBootstrapperPkg.Package.current.xml"
                 [xml]$xml = Get-Content $reportconfig.FullName
@@ -282,12 +284,10 @@
                 else {
                     $DatabaseClusteredStatus = 'NonClustered'
                 }
-                if (!$CustomModuleName)
-                {
+                if (!$CustomModuleName) {
                     $CustomModuleNameinConfig = $($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName.'#text').TrimStart()
                     $CustomModuleNameinConfig = $CustomModuleNameinConfig.TrimEnd()
-                    if ($CustomModuleNameinConfig.Length -gt 0)
-                    {
+                    if ($CustomModuleNameinConfig.Length -gt 0) {
                         $CustomModuleName = $CustomModuleNameinConfig
                     }
                 }
@@ -318,7 +318,7 @@
                     $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
                     $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                     $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
-                    if ($connection){
+                    if ($connection) {
                         Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My" -Level VeryVerbose
                     }
                     <#NewConnection logic start#>
@@ -750,6 +750,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'LastOrchJobId'                              = $LastOrchJobId
                 'LastRunbookTaskId'                          = $LastRunbookTaskId
                 'ComponentsinSetupModule'                    = $componentsinsetupmodule
+                'LCSProjectID'                               = $LCSProjectID 
 
             }
 
@@ -831,7 +832,7 @@ ORDER BY [rh].[restore_date] DESC"
             }
             $FinalOutput = $CertificateExpirationHash, $Properties | Merge-Hashtables
             ##Sends Custom Object to Pipeline
-            if ($Session){
+            if ($Session) {
                 Remove-PSSession -Session $SFModuleSession  
             }
             
