@@ -215,7 +215,7 @@
                 $TenantID = ""
                 $LCSEnvironmentName = ""
             }
-            $LCSProjectID = $(Get-ChildItem $AgentShareLocation\assets\$LCSEnvironmentID\* | Sort-Object { $_.CreationTime } | Select -First 1).Name
+            $LCSProjectID = $($($(Get-ChildItem $AgentShareLocation\assets\*\*\*\packages | Sort-Object { $_.CreationTime } | Where-Object { $_.Name -ne "chk" -and $_.Name -ne "topology.xml" -and $_.Name -ne "ControlFile.txt" }  Select -First 1).Parent).Parent).Name
             try {
                 $reportconfig = Get-ChildItem "\\$ReportServerServerName\C$\ProgramData\SF\*\Fabric\work\Applications\ReportingService_*\ReportingBootstrapperPkg.Package.current.xml"
                 [xml]$xml = Get-Content $reportconfig.FullName
