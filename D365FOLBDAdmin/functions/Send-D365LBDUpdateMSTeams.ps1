@@ -28,7 +28,12 @@ function Send-D365LBDUpdateMSTeams {
         [string]$MSTeamsBuildName,
         [string]$MSTeamsCustomStatus,
         [string]$MessageType,
-        [string]$CustomModuleName
+        [string]$CustomModuleName,
+        [string]$EnvironmentName,
+        [string]$EnvironmentURL,
+        [string]$LCSProjectId,
+        [string]$LCSEnvironmentID,
+        [string]$PlanTextMessage
     )
     BEGIN {
     }
@@ -37,7 +42,7 @@ function Send-D365LBDUpdateMSTeams {
             "PreDeployment" { $status = 'PreDeployment Started' }
             "PostDeployment" { $status = 'Deployment Completed' }
             "BuildStart" { $status = 'Build Started' }
-            "BuildComplete" { $status = 'PreDeployment Started' }
+            "BuildComplete" { $status = 'Build Completed' }
             "BuildPrepStarted" { $status = 'Build Prep Started' }
             "BuildPrepped" { $status = 'Build Prepped' }
             "StatusReport" { $Status = "Status Report" }
@@ -78,24 +83,26 @@ function Send-D365LBDUpdateMSTeams {
                     $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly 
                 }
             }
-            if ($CustomModuleName -and $MessageType -eq "Prepped" ) {
-                if (!$CustomModuleName -and !$Config) {
-                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
+        }
+
+        if (($CustomModuleName) -and $MessageType -eq "BuildPrepped" -and (!$MSTeamsBuildName)) {
+            if (!$CustomModuleName -and !$Config) {
+                $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
+            }
+            else {
+                if (!$Config) {
+                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly 
                 }
-                else {
-                    if (!$Config) {
-                        $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly 
-                    }
-                }
-                $Prepped = Export-D365LBDAssetModuleVersion -CustomModuleName $CustomModuleName -config $Config
-                if ($Prepped) {
-                    if ($Prepped.Count -eq 1) {
-                        Write-PSFMessage -Message "Found a prepped build: $Prepped" -Level VeryVerbose
-                        $LCSEnvironmentName = $Config.LCSEnvironmentName
-                        $clienturl = $Config.clienturl
-                        $LCSProjectId = $config.LCSProjectID
-                        $LCSEnvironmentID = $Config.LCSEnvironmentID
-                        $bodyjson = @"
+            }
+            $Prepped = Export-D365LBDAssetModuleVersion -CustomModuleName $CustomModuleName -config $Config
+            if ($Prepped) {
+                if ($Prepped.Count -eq 1) {
+                    Write-PSFMessage -Message "Found a prepped build: $Prepped" -Level VeryVerbose
+                    $LCSEnvironmentName = $Config.LCSEnvironmentName
+                    $clienturl = $Config.clienturl
+                    $LCSProjectId = $config.LCSProjectID
+                    $LCSEnvironmentID = $Config.LCSEnvironmentID
+                    $bodyjson = @"
 {
                     "@type": "MessageCard",
                     "@context": "http://schema.org/extensions",
@@ -117,8 +124,6 @@ function Send-D365LBDUpdateMSTeams {
                     }]
                 }            
 "@
-                    }
-
                 }
                 else {
                     foreach ($build in $Prepped) {
@@ -126,33 +131,65 @@ function Send-D365LBDUpdateMSTeams {
                     }
                 }
             }
-        }
-        ##$Config.CustomModuleVersioninAgentShare
+            else {
+                if ($EnvironmentName -and $MSTeamsBuildName) {
+                    $LCSEnvironmentName = $EnvironmentName
+                    $clienturl = $Config.clienturl
 
-        if ($MessageType -eq "PlainText") {
-            $bodyjson = @"
+                    $bodyjson = @"
 {
                     "@type": "MessageCard",
                     "@context": "http://schema.org/extensions",
                     "themeColor": "ff0000",
-                    "title": "D365 Update $MSTeamsCustomStatus",
-                    "summary": "D365 Update $MSTeamsCustomStatus",
+                    "title": "D365 Build Prepped",
+                    "summary": "D365 Build Prepped",
                     "sections": [{
                         "facts": [{
                             "name": "Environment",
                             "value": "[$LCSEnvironmentName]($clienturl)"
                         },{
                             "name": "Build Version/Name",
-                            "value": "$MSTeamsBuildName"
+                            "value": "$Prepped"
                         },{
-                            "name": "Status",
-                            "value": "$status"
+                            "name": "LCS",
+                            "value": "[LCS](https://lcs.dynamics.com/v2/EnvironmentDetailsV3New/$LCSProjectId?EnvironmentId=$LCSEnvironmentID)"
                         }],
                         "markdown": true
                     }]
                 }            
 "@
+                }
+                else {
+                    Write-PSFMessage -Level VeryVerbose -Message "No newly prepped build found" ##add logic to grab latest
+                }
+                ## Build prepped but Environment or Build not defined end
+            }
+        } ## end of build prep
+        
+        if ($MessageType -eq "PlainText") {
+            $bodyjson = @"
+{
+    "text":"$PlanTextMessage"
+}     
+"@
         }
+
+        if ($MessageType -eq "BuildStarted") {
+            $bodyjson = @"
+{
+    "text":"Build Started $MSTeamsBuildName"
+}     
+"@
+        }
+
+        if ($MessageType -eq "BuildComplete") {
+            $bodyjson = @"
+{
+    "text":"Build Completed $MSTeamsBuildName"
+}     
+"@
+        }
+
 
         if ($MSTeamsExtraDetails) {
             $bodyjson = @"
@@ -181,7 +218,9 @@ function Send-D365LBDUpdateMSTeams {
 }            
 "@
         }
-       
+        if (!$bodyjson) {
+            Write-PSFMessage -Message "Json is empty!" -Level VeryVerbose
+        }
         if ($MSTeamsURIS) {
             foreach ($MSTeamsURI in $MSTeamsURIS) {
                 Write-PSFMessage -Message "Calling $MSTeamsURI with Post of $bodyjson" -Level VeryVerbose
@@ -189,8 +228,8 @@ function Send-D365LBDUpdateMSTeams {
                 Write-PSFMessage -Message "$WebRequestResults" -Level VeryVerbose
             }
         }
- 
+
+    
+        END {
+        }
     }
-    END {
-    }
-}
