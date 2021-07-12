@@ -35,15 +35,16 @@ function Remove-D365LBDSFOldAssets {
             $StandaloneSetupZip = $null
             $StandaloneSetupZip = Get-ChildItem "$($AssetFolder.Fullname)\*\*\Packages\*\StandaloneSetup.zip"
             if ($ScanForInvalidZips){
-                $j = $null
-                $j = start-job -ScriptBlock { Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead($using:StandaloneSetupZip) }
-                if (Wait-Job $j -Timeout 300) { Receive-Job $j }else {
+                $job = $null
+                $job = start-job -ScriptBlock { Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead($using:StandaloneSetupZip) }
+                if (Wait-Job $j -Timeout 300) { Receive-Job $job }else {
                     Write-PSFMessage -Level VeryVerbose -message "Invalid Zip file $StandaloneSetupZip."
                     Write-PSFMessage -Message "$AssetFolder is invalid - deleting" -Level VeryVerbose
                     Get-ChildItem $AssetFolder.Fullname | Remove-Item -Recurse -Force
                     Get-ChildItem $AssetsFolderinAgentShareLocation | Where-object { $_.Name -eq $AssetFolder } | Remove-Item -Recurse -Force
                 }
             }
+            Remove-Job $job
             if (!$StandaloneSetupZip) {
                 Write-PSFMessage -Message "$AssetFolder is invalid no StandaloneSetup found - deleting" -Level VeryVerbose
                 Get-ChildItem $AssetFolder.Fullname | Remove-Item -Recurse -Force

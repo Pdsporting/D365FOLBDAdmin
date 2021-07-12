@@ -60,19 +60,20 @@ function Export-D365LBDAssetModuleVersion {
                 $SpecificAssetFolder = $AssetFolder.FullName
                 ##StandAloneSetupZip path to the zip that will be looked into for the module
                 $StandaloneSetupZip = Get-ChildItem $SpecificAssetFolder\*\*\Packages\*\StandaloneSetup.zip
-                $j = $null
-                $j = start-job -ScriptBlock { Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead($using:StandaloneSetupZip) }
-                if (Wait-Job $j -Timeout $Timeout) { Receive-Job $j }else {
+                $job = $null
+                $job = start-job -ScriptBlock { Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead($using:StandaloneSetupZip) }
+                if (Wait-Job $job -Timeout $Timeout) { Receive-Job $job }else {
                     Write-PSFMessage -Level VeryVerbose -message "Invalid Zip file $StandaloneSetupZip."
     
                 }
-                if ($j.HasMoreData -eq $true) {
+                if ($job.HasMoreData -eq $true) {
                     $zip = [System.IO.Compression.ZipFile]::OpenRead($StandaloneSetupZip)
                     $count = $($zip.Entries | Where-Object { $_.FullName -like $Filter }).Count
                 }
                 else {
                     $count = 0
                 }
+                Remove-Job $job
                 
                 if ($count -eq 0) {
                     Write-PSFMessage -Level Verbose -Message "Invalid Zip file or Module name $StandaloneSetupZip"
