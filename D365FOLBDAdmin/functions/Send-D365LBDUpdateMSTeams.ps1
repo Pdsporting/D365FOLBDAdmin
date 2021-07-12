@@ -228,8 +228,7 @@ function Send-D365LBDUpdateMSTeams {
                 Write-PSFMessage -Message "$WebRequestResults" -Level VeryVerbose
             }
         }
-
-    
-        END {
-        }
     }
+    END {
+    }
+}

@@ -33,7 +33,8 @@ function Export-D365LBDAssetModuleVersion {
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [Parameter(ParameterSetName = 'Config',
             ValueFromPipeline = $True)]
-        [psobject]$Config
+        [psobject]$Config,
+        [int]$Timeout = 120
         
     ) BEGIN {
     } 
@@ -59,10 +60,20 @@ function Export-D365LBDAssetModuleVersion {
                 $SpecificAssetFolder = $AssetFolder.FullName
                 ##StandAloneSetupZip path to the zip that will be looked into for the module
                 $StandaloneSetupZip = Get-ChildItem $SpecificAssetFolder\*\*\Packages\*\StandaloneSetup.zip
-
-                $zip = [System.IO.Compression.ZipFile]::OpenRead($StandaloneSetupZip)
-                $count = $($zip.Entries | Where-Object { $_.FullName -like $Filter }).Count
-
+                $j = $null
+                $j = start-job -ScriptBlock { Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead($using:StandaloneSetupZip) }
+                if (Wait-Job $j -Timeout $Timeout) { Receive-Job $j }else {
+                    Write-PSFMessage -Level VeryVerbose -message "Invalid Zip file $StandaloneSetupZip."
+    
+                }
+                if ($j.HasMoreData -eq $true) {
+                    $zip = [System.IO.Compression.ZipFile]::OpenRead($StandaloneSetupZip)
+                    $count = $($zip.Entries | Where-Object { $_.FullName -like $Filter }).Count
+                }
+                else {
+                    $count = 0
+                }
+                
                 if ($count -eq 0) {
                     Write-PSFMessage -Level Verbose -Message "Invalid Zip file or Module name $StandaloneSetupZip"
                 }
@@ -84,7 +95,7 @@ function Export-D365LBDAssetModuleVersion {
                         $zip.Dispose()
                     }
                     ##Closes Zip
-                   ## $zip.Dispose()
+                    ## $zip.Dispose()
                     $NewfileWithoutVersionPath = $SpecificAssetFolder + "\$CustomModuleName.xml"
                     Write-PSFMessage -Message "$SpecificAssetFolder\$FileName exported" -Level Verbose
 

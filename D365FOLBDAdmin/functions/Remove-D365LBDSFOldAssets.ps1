@@ -12,7 +12,8 @@ function Remove-D365LBDSFOldAssets {
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [psobject]$Config,
         [int]$NumberofAssetsToKeep,
-        [switch]$ControlFile
+        [switch]$ControlFile,
+        [switch]$ScanForInvalidZips
     )
     BEGIN {
     }
@@ -33,6 +34,16 @@ function Remove-D365LBDSFOldAssets {
         foreach ($AssetFolder  in $AssetFolders ) {
             $StandaloneSetupZip = $null
             $StandaloneSetupZip = Get-ChildItem "$($AssetFolder.Fullname)\*\*\Packages\*\StandaloneSetup.zip"
+            if ($ScanForInvalidZips){
+                $j = $null
+                $j = start-job -ScriptBlock { Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead($using:StandaloneSetupZip) }
+                if (Wait-Job $j -Timeout 300) { Receive-Job $j }else {
+                    Write-PSFMessage -Level VeryVerbose -message "Invalid Zip file $StandaloneSetupZip."
+                    Write-PSFMessage -Message "$AssetFolder is invalid - deleting" -Level VeryVerbose
+                    Get-ChildItem $AssetFolder.Fullname | Remove-Item -Recurse -Force
+                    Get-ChildItem $AssetsFolderinAgentShareLocation | Where-object { $_.Name -eq $AssetFolder } | Remove-Item -Recurse -Force
+                }
+            }
             if (!$StandaloneSetupZip) {
                 Write-PSFMessage -Message "$AssetFolder is invalid no StandaloneSetup found - deleting" -Level VeryVerbose
                 Get-ChildItem $AssetFolder.Fullname | Remove-Item -Recurse -Force
@@ -48,6 +59,7 @@ function Remove-D365LBDSFOldAssets {
                     Write-PSFMessage -Message "Standalone zip in $AssetFolder is VALID" -Level Verbose
                 }
             }
+
         }
         Write-PSFMessage -Level Verbose -Message "Starting Clean on $AssetsFolderinAgentShareLocation"
         $FilesThatAreBeingDeleted = Get-ChildItem $AssetsFolderinAgentShareLocation | Where-Object { $_.Name -ne "chk" -and $_.Name -ne "topology.xml" -and $_.Name -ne "$AlreadyDeployedAssetIDInWPFolder" -and $_.CreateDate -lt $Onedayold -and $_.Name -ne "ControlFile.txt" } | Sort-Object LastWriteTime | Select-Object -SkipLast $NumberofAssetsToKeep
