@@ -53,6 +53,7 @@ function Export-D365LBDAssetModuleVersion {
         foreach ($AssetFolder in $AssetFolders ) {
             Write-PSFMessage -Message "Checking $AssetFolder" -Level Verbose
             $versionfile = $null
+            $invalidfile = $false
             $versionfilepath = $AssetFolder.FullName + "\$CustomModuleName*.xml"
             $versionfile = Get-ChildItem -Path $versionfilepath
             if (($null -eq $versionfile) -or !($versionfile)) {
@@ -64,9 +65,9 @@ function Export-D365LBDAssetModuleVersion {
                 $job = start-job -ScriptBlock { Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead($using:StandaloneSetupZip) }
                 if (Wait-Job $job -Timeout $Timeout) { Receive-Job $job }else {
                     Write-PSFMessage -Level VeryVerbose -message "Invalid Zip file $StandaloneSetupZip."
-    
+    $invalidfile = $true
                 }
-                if ($job.HasMoreData -eq $true) {
+                if ($invalidfile -eq $false) {
                     $zip = [System.IO.Compression.ZipFile]::OpenRead($StandaloneSetupZip)
                     $count = $($zip.Entries | Where-Object { $_.FullName -like $Filter }).Count
                 }
