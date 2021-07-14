@@ -33,7 +33,8 @@ function Send-D365LBDUpdateMSTeams {
         [string]$EnvironmentURL,
         [string]$LCSProjectId,
         [string]$LCSEnvironmentID,
-        [string]$PlanTextMessage
+        [string]$PlainTextMessage,
+        [string]$PlainTextTitle
     )
     BEGIN {
     }
@@ -84,7 +85,68 @@ function Send-D365LBDUpdateMSTeams {
                 }
             }
         }
+        if (($CustomModuleName) -and $MessageType -eq "BuildPrepped" -and ($MSTeamsBuildName)) {
+            Write-PSFMessage -Level VeryVerbose -Message "MessageType is: BuildPrepped - BuildName has been defined ($MSTeamsBuildName)"
+            if (!$EnvironmentName) {
+                if (!$CustomModuleName) {
+                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
+                }
+                else {
+                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly 
+                }
+                $LCSEnvironmentName = $Config.LCSEnvironmentName
+                $clienturl = $Config.clienturl
+                $LCSProjectId = $Config.ProjectID
+                $LCSEnvironmentID = $Config.LCSEnvironmentID
+                $LCSEnvironmentURL = $Config.LCSEnvironmentURL
+            }
+            if ($LCSEnvironmentID) {
+                $bodyjson = @"
+{
+     "@type": "MessageCard",
+     "@context": "http://schema.org/extensions",
+     "themeColor": "ff0000",
+    "title": "D365 Build Prepped for $LCSEnvironmentName",
+      "summary": "D365 Build Prepped for $LCSEnvironmentName",
+      "sections": [{
+      "facts": [{
+       "name": "Environment",
+       "value": "[$LCSEnvironmentName]($clienturl)"
+         },{
+        "name": "Build Version/Name",
+        "value": "$MSTeamsBuildName"
+         },{
+         "name": "LCS",
+         "value": "[LCS]($LCSEnvironmentURL)"
+        }],
+         "markdown": true
+          }]
+}            
+"@
+            }
+            else {
+                $bodyjson = @"
+{
+     "@type": "MessageCard",
+     "@context": "http://schema.org/extensions",
+     "themeColor": "ff0000",
+    "title": "D365 Build Prepped for $EnvironmentName $status ",
+      "summary": "D365 Build Prepped for $EnvironmentName $status",
+      "sections": [{
+      "facts": [{
+       "name": "Environment",
+       "value": "[$EnvironmentName]($EnvironmentURL)"
+         },{
+        "name": "Build Version/Name",
+        "value": "$MSTeamsBuildName"
+         }],
+         "markdown": true
+          }]
+}            
+"@
 
+            }
+        }
         if (($CustomModuleName) -and $MessageType -eq "BuildPrepped" -and (!$MSTeamsBuildName)) {
             if (!$CustomModuleName -and !$Config) {
                 $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
@@ -102,13 +164,14 @@ function Send-D365LBDUpdateMSTeams {
                     $clienturl = $Config.clienturl
                     $LCSProjectId = $config.LCSProjectID
                     $LCSEnvironmentID = $Config.LCSEnvironmentID
+                    $LCSEnvironmentURL = $Config.LCSEnvironmentURL
                     $bodyjson = @"
 {
                     "@type": "MessageCard",
                     "@context": "http://schema.org/extensions",
                     "themeColor": "ff0000",
-                    "title": "D365 Build Prepped",
-                    "summary": "D365 Build Prepped",
+                    "title": "D365 Build Prepped $status",
+                    "summary": "D365 Build Prepped $status",
                     "sections": [{
                         "facts": [{
                             "name": "Environment",
@@ -118,7 +181,7 @@ function Send-D365LBDUpdateMSTeams {
                             "value": "$Prepped"
                         },{
                             "name": "LCS",
-                            "value": "[LCS](https://lcs.dynamics.com/v2/EnvironmentDetailsV3New/$LCSProjectId?EnvironmentId=$LCSEnvironmentID)"
+                            "value": "[LCS]($LCSEnvironmentURL)"
                         }],
                         "markdown": true
                     }]
@@ -135,14 +198,14 @@ function Send-D365LBDUpdateMSTeams {
                 if ($EnvironmentName -and $MSTeamsBuildName) {
                     $LCSEnvironmentName = $EnvironmentName
                     $clienturl = $Config.clienturl
-
+                    $LCSEnvironmentURL = $Config.LCSEnvironmentURL
                     $bodyjson = @"
 {
                     "@type": "MessageCard",
                     "@context": "http://schema.org/extensions",
                     "themeColor": "ff0000",
-                    "title": "D365 Build Prepped",
-                    "summary": "D365 Build Prepped",
+                    "title": "D365 Build Prepped $status",
+                    "summary": "D365 Build Prepped $status",
                     "sections": [{
                         "facts": [{
                             "name": "Environment",
@@ -152,7 +215,7 @@ function Send-D365LBDUpdateMSTeams {
                             "value": "$Prepped"
                         },{
                             "name": "LCS",
-                            "value": "[LCS](https://lcs.dynamics.com/v2/EnvironmentDetailsV3New/$LCSProjectId?EnvironmentId=$LCSEnvironmentID)"
+                            "value": "[LCS]($LCSEnvironmentURL)"
                         }],
                         "markdown": true
                     }]
@@ -167,26 +230,62 @@ function Send-D365LBDUpdateMSTeams {
         } ## end of build prep
         
         if ($MessageType -eq "PlainText") {
+            Write-PSFMessage -Level VeryVerbose -Message "Plain Text Message" 
+            if ($PlainTextTitle) {
+                Write-PSFMessage -Level VeryVerbose -Message "Plain Text Message with Custom Title" 
+                $bodyjson = @"
+                {
+                    "title":"$PlainTextTitle $status"
+                    "text":"$PlainTextMessage"
+                }     
+"@
+            }
+            else{
+                Write-PSFMessage -Level VeryVerbose -Message "Plain Text Message"              
             $bodyjson = @"
 {
-    "text":"$PlanTextMessage"
+    "title":"D365 Message $status"
+    "text":"$PlainTextMessage"
 }     
 "@
-        }
+            }
+        } ## PLAIN TEXT END
 
         if ($MessageType -eq "BuildStarted") {
             $bodyjson = @"
 {
-    "text":"Build Started $MSTeamsBuildName"
-}     
-"@
+    "@type": "MessageCard",
+    "@context": "http://schema.org/extensions",
+    "themeColor": "ff0000",
+    "title": "Build Started $status",
+    "summary": "Build Started $status",
+    "sections": [{
+        "facts": [
+            "name": "Build Version",
+            "value": "$MSTeamsBuildName"
+        }],
+        "markdown": true
+    }]
+}  
         }
 
         if ($MessageType -eq "BuildComplete") {
+           
             $bodyjson = @"
 {
-    "text":"Build Completed $MSTeamsBuildName"
-}     
+    "@type": "MessageCard",
+    "@context": "http://schema.org/extensions",
+    "themeColor": "ff0000",
+    "title": "Build Completed $status",
+    "summary": "Build Completed $status",
+    "sections": [{
+        "facts": [
+            "name": "Build Version",
+            "value": "$MSTeamsBuildName"
+        }],
+        "markdown": true
+    }]
+}            
 "@
         }
 

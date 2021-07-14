@@ -74,7 +74,7 @@ function Export-D365LBDAssetModuleVersion {
                 else {
                     $count = 0
                 }
-                Remove-Job $job
+                Remove-Job $job -Force
                 
                 if ($count -eq 0) {
                     Write-PSFMessage -Level Verbose -Message "Invalid Zip file or Module name $StandaloneSetupZip"

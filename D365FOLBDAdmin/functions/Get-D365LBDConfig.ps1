@@ -216,6 +216,9 @@
                 $LCSEnvironmentName = ""
             }
             $LCSProjectID = $($($(Get-ChildItem $AgentShareLocation\assets\*\*\*\packages | Sort-Object { $_.CreationTime } | Where-Object { $_.Name -ne "chk" -and $_.Name -ne "topology.xml" -and $_.Name -ne "ControlFile.txt" } | Select-Object -First 1).Parent).Parent).Name
+            if ($LCSProjectID -and $LCSEnvironmentId) {
+                $LCSEnvironmentURL = "https://lcs.dynamics.com/v2/EnvironmentDetailsV3New/$LCSProjectID" + "?" + "EnvironmentId=$LCSEnvironmentId"
+            }
             try {
                 $reportconfig = Get-ChildItem "\\$ReportServerServerName\C$\ProgramData\SF\*\Fabric\work\Applications\ReportingService_*\ReportingBootstrapperPkg.Package.current.xml"
                 [xml]$xml = Get-Content $reportconfig.FullName
@@ -751,7 +754,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'LastRunbookTaskId'                          = $LastRunbookTaskId
                 'ComponentsinSetupModule'                    = $componentsinsetupmodule
                 'LCSProjectID'                               = $LCSProjectID 
-
+                'LCSEnvironmentURL'                          = $LCSEnvironmentURL
             }
 
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
