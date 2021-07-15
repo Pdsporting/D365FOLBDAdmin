@@ -91,8 +91,8 @@ function Send-D365LBDUpdateMSTeams {
      "@type": "MessageCard",
      "@context": "http://schema.org/extensions",
      "themeColor": "ff0000",
-    "title": "D365 Build Prepped for $LCSEnvironmentName",
-      "summary": "D365 Build Prepped for $LCSEnvironmentName",
+    "title": "$LCSEnvironmentName $status",
+      "summary": "$LCSEnvironmentName $status",
       "sections": [{
       "facts": [{
        "name": "Environment",
@@ -115,8 +115,8 @@ function Send-D365LBDUpdateMSTeams {
      "@type": "MessageCard",
      "@context": "http://schema.org/extensions",
      "themeColor": "ff0000",
-    "title": "D365 Build Prepped for $EnvironmentName $status ",
-      "summary": "D365 Build Prepped for $EnvironmentName $status",
+    "title": "$EnvironmentName $status ",
+      "summary": "$EnvironmentName $status",
       "sections": [{
       "facts": [{
        "name": "Environment",
@@ -155,8 +155,8 @@ function Send-D365LBDUpdateMSTeams {
                     "@type": "MessageCard",
                     "@context": "http://schema.org/extensions",
                     "themeColor": "ff0000",
-                    "title": "D365 Build Prepped $status",
-                    "summary": "D365 Build Prepped $status",
+                    "title": "$status $LCSEnvironmentName",
+                    "summary": "$status $LCSEnvironmentName",
                     "sections": [{
                         "facts": [{
                             "name": "Environment",
@@ -189,8 +189,8 @@ function Send-D365LBDUpdateMSTeams {
                     "@type": "MessageCard",
                     "@context": "http://schema.org/extensions",
                     "themeColor": "ff0000",
-                    "title": "D365 Build Prepped $status",
-                    "summary": "D365 Build Prepped $status",
+                    "title": "$LCSEnvironmentName $status",
+                    "summary": "$LCSEnvironmentName $status",
                     "sections": [{
                         "facts": [{
                             "name": "Environment",
@@ -243,8 +243,8 @@ function Send-D365LBDUpdateMSTeams {
     "@type": "MessageCard",
     "@context": "http://schema.org/extensions",
     "themeColor": "ff0000",
-    "title": "Build Started $status",
-    "summary": "Build Started $status",
+    "title": "$status",
+    "summary": "$status",
     "sections": [{
         "facts": [{
             "name": "Build Version",
@@ -263,8 +263,8 @@ function Send-D365LBDUpdateMSTeams {
     "@type": "MessageCard",
     "@context": "http://schema.org/extensions",
     "themeColor": "ff0000",
-    "title": "Build Completed $status",
-    "summary": "Build Completed $status",
+    "title": "$status",
+    "summary": "$status",
     "sections": [{
         "facts": [{
             "name": "Build Version",
@@ -294,8 +294,8 @@ function Send-D365LBDUpdateMSTeams {
      "@type": "MessageCard",
      "@context": "http://schema.org/extensions",
      "themeColor": "ff0000",
-    "title": "D365 Build Prepped for $LCSEnvironmentName",
-      "summary": "D365 Build Prepped for $LCSEnvironmentName",
+    "title": "$LCSEnvironmentName $status",
+      "summary": "$LCSEnvironmentName $status",
       "sections": [{
       "facts": [{
        "name": "Environment",
