@@ -17,14 +17,10 @@ function Send-D365LBDUpdateMSTeams {
         [Parameter(ParameterSetName = 'Config',
             ValueFromPipeline = $True)]
         [psobject]$Config,
-        [switch]$PreDeployment,
-        [switch]$PostDeployment,
-        [switch]$RemoveMR,
-        [switch]$MaintenanceModeOn,
-        [switch]$MaintenanceModeOff,
         [string]$MSTeamsURI,
         [string]$MSTeamsExtraDetailsURI,
         [string]$MSTeamsExtraDetails,
+        [string]$MSTeamsExtraDetailsTitle,
         [string]$MSTeamsBuildName,
         [string]$MSTeamsCustomStatus,
         [string]$MessageType,
@@ -75,17 +71,8 @@ function Send-D365LBDUpdateMSTeams {
             $MSTeamsURIS = $MSTeamsURI
         }
 
-        if ($MessageType -eq "PreDeployment" -or $MessageType -eq "PostDeployment") {
-            if (!$Config) {
-                if (!$CustomModuleName) {
-                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
-                }
-                else {
-                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly 
-                }
-            }
-        }
         if (($CustomModuleName) -and $MessageType -eq "BuildPrepped" -and ($MSTeamsBuildName)) {
+            ## BUILD PREPPED Beginning
             Write-PSFMessage -Level VeryVerbose -Message "MessageType is: BuildPrepped - BuildName has been defined ($MSTeamsBuildName)"
             if (!$EnvironmentName) {
                 if (!$CustomModuleName) {
@@ -96,8 +83,6 @@ function Send-D365LBDUpdateMSTeams {
                 }
                 $LCSEnvironmentName = $Config.LCSEnvironmentName
                 $clienturl = $Config.clienturl
-                $LCSProjectId = $Config.ProjectID
-                $LCSEnvironmentID = $Config.LCSEnvironmentID
                 $LCSEnvironmentURL = $Config.LCSEnvironmentURL
             }
             if ($LCSEnvironmentID) {
@@ -230,28 +215,29 @@ function Send-D365LBDUpdateMSTeams {
         } ## end of build prep
         
         if ($MessageType -eq "PlainText") {
-            Write-PSFMessage -Level VeryVerbose -Message "Plain Text Message" 
+            Write-PSFMessage -Level VeryVerbose -Message "MessageType is: Plain Text Message" 
             if ($PlainTextTitle) {
                 Write-PSFMessage -Level VeryVerbose -Message "Plain Text Message with Custom Title" 
                 $bodyjson = @"
                 {
-                    "title":"$PlainTextTitle $status"
+                    "title":"$($("$PlainTextTitle $status").trim())",
                     "text":"$PlainTextMessage"
                 }     
 "@
             }
-            else{
+            else {
                 Write-PSFMessage -Level VeryVerbose -Message "Plain Text Message"              
-            $bodyjson = @"
+                $bodyjson = @"
 {
-    "title":"D365 Message $status"
+    "title":"$($("$PlainTextTitle $status").trim())",
     "text":"$PlainTextMessage"
 }     
 "@
             }
         } ## PLAIN TEXT END
 
-        if ($MessageType -eq "BuildStarted") {
+        if ($MessageType -eq "BuildStart") {
+            Write-PSFMessage -Message "MessageType is: BuildStart" -Level VeryVerbose
             $bodyjson = @"
 {
     "@type": "MessageCard",
@@ -260,17 +246,18 @@ function Send-D365LBDUpdateMSTeams {
     "title": "Build Started $status",
     "summary": "Build Started $status",
     "sections": [{
-        "facts": [
+        "facts": [{
             "name": "Build Version",
             "value": "$MSTeamsBuildName"
         }],
         "markdown": true
     }]
-}  
+} 
+"@ 
         }
 
         if ($MessageType -eq "BuildComplete") {
-           
+            Write-PSFMessage -Message "MessageType is: BuildComplete" -Level VeryVerbose
             $bodyjson = @"
 {
     "@type": "MessageCard",
@@ -279,7 +266,7 @@ function Send-D365LBDUpdateMSTeams {
     "title": "Build Completed $status",
     "summary": "Build Completed $status",
     "sections": [{
-        "facts": [
+        "facts": [{
             "name": "Build Version",
             "value": "$MSTeamsBuildName"
         }],
@@ -290,14 +277,51 @@ function Send-D365LBDUpdateMSTeams {
         }
 
 
-        if ($MSTeamsExtraDetails) {
+        if ($MessageType -eq "BuildPrepStarted") {   
+            Write-PSFMessage -Message "MessageType is: Build Prep Started" -Level VeryVerbose
+            if (!$CustomModuleName) {
+                $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
+            }
+            else {
+                $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly 
+            }
+            $LCSEnvironmentName = $Config.LCSEnvironmentName
+            $clienturl = $Config.clienturl
+            $LCSEnvironmentURL = $Config.LCSEnvironmentURL
+            
+            $bodyjson = @"
+{
+     "@type": "MessageCard",
+     "@context": "http://schema.org/extensions",
+     "themeColor": "ff0000",
+    "title": "D365 Build Prepped for $LCSEnvironmentName",
+      "summary": "D365 Build Prepped for $LCSEnvironmentName",
+      "sections": [{
+      "facts": [{
+       "name": "Environment",
+       "value": "[$LCSEnvironmentName]($clienturl)"
+         },{
+        "name": "Build Version/Name",
+        "value": "$MSTeamsBuildName"
+         },{
+         "name": "LCS",
+         "value": "[LCS]($LCSEnvironmentURL)"
+        }],
+         "markdown": true
+          }]
+}            
+"@
+        }
+
+        if ($MessageType -eq "StatusReport") {   
+            Write-PSFMessage -Message "MessageType is: StatusReport" -Level VeryVerbose
             $bodyjson = @"
 {
     "@type": "MessageCard",
     "@context": "http://schema.org/extensions",
     "themeColor": "ff0000",
-    "title": "D365 $LCSEnvironmentName $status",
-    "summary": "D365 $LCSEnvironmentName $status",
+    "title": "$LCSEnvironmentName $status",
+    "summary": "$LCSEnvironmentName $status",
     "sections": [{
         "facts": [{
             "name": "Environment",
@@ -305,17 +329,22 @@ function Send-D365LBDUpdateMSTeams {
         },{
             "name": "Build Version",
             "value": "$MSTeamsBuildName"
-        },{
-            "name": "Details",
-            "value": "[$MSTeamsExtraDetails]($MSTeamsExtraDetailsURI)"
-        },{
-            "name": "Status",
-            "value": "$status"
         }],
         "markdown": true
     }]
 }            
 "@
+        }
+
+        if ($MSTeamsExtraDetails) {
+            Write-PSFMessage -Level VeryVerbose -Message "Adding extra Details to JSON"
+            $Additionaljson = @"
+    ,{
+            "name": "$MSTeamsExtraDetailsTitle",
+            "value": "[$MSTeamsExtraDetails]($MSTeamsExtraDetailsURI)"
+        }],                  
+"@
+            $bodyjson = $bodyjson.Replace('],', "$Additionaljson")
         }
         if (!$bodyjson) {
             Write-PSFMessage -Message "Json is empty!" -Level VeryVerbose
