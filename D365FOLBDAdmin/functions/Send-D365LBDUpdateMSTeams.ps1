@@ -276,7 +276,6 @@ function Send-D365LBDUpdateMSTeams {
 "@
         }
 
-
         if ($MessageType -eq "BuildPrepStarted") {   
             Write-PSFMessage -Message "MessageType is: Build Prep Started" -Level VeryVerbose
             if (!$CustomModuleName) {

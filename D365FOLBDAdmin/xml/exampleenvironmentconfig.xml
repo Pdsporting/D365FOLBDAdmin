@@ -16,6 +16,8 @@
             <DatabaseEncryptionThumbprint>699F09C7DC2642759E7E1264D417175F5C9AC5A2</DatabaseEncryptionThumbprint>
          </SQLServer>
       </SQLDetails>
+      <DriveSpaceWarningPercentage>15</DriveSpaceWarningPercentage>
+      <DriveSpaceErrorPercentage></DriveSpaceErrorPercentage>
       <DataEnciphermentCertThumbprint>420F09C7DC2642759E7E1264D417175F5C9AC5A2</DataEnciphermentCertThumbprint>
       <ModifiedInfrastructureScriptsfolderLocation>//myshare/environment/InfrastureScripts-33627</ModifiedInfrastructureScriptsfolderLocation>
       <LBDAdminOrchestrationServers></LBDAdminOrchestrationServers>
@@ -28,11 +30,14 @@
       </AutomaticDeployments>
       <CleanupSFLogs Enabled="true">
          <Frequency>60</Frequency>
+         <CleanupOlderThanDays>2</CleanupOlderThanDays>
+         <ControlFileLocation></ControlFileLocation>
          <!--Frequency to check if next step is to be triggered (in minutes)-->
       </CleanupSFLogs>
       <CleanupAssets Enabled="true">
          <Frequency>1440</Frequency>
          <AssetsToKeep>5</AssetsToKeep>
+         <ControlFileLocation></ControlFileLocation>
       </CleanupAssets>
       <CheckforPreppedAsset Enabled="true">
          <!--Frequency in minutes-->
