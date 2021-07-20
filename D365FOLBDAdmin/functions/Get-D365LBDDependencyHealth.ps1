@@ -61,22 +61,20 @@ function Get-D365LBDDependencyHealth {
                 if ($results.statusCode -eq 200 -or $results.statusCode -eq 203 -or $results.statusCode -eq 204 ) {
                     $Output = New-Object -TypeName PSObject -Property `
                     @{'Source'           = $env:COMPUTERNAME ;
-                        'DependencyType' = "Web Service/Page";
                         'Name'           = $_.uri ;
                         'State'          = "Operational";
                         'ExtraInfo'      = $results.Statuscode
-                        'Group'          = 'Web'
+                        'Group'          = 'Web Service/Page Web Basic'
                     }
                     $OutputList += $Output
                 }
                 else {
                     $Output += New-Object -TypeName PSObject -Property `
                     @{'Source'           = $env:COMPUTERNAME ;
-                        'DependencyType' = "Web Service/Page";
                         'Name'           = $_.uri ;
                         'State'          = "Down";
                         'ExtraInfo'      = $results.Statuscode
-                        'Group'          = 'Web'
+                        'Group'          = 'Web Service/Page Web Basic'
                     }
                 }
             }
@@ -94,11 +92,10 @@ function Get-D365LBDDependencyHealth {
                         Write-PSFMessage -message "Found differences $diff" -Level VeryVerbose
                         $Output = New-Object -TypeName PSObject -Property `
                         @{'Source'           = $env:COMPUTERNAME ;
-                            'DependencyType' = "Web Service/Page";
                             'Name'           = $_.uri ;
                             'State'          = "Down";
                             'ExtraInfo'      = $Note
-                            'Group'          = 'Web'
+                            'Group'          = 'Web Service/Page Web Advanced'
                         }
                         $OutputList += $Output
                     }
@@ -106,11 +103,10 @@ function Get-D365LBDDependencyHealth {
                         ##no differences found so success
                         $Output = New-Object -TypeName PSObject -Property `
                         @{'Source'           = $env:COMPUTERNAME ;
-                            'DependencyType' = "Web Service/Page";
                             'Name'           = $_.uri ;
                             'State'          = "Operational";
                             'ExtraInfo'      = $Note
-                            'Group'          = 'Web'
+                            'Group'          = 'Web Service/Page Web Advanced'
                         }
                         $OutputList += $Output
                     }  ##only one or 0 child items end
@@ -122,22 +118,20 @@ function Get-D365LBDDependencyHealth {
                             Write-PSFMessage -message "Found differences $diff" -Level VeryVerbose
                             $Output = New-Object -TypeName PSObject -Property `
                             @{'Source'           = $env:COMPUTERNAME ;
-                                'DependencyType' = "Web Service/Page";
                                 'Name'           = $_.uri ;
                                 'State'          = "Down";
                                 'ExtraInfo'      = $results.Statuscode
-                                'Group'          = 'Web'
+                                'Group'          = 'Web Service/Page Web Advanced'
                             }
                             $OutputList += $Output
                         }
                         else {
                             $Output = New-Object -TypeName PSObject -Property `
                             @{'Source'           = $env:COMPUTERNAME ;
-                                'DependencyType' = "Web Service/Page";
                                 'Name'           = $_.uri ;
                                 'State'          = "Operational";
                                 'ExtraInfo'      = $results.Statuscode;
-                                'Group'          = 'Web'
+                                'Group'          = 'Web Service/Page Web Advanced'
                             }
                             $OutputList += $Output
                         }
@@ -160,12 +154,11 @@ function Get-D365LBDDependencyHealth {
                         if ($results.Status -eq "Running") {
                             $results | ForEach-Object -Process { `
                                     $Output = New-Object -TypeName PSObject -Property `
-                                @{'Source'           = $env:COMPUTERNAME ;
-                                    'DependencyType' = "Service";
+                                @{'Source'           = $AXSfServerName ;
                                     'Name'           = "$servicetovalidateName"; 
                                     'State'          = "Operational";
                                     'ExtraInfo'      = $_.StartType;
-                                    'Group'          = 'Service'
+                                    'Group'          = 'AXSFService'
                                 }
                                 $OutputList += $Output
                             }
@@ -173,12 +166,11 @@ function Get-D365LBDDependencyHealth {
                         else {
                             $results | ForEach-Object -Process { `
                                     $Output = New-Object -TypeName PSObject -Property `
-                                @{'Source'           = $env:COMPUTERNAME ;
-                                    'DependencyType' = "Service";
+                                @{'Source'           = $AXSfServerName ;
                                     'Name'           = "$servicetovalidateName"; 
                                     'State'          = "Down";
                                     'ExtraInfo'      = $_.StartType;
-                                    'Group'          = 'Service'
+                                    'Group'          = 'AXSFService'
                                 }
                                 $OutputList += $Output
                             }
@@ -192,12 +184,11 @@ function Get-D365LBDDependencyHealth {
                         if ($results.Status -eq "Running") {
                             $results | ForEach-Object -Process { `
                                     $Output = New-Object -TypeName PSObject -Property `
-                                @{'Source'           = $env:COMPUTERNAME ;
-                                    'DependencyType' = "Service";
+                                @{'Source'           = $SSRSClusterServerName ;
                                     'Name'           = "$servicetovalidateName"; 
                                     'State'          = "Operational";
                                     'ExtraInfo'      = $_.StartType;
-                                    'Group'          = 'Service'
+                                    'Group'          = 'SSRSService'
                                 }
                                 $OutputList += $Output
                             }
@@ -205,12 +196,11 @@ function Get-D365LBDDependencyHealth {
                         else {
                             $results | ForEach-Object -Process { `
                                     $Output = New-Object -TypeName PSObject -Property `
-                                @{'Source'           = $env:COMPUTERNAME ;
-                                    'DependencyType' = "Service";
+                                @{'Source'           = $SSRSClusterServerName ;
                                     'Name'           = "$servicetovalidateName"; 
                                     'State'          = "Down";
                                     'ExtraInfo'      = $_.StartType;
-                                    'Group'          = 'Service'
+                                    'Group'          = 'SSRSService'
                                 }
                                 $OutputList += $Output
                             }
@@ -224,12 +214,11 @@ function Get-D365LBDDependencyHealth {
                         if ($results.Status -eq "Running") {
                             $results | ForEach-Object -Process { `
                                     $Output = New-Object -TypeName PSObject -Property `
-                                @{'Source'           = $env:COMPUTERNAME ;
-                                    'DependencyType' = "Service";
+                                @{'Source'           = $DatabaseClusterServerName ;
                                     'Name'           = "$servicetovalidateName"; 
                                     'State'          = "Operational";
                                     'ExtraInfo'      = $_.StartType;
-                                    'Group'          = 'Service'
+                                    'Group'          = 'SQLDBService'
                                 }
                                 $OutputList += $Output
                             }
@@ -237,12 +226,11 @@ function Get-D365LBDDependencyHealth {
                         else {
                             $results | ForEach-Object -Process { `
                                     $Output = New-Object -TypeName PSObject -Property `
-                                @{'Source'           = $env:COMPUTERNAME ;
-                                    'DependencyType' = "Service";
+                                @{'Source'           = $DatabaseClusterServerName ;
                                     'Name'           = "$servicetovalidateName"; 
                                     'State'          = "Down";
                                     'ExtraInfo'      = $_.StartType;
-                                    'Group'          = 'Service'
+                                    'Group'          = 'SQLDBService'
                                 }
                                 $OutputList += $Output
                             }
@@ -256,12 +244,11 @@ function Get-D365LBDDependencyHealth {
                         if ($results.Status -eq "Running") {
                             $results | ForEach-Object -Process { `
                                     $Output = New-Object -TypeName PSObject -Property `
-                                @{'Source'           = $env:COMPUTERNAME ;
-                                    'DependencyType' = "Service";
+                                @{'Source'           = $ManagementReporterServer ;
                                     'Name'           = "$servicetovalidateName"; 
                                     'State'          = "Operational";
                                     'ExtraInfo'      = $_.StartType;
-                                    'Group'          = 'Service'
+                                    'Group'          = 'ManagementReporterService'
                                 }
                                 $OutputList += $Output
                             }
@@ -269,12 +256,11 @@ function Get-D365LBDDependencyHealth {
                         else {
                             $results | ForEach-Object -Process { `
                                     $Output = New-Object -TypeName PSObject -Property `
-                                @{'Source'           = $env:COMPUTERNAME ;
-                                    'DependencyType' = "Service";
+                                @{'Source'           = $ManagementReporterServer ;
                                     'Name'           = "$servicetovalidateName"; 
                                     'State'          = "Down";
                                     'ExtraInfo'      = $_.StartType;
-                                    'Group'          = 'Service'
+                                    'Group'          = 'ManagementReporterService'
                                 }
                                 $OutputList += $Output
                             }
@@ -288,12 +274,11 @@ function Get-D365LBDDependencyHealth {
                         if ($results.Status -eq "Running") {
                             $results | ForEach-Object -Process { `
                                     $Output = New-Object -TypeName PSObject -Property `
-                                @{'Source'           = $env:COMPUTERNAME ;
-                                    'DependencyType' = "Service";
+                                @{'Source'           = $AppServer ;
                                     'Name'           = "$servicetovalidateName"; 
                                     'State'          = "Operational";
                                     'ExtraInfo'      = $_.StartType;
-                                    'Group'          = 'Process'
+                                    'Group'          = 'AllServersService'
                                 }
                                 $OutputList += $Output
                             }
@@ -301,12 +286,11 @@ function Get-D365LBDDependencyHealth {
                         else {
                             $results | ForEach-Object -Process { `
                                     $Output = New-Object -TypeName PSObject -Property `
-                                @{'Source'           = $env:COMPUTERNAME ;
-                                    'DependencyType' = "Service";
+                                @{'Source'           = $AppServer ;
                                     'Name'           = "$servicetovalidateName"; 
                                     'State'          = "Down";
                                     'ExtraInfo'      = $_.StartType;
-                                    'Group'          = 'Process'
+                                    'Group'          = 'AllServersService'
                                 }
                                 $OutputList += $Output
                             }
@@ -321,31 +305,128 @@ function Get-D365LBDDependencyHealth {
                 $ProcessName = $processtovalidate.name
                 if ($processtovalidate.locationType.'#text'.Trim() -eq 'AXSF') {
                     foreach ($AXSfServerName in $Config.AXSFServerNames) {
-                        Invoke-Command -ComputerName $AXSfServerName -ScriptBlock { Get-process | where-object { $_.Name -eq $Using:ProcessName } | Select-Object -First 1 } | ForEach-Object -Process { `
+                        $results = Invoke-Command -ComputerName $AXSfServerName -ScriptBlock { Get-process | where-object { $_.Name -eq $Using:ProcessName } | Select-Object -First 1 } | ForEach-Object -Process { `
+                                if ($results) {
+                                $Output = New-Object -TypeName PSObject -Property `
+                                @{'Source'           = $AXSfServerName ;
+                                    'Name'           = "$ProcessName"; 
+                                    'State'          = "Operational";
+                                    'ExtraInfo'      = $_.StartType;
+                                    'Group'          = 'AXServerProcess'
+                                }
+                            }
+                            else {
+                                $Output = New-Object -TypeName PSObject -Property `
+                                @{'Source'           = $AXSfServerName ;
+                                    'Name'           = "$ProcessName"; 
+                                    'State'          = "Down";
+                                    'ExtraInfo'      = $_.StartType;
+                                    'Group'          = 'AXServerProcess'
+                                }
+                            }
+                            $OutputList += $Output
                         }
                     }
                 }
+            
                 if ($processtovalidate.locationType.'#text'.Trim() -eq 'SSRS') {
                     foreach ($SSRSClusterServerName in $Config.SSRSClusterServerNames) {
-                        Invoke-Command -ComputerName $SSRSClusterServerName -ScriptBlock { Get-process | where-object { $_.Name -eq $Using:ProcessName }  | Select-Object -First 1 } | ForEach-Object -Process { `
+                        $results = Invoke-Command -ComputerName $SSRSClusterServerName -ScriptBlock { Get-process | where-object { $_.Name -eq $Using:ProcessName }  | Select-Object -First 1 } | ForEach-Object -Process { `
+                                if ($results) {
+                                $Output = New-Object -TypeName PSObject -Property `
+                                @{'Source'           = $SSRSClusterServerName ;
+                                    'Name'           = "$ProcessName"; 
+                                    'State'          = "Operational";
+                                    'ExtraInfo'      = $_.StartType;
+                                    'Group'          = 'SSRSServerProcess'
+                                }
+                            }
+                            else {
+                                $Output = New-Object -TypeName PSObject -Property `
+                                @{'Source'           = $SSRSClusterServerName ;
+                                    'Name'           = "$ProcessName"; 
+                                    'State'          = "Down";
+                                    'ExtraInfo'      = $_.StartType;
+                                    'Group'          = '$SSRSServerProcess'
+                                }
+                            }
+                            $OutputList += $Output
                         }
                     }
                 }
                 if ($processtovalidate.locationType.'#text'.Trim() -eq 'SQLDB') {
                     foreach ($DatabaseClusterServerName in $config.DatabaseClusterServerNames) {
-                        Invoke-Command -ComputerName $DatabaseClusterServerName -ScriptBlock { Get-process | where-object { $_.Name -eq $Using:ProcessName } | Select-Object -First 1 } | ForEach-Object -Process { `
+                        $results = Invoke-Command -ComputerName $DatabaseClusterServerName -ScriptBlock { Get-process | where-object { $_.Name -eq $Using:ProcessName } | Select-Object -First 1 } | ForEach-Object -Process { `
+                                if ($results) {
+                                $Output = New-Object -TypeName PSObject -Property `
+                                @{'Source'           = $DatabaseClusterServerName ;
+                                    'Name'           = "$ProcessName"; 
+                                    'State'          = "Operational";
+                                    'ExtraInfo'      = $_.StartType;
+                                    'Group'          = 'DatabaseClusterServerProcess'
+                                }
+                            }
+                            else {
+                                $Output = New-Object -TypeName PSObject -Property `
+                                @{'Source'           = $DatabaseClusterServerName ;
+                                    'Name'           = "$ProcessName"; 
+                                    'State'          = "Down";
+                                    'ExtraInfo'      = $_.StartType;
+                                    'Group'          = 'DatabaseClusterServerProcess'
+                                }
+                            }
+                            $OutputList += $Output
                         }
                     }
                 }
+            
                 if ($processtovalidate.locationType.'#text'.Trim() -eq 'ManagementReporter') {
                     foreach ($ManagementReporterServer in $ManagementReporterServers) {
-                        Invoke-Command -ComputerName $ManagementReporterServer -ScriptBlock { Get-process | where-object { $_.Name -eq $Using:ProcessName } | Select-Object -First 1 } | ForEach-Object -Process { `
+                        $results = Invoke-Command -ComputerName $ManagementReporterServer -ScriptBlock { Get-process | where-object { $_.Name -eq $Using:ProcessName } | Select-Object -First 1 } | ForEach-Object -Process { `
+                                if ($results) {
+                                $Output = New-Object -TypeName PSObject -Property `
+                                @{'Source'           = $ManagementReporterServer ;
+                                    'Name'           = "$ProcessName"; 
+                                    'State'          = "Operational";
+                                    'ExtraInfo'      = $_.StartType;
+                                    'Group'          = 'ManagementReporterProcess'
+                                }
+                            }
+                            else {
+                                $Output = New-Object -TypeName PSObject -Property `
+                                @{'Source'           = $ManagementReporterServer ;
+                                    'Name'           = "$ProcessName"; 
+                                    'State'          = "Down";
+                                    'ExtraInfo'      = $_.StartType;
+                                    'Group'          = 'ManagementReporterProcess'
+                                }
+                            }
+                            $OutputList += $Output
                         }
                     }
                 }
                 if ($processtovalidate.locationType.'#text'.Trim() -eq 'All') {
                     foreach ($AppServer in $Config.AllAppServerList) {
-                        Invoke-Command -ComputerName $AppServer -ScriptBlock { Get-process | where-object { $_.Name -eq $Using:ProcessName }  | Select-Object -First 1 } | ForEach-Object -Process { `
+                        $results = Invoke-Command -ComputerName $AppServer -ScriptBlock { Get-process | where-object { $_.Name -eq $Using:ProcessName }  | Select-Object -First 1 } | ForEach-Object -Process { `
+                                if ($results) {
+                                $Output = New-Object -TypeName PSObject -Property `
+                                @{'Source'           = $AppServer ;
+                                    'Name'           = "$ProcessName"; 
+                                    'State'          = "Operational";
+                                    'ExtraInfo'      = $_.StartType;
+                                    'Group'          = 'AllProcess'
+                                }
+                            }
+                            else {
+                                $Output = New-Object -TypeName PSObject -Property `
+                                @{'Source'           = $AppServer ;
+                                    'Name'           = "$ProcessName"; 
+                                    'State'          = "Down";
+                                    'ExtraInfo'      = $_.StartType;
+                                    'Group'          = 'AllProcess'
+                                }
+                            }
+                            $OutputList += $Output
                         }
                     }
                 }

@@ -52,7 +52,7 @@ function Get-D365LBDEnvironmentHealth {
             }
         }#>
          
-       $AssemblyList = "Microsoft.SqlServer.Management.Common", "Microsoft.SqlServer.Smo", "Microsoft.SqlServer.Management.Smo"
+        $AssemblyList = "Microsoft.SqlServer.Management.Common", "Microsoft.SqlServer.Smo", "Microsoft.SqlServer.Management.Smo"
         foreach ($Assembly in $AssemblyList) {
             $AssemblyLoad = [Reflection.Assembly]::LoadWithPartialName($Assembly) 
         }
@@ -78,10 +78,10 @@ function Get-D365LBDEnvironmentHealth {
                         "True" { $dbstatus = "Operational" }
                         "False" { $dbstatus = "Down" }
                     }
-                    $Properties = @{'Object' = "SSRSDatabase"
-                        'Details'            = $database.name
-                        'Status'             = "$dbstatus" 
-                        'Source'             = $ReportServerServerName
+                    $Properties = @{'Name' = "SSRSDatabase"
+                        'Details'          = $database.name
+                        'Status'           = "$dbstatus" 
+                        'Source'           = $ReportServerServerName
                     }
                     New-Object -TypeName psobject -Property $Properties
                 }
@@ -90,10 +90,12 @@ function Get-D365LBDEnvironmentHealth {
                         "True" { $dbstatus = "Operational" }
                         "False" { $dbstatus = "Down" }
                     }
-                    $Properties = @{'Object' = "SSRSTempDBDatabase"
-                        'Details'            = $database.name
-                        'Status'             = "$dbstatus" 
-                        'Source'             = $ReportServerServerName
+                    $Properties = @{'Name' = "SSRSTempDBDatabase"
+                        'Details'          = $database.name
+                        'Status'           = "$dbstatus" 
+                        'ExtraInfo'      = ""
+                        'Source'           = $ReportServerServerName
+                        'Group'            = 'Database'
                     }
                     New-Object -TypeName psobject -Property $Properties
                 }
@@ -101,18 +103,22 @@ function Get-D365LBDEnvironmentHealth {
             }
         }
         if ($SystemDatabasesWithIssues -eq 0) {
-            $Properties = @{'Object' = "SSRSSystemDatabasesDatabase"
-                'Details'            = "$SystemDatabasesAccessible databases are accessible"
-                'Status'             = "Operational" 
-                'Source'             = $ReportServerServerName
+            $Properties = @{'Name' = "SSRSSystemDatabasesDatabase"
+                'Details'          = "$SystemDatabasesAccessible databases are accessible"
+                'Status'           = "Operational" 
+                'ExtraInfo'      = ""
+                'Source'           = $ReportServerServerName
+                'Group'            = 'Database'
             }
             New-Object -TypeName psobject -Property $Properties
         }
         else {
-            $Properties = @{'Object' = "SSRSSystemDatabasesDatabase"
-                'Details'            = "$SystemDatabasesAccessible databases are accessible. $SystemDatabasesWithIssues are not accessible"
-                'Status'             = "Down" 
-                'Source'             = $ReportServerServerName
+            $Properties = @{'Name' = "SSRSSystemDatabasesDatabase"
+                'Details'          = "$SystemDatabasesAccessible databases are accessible. $SystemDatabasesWithIssues are not accessible"
+                'Status'           = "Down" 
+                'ExtraInfo'      = ""
+                'Source'           = $ReportServerServerName
+                'Group'            = 'Database'
             }
             New-Object -TypeName psobject -Property $Properties
         }
@@ -139,10 +145,12 @@ function Get-D365LBDEnvironmentHealth {
                         "True" { $dbstatus = "Operational" }
                         "False" { $dbstatus = "Down" }
                     }
-                    $Properties = @{'Object' = "AXDatabase"
-                        'Details'            = $database.name
-                        'Status'             = "$dbstatus" 
-                        'Source'             = $AXDatabaseServer
+                    $Properties = @{'Name' = "AXDatabase"
+                        'Details'          = $database.name
+                        'Status'           = "$dbstatus" 
+                        'ExtraInfo'      = ""
+                        'Source'           = $AXDatabaseServer
+                        'Group'            = 'Database'
                     }
                     New-Object -TypeName psobject -Property $Properties
                 }
@@ -150,18 +158,22 @@ function Get-D365LBDEnvironmentHealth {
             }
         }
         if ($SystemDatabasesWithIssues -eq 0) {
-            $Properties = @{'Object' = "AXDBSystemDatabasesDatabase"
-                'Details'            = "$SystemDatabasesAccessible databases are accessible"
-                'Status'             = "Operational" 
-                'Source'             = $AXDatabaseServer
+            $Properties = @{'Name' = "AXDBSystemDatabasesDatabase"
+                'Details'          = "$SystemDatabasesAccessible databases are accessible"
+                'Status'           = "Operational" 
+                'ExtraInfo'      = ""
+                'Source'           = $AXDatabaseServer
+                'Group'            = 'Database'
             }
             New-Object -TypeName psobject -Property $Properties
         }
         else {
-            $Properties = @{'Object' = "AXDBSystemDatabasesDatabase"
-                'Details'            = "$SystemDatabasesAccessible databases are accessible. $SystemDatabasesWithIssues are not accessible"
-                'Status'             = "Down" 
-                'Source'             = $AXDatabaseServer
+            $Properties = @{'Name' = "AXDBSystemDatabasesDatabase"
+                'Details'          = "$SystemDatabasesAccessible databases are accessible. $SystemDatabasesWithIssues are not accessible"
+                'Status'           = "Down" 
+                'ExtraInfo'      = ""
+                'Source'           = $AXDatabaseServer
+                'Group'            = 'Database'
             }
             New-Object -TypeName psobject -Property $Properties
         }
@@ -191,10 +203,11 @@ function Get-D365LBDEnvironmentHealth {
                         Write-PSFMessage -Level Verbose -Message " $ApplicationServer - $($HardDrive.DeviceID) has $FreeSpace %"
                         if ($FreeSpace -lt $HDErrorValue) {
                             Write-PSFMessage -Message "ERROR: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Warning
-                            $Properties = @{'Object' = "AXDBSystemDatabasesDatabase"
-                                'Details'            = $HardDrive.DeviceId
-                                'Status'             = "Down" 
-                                'Source'             = $ApplicationServer
+                            $Properties = @{'Name' = "AXDBSystemDatabasesDatabase"
+                                'Details'          = $HardDrive.DeviceId
+                                'Status'           = "Down" 
+                                'ExtraInfo'      = ""
+                                'Source'           = $ApplicationServer
                             }
                             New-Object -TypeName psobject -Property $Properties
                             $foundHardDrivewithIssue = $true
@@ -208,14 +221,15 @@ function Get-D365LBDEnvironmentHealth {
                         }
                     }
                 }
-                if ($foundHardDrivewithIssue -eq $false)
-                {
-                    $Properties = @{'Object' = "Hard Disk Space"
-                                'Details'            = $config.AllAppServerList
-                                'Status'             = "Operational" 
-                                'Source'             = $config.AllAppServerList
-                            }
-                            New-Object -TypeName psobject -Property $Properties
+                if ($foundHardDrivewithIssue -eq $false) {
+                    $Properties = @{'Name' = "Hard Disk Space"
+                        'Details'          = $config.AllAppServerList
+                        'Status'           = "Operational" 
+                        'ExtraInfo'      = ""
+                        'Source'           = $config.AllAppServerList
+                        'Group'            = 'OS'
+                    }
+                    New-Object -TypeName psobject -Property $Properties
                 }
             }##Check HD end
         }##additional details end
@@ -232,13 +246,17 @@ function Get-D365LBDEnvironmentHealth {
                     Write-PSFMessage -Level Verbose -Message " $ApplicationServer - $($HardDrive.DeviceID) has $FreeSpace %"
                     if ($FreeSpace -lt $HDErrorValue) {
                         Write-PSFMessage -Message "ERROR: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Warning
-                        $Properties = @{'Object' = "AXDBSystemDatabasesDatabase"
-                                'Details'            = $HardDrive.DeviceId
-                                'Status'             = "Down" 
-                                'Source'             = $ApplicationServer
-                            }
-                            New-Object -TypeName psobject -Property $Properties
-                            $foundHardDrivewithIssue = $true
+                        $Properties = @{
+                            'Source'           = $ApplicationServer ;
+                            'Name' = "AXDBSystemDatabasesDatabase"
+                            'Details'          = $HardDrive.DeviceId
+                            'State'            = "Down" 
+                            'ExtraInfo'        = '';
+                            'Group'            = 'OS'
+                               
+                        }
+                        New-Object -TypeName psobject -Property $Properties
+                        $foundHardDrivewithIssue = $true
                     }
                     elseif ($FreeSpace -lt $HDWarningValue) {
                         Write-PSFMessage -Message "WARNING: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Warning
@@ -249,22 +267,23 @@ function Get-D365LBDEnvironmentHealth {
                 }
             }
 
-            if ($foundHardDrivewithIssue -eq $false)
-                {
-                    $Properties = @{'Object' = "Hard Disk Space"
-                                'Details'            = $config.AllAppServerList
-                                'Status'             = "Operational" 
-                                'Source'             = $config.AllAppServerList
-                            }
-                            New-Object -TypeName psobject -Property $Properties
+            if ($foundHardDrivewithIssue -eq $false) {
+                $Properties = @{'Name' = "Hard Disk Space"
+                    'Details'          = $config.AllAppServerList
+                    'Status'           = "Operational" 
+                    'ExtraInfo'      = ""
+                    'Source'           = $config.AllAppServerList
+                    'Group'            = 'OS'
                 }
+                New-Object -TypeName psobject -Property $Properties
+            }
        
         
         }
     }
-        END {
-            if ($SFModuleSession) {
-                Remove-PSSession -Session $SFModuleSession  
-            }
+    END {
+        if ($SFModuleSession) {
+            Remove-PSSession -Session $SFModuleSession  
         }
     }
+}
