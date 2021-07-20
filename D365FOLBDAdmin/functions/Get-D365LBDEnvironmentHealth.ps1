@@ -222,6 +222,7 @@ function Get-D365LBDEnvironmentHealth {
         else {
             Write-PSFMessage -Message "Warning: Can't find additional environment Config. Not needed but recommend making one" -level warning  
         }
+
         if ($CheckedHardDrives -eq $false -and $CheckForHardDriveDetails) {
             $foundHardDrivewithIssue = $false
             foreach ($ApplicationServer in $config.AllAppServerList) {
@@ -260,6 +261,7 @@ function Get-D365LBDEnvironmentHealth {
        
         
         }
+    }
         END {
             if ($SFModuleSession) {
                 Remove-PSSession -Session $SFModuleSession  
