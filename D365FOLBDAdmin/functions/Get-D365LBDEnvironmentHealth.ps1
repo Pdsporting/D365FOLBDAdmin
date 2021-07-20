@@ -24,8 +24,7 @@ function Get-D365LBDEnvironmentHealth {
     [alias("Get-D365EnvironmentHealth")]
     param
     (
-        [Parameter(Mandatory = $true)]
-        [int]$Timeout,
+        [int]$Timeout = 120,
         [psobject]$Config,
         [string]$CustomModuleName,
         [switch]$CheckForHardDriveDetails
@@ -74,7 +73,7 @@ function Get-D365LBDEnvironmentHealth {
                         $SystemDatabasesWithIssues = $SystemDatabasesWithIssues + 1
                     }
                 }
-                "[DynamicsAxReportServer]" {
+                ("[DynamicsAxReportServer]", "[ReportServer]") {
                     switch ($database.IsAccessible) {
                         "True" { $dbstatus = "Operational" }
                         "False" { $dbstatus = "Down" }
@@ -86,7 +85,7 @@ function Get-D365LBDEnvironmentHealth {
                     }
                     New-Object -TypeName psobject -Property $Properties
                 }
-                "[DynamicsAxReportServerTempDB]" {
+                ("[DynamicsAxReportServerTempDB]", "[ReportServerTempDB]") {
                     switch ($database.IsAccessible) {
                         "True" { $dbstatus = "Operational" }
                         "False" { $dbstatus = "Down" }
@@ -170,6 +169,7 @@ function Get-D365LBDEnvironmentHealth {
 
 
         $AgentShareLocation = $config.AgentShareLocation
+        $CheckedHardDrives = $false
         if (test-path $AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml) {
             ##additional details start
             Write-PSFMessage -Level Verbose -Message "Found AdditionalEnvironmentDetails config"
@@ -179,16 +179,26 @@ function Get-D365LBDEnvironmentHealth {
             $CheckForHardDriveDetails = $XMLAdditionalConfig.d365LBDEnvironment.Automation.CheckForHealthIssues.CheckAllHardDisks
             $HDErrorValue = $CheckForHardDriveDetails.HardDriveError
             $HDWarningValue = $CheckForHardDriveDetails.HardDriveWarning
-
+            $foundHardDrivewithIssue = $false
             if ($CheckForHardDriveDetails.Enabled -eq $true) {
+                $CheckedHardDrives = $true
                 ##check HD Start
                 Write-PSFMessage -Message "Checking Hard drive free space" -Level Verbose
                 foreach ($ApplicationServer in $config.AllAppServerList) {
                     $HardDrives = Get-WmiObject -Class "Win32_LogicalDisk" -Namespace "root\CIMV2" -ComputerName $ApplicationServer
                     foreach ($HardDrive in $HardDrives) {
                         $FreeSpace = (($HardDrive.freespace / $HardDrive.size) * 100)
+                        Write-PSFMessage -Level Verbose -Message " $ApplicationServer - $($HardDrive.DeviceID) has $FreeSpace %"
                         if ($FreeSpace -lt $HDErrorValue) {
                             Write-PSFMessage -Message "ERROR: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Warning
+                            $Properties = @{'Object' = "AXDBSystemDatabasesDatabase"
+                                'Details'            = $HardDrive.DeviceId
+                                'Status'             = "Down" 
+                                'Source'             = $ApplicationServer
+                            }
+                            New-Object -TypeName psobject -Property $Properties
+                            $foundHardDrivewithIssue = $true
+
                         }
                         elseif ($FreeSpace -lt $HDWarningValue) {
                             Write-PSFMessage -Message "WARNING: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Warning
@@ -198,17 +208,61 @@ function Get-D365LBDEnvironmentHealth {
                         }
                     }
                 }
+                if ($foundHardDrivewithIssue -eq $false)
+                {
+                    $Properties = @{'Object' = "Hard Disk Space"
+                                'Details'            = $config.AllAppServerList
+                                'Status'             = "Operational" 
+                                'Source'             = $config.AllAppServerList
+                            }
+                            New-Object -TypeName psobject -Property $Properties
+                }
             }##Check HD end
         }##additional details end
         else {
             Write-PSFMessage -Message "Warning: Can't find additional environment Config. Not needed but recommend making one" -level warning  
         }
+        if ($CheckedHardDrives -eq $false -and $CheckForHardDriveDetails) {
+            $foundHardDrivewithIssue = $false
+            foreach ($ApplicationServer in $config.AllAppServerList) {
+                $HardDrives = Get-WmiObject -Class "Win32_LogicalDisk" -Namespace "root\CIMV2" -ComputerName $ApplicationServer
+                foreach ($HardDrive in $HardDrives) {
+                    $FreeSpace = (($HardDrive.freespace / $HardDrive.size) * 100)
+                    Write-PSFMessage -Level Verbose -Message " $ApplicationServer - $($HardDrive.DeviceID) has $FreeSpace %"
+                    if ($FreeSpace -lt $HDErrorValue) {
+                        Write-PSFMessage -Message "ERROR: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Warning
+                        $Properties = @{'Object' = "AXDBSystemDatabasesDatabase"
+                                'Details'            = $HardDrive.DeviceId
+                                'Status'             = "Down" 
+                                'Source'             = $ApplicationServer
+                            }
+                            New-Object -TypeName psobject -Property $Properties
+                            $foundHardDrivewithIssue = $true
+                    }
+                    elseif ($FreeSpace -lt $HDWarningValue) {
+                        Write-PSFMessage -Message "WARNING: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Warning
+                    }
+                    else {
+                        Write-PSFMessage -Message  "VERBOSE: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Verbose
+                    }
+                }
+            }
+
+            if ($foundHardDrivewithIssue -eq $false)
+                {
+                    $Properties = @{'Object' = "Hard Disk Space"
+                                'Details'            = $config.AllAppServerList
+                                'Status'             = "Operational" 
+                                'Source'             = $config.AllAppServerList
+                            }
+                            New-Object -TypeName psobject -Property $Properties
+                }
        
         
-    }
-    END {
-        if ($SFModuleSession) {
-            Remove-PSSession -Session $SFModuleSession  
+        }
+        END {
+            if ($SFModuleSession) {
+                Remove-PSSession -Session $SFModuleSession  
+            }
         }
     }
-}
