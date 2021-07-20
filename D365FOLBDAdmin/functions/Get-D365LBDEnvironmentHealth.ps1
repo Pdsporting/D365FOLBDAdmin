@@ -93,7 +93,7 @@ function Get-D365LBDEnvironmentHealth {
                     $Properties = @{'Name' = "SSRSTempDBDatabase"
                         'Details'          = $database.name
                         'Status'           = "$dbstatus" 
-                        'ExtraInfo'      = ""
+                        'ExtraInfo'        = ""
                         'Source'           = $ReportServerServerName
                         'Group'            = 'Database'
                     }
@@ -106,7 +106,7 @@ function Get-D365LBDEnvironmentHealth {
             $Properties = @{'Name' = "SSRSSystemDatabasesDatabase"
                 'Details'          = "$SystemDatabasesAccessible databases are accessible"
                 'Status'           = "Operational" 
-                'ExtraInfo'      = ""
+                'ExtraInfo'        = ""
                 'Source'           = $ReportServerServerName
                 'Group'            = 'Database'
             }
@@ -116,7 +116,7 @@ function Get-D365LBDEnvironmentHealth {
             $Properties = @{'Name' = "SSRSSystemDatabasesDatabase"
                 'Details'          = "$SystemDatabasesAccessible databases are accessible. $SystemDatabasesWithIssues are not accessible"
                 'Status'           = "Down" 
-                'ExtraInfo'      = ""
+                'ExtraInfo'        = ""
                 'Source'           = $ReportServerServerName
                 'Group'            = 'Database'
             }
@@ -148,7 +148,7 @@ function Get-D365LBDEnvironmentHealth {
                     $Properties = @{'Name' = "AXDatabase"
                         'Details'          = $database.name
                         'Status'           = "$dbstatus" 
-                        'ExtraInfo'      = ""
+                        'ExtraInfo'        = ""
                         'Source'           = $AXDatabaseServer
                         'Group'            = 'Database'
                     }
@@ -161,7 +161,7 @@ function Get-D365LBDEnvironmentHealth {
             $Properties = @{'Name' = "AXDBSystemDatabasesDatabase"
                 'Details'          = "$SystemDatabasesAccessible databases are accessible"
                 'Status'           = "Operational" 
-                'ExtraInfo'      = ""
+                'ExtraInfo'        = ""
                 'Source'           = $AXDatabaseServer
                 'Group'            = 'Database'
             }
@@ -171,7 +171,7 @@ function Get-D365LBDEnvironmentHealth {
             $Properties = @{'Name' = "AXDBSystemDatabasesDatabase"
                 'Details'          = "$SystemDatabasesAccessible databases are accessible. $SystemDatabasesWithIssues are not accessible"
                 'Status'           = "Down" 
-                'ExtraInfo'      = ""
+                'ExtraInfo'        = ""
                 'Source'           = $AXDatabaseServer
                 'Group'            = 'Database'
             }
@@ -185,19 +185,22 @@ function Get-D365LBDEnvironmentHealth {
         if (test-path $AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml) {
             ##additional details start
             Write-PSFMessage -Level Verbose -Message "Found AdditionalEnvironmentDetails config"
-            $EnvironmentAdditionalConfig = get-childitem  "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
+           #$EnvironmentAdditionalConfig = get-childitem  "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
 
             [xml]$XMLAdditionalConfig = Get-Content "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
             [string]$CheckForHardDriveDetails = $XMLAdditionalConfig.d365LBDEnvironment.Automation.CheckForHealthIssues.CheckAllHardDisks.Enabled
             $HDErrorValue = $CheckForHardDriveDetails.HardDriveError
             $HDWarningValue = $CheckForHardDriveDetails.HardDriveWarning
             $foundHardDrivewithIssue = $false
-            if ($CheckForHardDriveDetails.Enabled -eq "true") {
+            if ($CheckForHardDriveDetails -eq "true") {
                 $CheckedHardDrives = $true
                 ##check HD Start
                 Write-PSFMessage -Message "Checking Hard drive free space" -Level Verbose
                 foreach ($ApplicationServer in $config.AllAppServerList) {
                     $HardDrives = Get-WmiObject -Class "Win32_LogicalDisk" -Namespace "root\CIMV2" -ComputerName $ApplicationServer
+                    if (!$HardDrives){
+                        Write-PSFMessage -Level Verbose -Message " Having trouble accessing drives on $ApplicationServer"
+                    }
                     foreach ($HardDrive in $HardDrives) {
                         $FreeSpace = (($HardDrive.freespace / $HardDrive.size) * 100)
                         Write-PSFMessage -Level Verbose -Message " $ApplicationServer - $($HardDrive.DeviceID) has $FreeSpace %"
@@ -206,7 +209,7 @@ function Get-D365LBDEnvironmentHealth {
                             $Properties = @{'Name' = "AXDBSystemDatabasesDatabase"
                                 'Details'          = $HardDrive.DeviceId
                                 'Status'           = "Down" 
-                                'ExtraInfo'      = ""
+                                'ExtraInfo'        = ""
                                 'Source'           = $ApplicationServer
                             }
                             New-Object -TypeName psobject -Property $Properties
@@ -216,7 +219,7 @@ function Get-D365LBDEnvironmentHealth {
                         elseif ($FreeSpace -lt $HDWarningValue) {
                             Write-PSFMessage -Message "WARNING: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Warning
                         }
-                        else {
+                        else { 
                             Write-PSFMessage -Message  "VERBOSE: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Verbose
                         }
                     }
@@ -225,7 +228,7 @@ function Get-D365LBDEnvironmentHealth {
                     $Properties = @{'Name' = "Hard Disk Space"
                         'Details'          = $config.AllAppServerList
                         'Status'           = "Operational" 
-                        'ExtraInfo'      = ""
+                        'ExtraInfo'        = ""
                         'Source'           = $config.AllAppServerList
                         'Group'            = 'OS'
                     }
@@ -247,12 +250,12 @@ function Get-D365LBDEnvironmentHealth {
                     if ($FreeSpace -lt $HDErrorValue) {
                         Write-PSFMessage -Message "ERROR: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Warning
                         $Properties = @{
-                            'Source'           = $ApplicationServer ;
-                            'Name' = "AXDBSystemDatabasesDatabase"
-                            'Details'          = $HardDrive.DeviceId
-                            'State'            = "Down" 
-                            'ExtraInfo'        = '';
-                            'Group'            = 'OS'
+                            'Source'    = $ApplicationServer ;
+                            'Name'      = "AXDBSystemDatabasesDatabase"
+                            'Details'   = $HardDrive.DeviceId
+                            'State'     = "Down" 
+                            'ExtraInfo' = '';
+                            'Group'     = 'OS'
                                
                         }
                         New-Object -TypeName psobject -Property $Properties
@@ -271,7 +274,7 @@ function Get-D365LBDEnvironmentHealth {
                 $Properties = @{'Name' = "Hard Disk Space"
                     'Details'          = $config.AllAppServerList
                     'Status'           = "Operational" 
-                    'ExtraInfo'      = ""
+                    'ExtraInfo'        = ""
                     'Source'           = $config.AllAppServerList
                     'Group'            = 'OS'
                 }
