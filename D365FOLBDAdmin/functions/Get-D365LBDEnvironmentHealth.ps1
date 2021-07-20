@@ -27,7 +27,8 @@ function Get-D365LBDEnvironmentHealth {
         [Parameter(Mandatory = $true)]
         [int]$Timeout,
         [psobject]$Config,
-        [string]$CustomModuleName
+        [string]$CustomModuleName,
+        [switch]$CheckForHardDriveDetails
     )
     BEGIN {
     }
@@ -40,17 +41,24 @@ function Get-D365LBDEnvironmentHealth {
                 $Config = Get-D365LBDConfig -ComputerName $ComputerName 
             }
         }
+
+        $ReportServerServerName = $Config.ReportServerServerName
+        $AXDatabaseServer = $Config.AXDatabaseServer
         $SourceAXSFServer = $Config.SourceAXSFServer
         $SFModuleSession = New-PSSession -ComputerName $SourceAXSFServer
-        Invoke-Command -SessionName $SFModuleSession -ScriptBlock {
+        Invoke-Command -Session $SFModuleSession -ScriptBlock {
             $AssemblyList = "Microsoft.SqlServer.Management.Common", "Microsoft.SqlServer.Smo", "Microsoft.SqlServer.Management.Smo"
             foreach ($Assembly in $AssemblyList) {
                 $AssemblyLoad = [Reflection.Assembly]::LoadWithPartialName($Assembly) 
             }
         }
-        $AssemblyList = "Microsoft.SqlServer.Management.Common", "Microsoft.SqlServer.Smo", "Microsoft.SqlServer.Management.Smo"
+        <# Test removal
+       $AssemblyList = "Microsoft.SqlServer.Management.Common", "Microsoft.SqlServer.Smo", "Microsoft.SqlServer.Management.Smo"
         foreach ($Assembly in $AssemblyList) {
             $AssemblyLoad = [Reflection.Assembly]::LoadWithPartialName($Assembly) 
+        }#>
+        if (!$ReportServerServerName) {
+            $ReportServerServerName = $using:ReportServerServerName
         }
         $SQLSSRSServer = New-Object ("Microsoft.SqlServer.Management.Smo.Server") $ReportServerServerName 
         $SystemDatabasesWithIssues = 0
@@ -68,8 +76,8 @@ function Get-D365LBDEnvironmentHealth {
                 }
                 "[DynamicsAxReportServer]" {
                     switch ($database.IsAccessible) {
-                        "True" { $dbstatus = "Online" }
-                        "False" { $dbstatus = "Offline" }
+                        "True" { $dbstatus = "Operational" }
+                        "False" { $dbstatus = "Down" }
                     }
                     $Properties = @{'Object' = "SSRSDatabase"
                         'Details'            = $database.name
@@ -80,8 +88,8 @@ function Get-D365LBDEnvironmentHealth {
                 }
                 "[DynamicsAxReportServerTempDB]" {
                     switch ($database.IsAccessible) {
-                        "True" { $dbstatus = "Online" }
-                        "False" { $dbstatus = "Offline" }
+                        "True" { $dbstatus = "Operational" }
+                        "False" { $dbstatus = "Down" }
                     }
                     $Properties = @{'Object' = "SSRSTempDBDatabase"
                         'Details'            = $database.name
@@ -96,7 +104,7 @@ function Get-D365LBDEnvironmentHealth {
         if ($SystemDatabasesWithIssues -eq 0) {
             $Properties = @{'Object' = "SSRSSystemDatabasesDatabase"
                 'Details'            = "$SystemDatabasesAccessible databases are accessible"
-                'Status'             = "Online" 
+                'Status'             = "Operational" 
                 'Source'             = $ReportServerServerName
             }
             New-Object -TypeName psobject -Property $Properties
@@ -104,11 +112,63 @@ function Get-D365LBDEnvironmentHealth {
         else {
             $Properties = @{'Object' = "SSRSSystemDatabasesDatabase"
                 'Details'            = "$SystemDatabasesAccessible databases are accessible. $SystemDatabasesWithIssues are not accessible"
-                'Status'             = "Offline" 
+                'Status'             = "Down" 
                 'Source'             = $ReportServerServerName
             }
             New-Object -TypeName psobject -Property $Properties
         }
+        
+        ##DB AX
+        if (!$AXDatabaseServer) {
+            $AXDatabaseServer = $using:AXDatabaseServer
+        }
+        $AXDatabaseServerConnection = New-Object ("Microsoft.SqlServer.Management.Smo.Server") $AXDatabaseServer
+        $SystemDatabasesWithIssues = 0
+        $SystemDatabasesAccessible = 0
+        foreach ($database in $AXDatabaseServerConnection.Databases) {
+            switch ($database) {
+                { @("[model]", "[master]", "[msdb]", "[tempdb]") -contains $_ } {
+                    if ($database.IsAccessible) {
+                        $SystemDatabasesAccessible = $SystemDatabasesAccessible + 1
+                    }
+                    else {
+                        $SystemDatabasesWithIssues = $SystemDatabasesWithIssues + 1
+                    }
+                }
+                "[AXDB]" {
+                    switch ($database.IsAccessible) {
+                        "True" { $dbstatus = "Operational" }
+                        "False" { $dbstatus = "Down" }
+                    }
+                    $Properties = @{'Object' = "AXDatabase"
+                        'Details'            = $database.name
+                        'Status'             = "$dbstatus" 
+                        'Source'             = $AXDatabaseServer
+                    }
+                    New-Object -TypeName psobject -Property $Properties
+                }
+                Default {}
+            }
+        }
+        if ($SystemDatabasesWithIssues -eq 0) {
+            $Properties = @{'Object' = "AXDBSystemDatabasesDatabase"
+                'Details'            = "$SystemDatabasesAccessible databases are accessible"
+                'Status'             = "Operational" 
+                'Source'             = $AXDatabaseServer
+            }
+            New-Object -TypeName psobject -Property $Properties
+        }
+        else {
+            $Properties = @{'Object' = "AXDBSystemDatabasesDatabase"
+                'Details'            = "$SystemDatabasesAccessible databases are accessible. $SystemDatabasesWithIssues are not accessible"
+                'Status'             = "Down" 
+                'Source'             = $AXDatabaseServer
+            }
+            New-Object -TypeName psobject -Property $Properties
+        }
+
+
+
         $AgentShareLocation = $config.AgentShareLocation
         if (test-path $AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml) {
             ##additional details start
@@ -143,7 +203,12 @@ function Get-D365LBDEnvironmentHealth {
         else {
             Write-PSFMessage -Message "Warning: Can't find additional environment Config. Not needed but recommend making one" -level warning  
         }
+       
+        
     }
     END {
+        if ($SFModuleSession) {
+            Remove-PSSession -Session $SFModuleSession  
+        }
     }
 }
