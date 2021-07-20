@@ -44,18 +44,18 @@ function Get-D365LBDEnvironmentHealth {
         $ReportServerServerName = $Config.ReportServerServerName
         $AXDatabaseServer = $Config.AXDatabaseServer
         $SourceAXSFServer = $Config.SourceAXSFServer
-        $SFModuleSession = New-PSSession -ComputerName $SourceAXSFServer
+        <#$SFModuleSession = New-PSSession -ComputerName $SourceAXSFServer
         Invoke-Command -Session $SFModuleSession -ScriptBlock {
             $AssemblyList = "Microsoft.SqlServer.Management.Common", "Microsoft.SqlServer.Smo", "Microsoft.SqlServer.Management.Smo"
             foreach ($Assembly in $AssemblyList) {
                 $AssemblyLoad = [Reflection.Assembly]::LoadWithPartialName($Assembly) 
             }
-        }
-        <# Test removal
+        }#>
+         
        $AssemblyList = "Microsoft.SqlServer.Management.Common", "Microsoft.SqlServer.Smo", "Microsoft.SqlServer.Management.Smo"
         foreach ($Assembly in $AssemblyList) {
             $AssemblyLoad = [Reflection.Assembly]::LoadWithPartialName($Assembly) 
-        }#>
+        }
         if (!$ReportServerServerName) {
             $ReportServerServerName = $using:ReportServerServerName
         }
@@ -176,11 +176,11 @@ function Get-D365LBDEnvironmentHealth {
             $EnvironmentAdditionalConfig = get-childitem  "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
 
             [xml]$XMLAdditionalConfig = Get-Content "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
-            $CheckForHardDriveDetails = $XMLAdditionalConfig.d365LBDEnvironment.Automation.CheckForHealthIssues.CheckAllHardDisks
+            [string]$CheckForHardDriveDetails = $XMLAdditionalConfig.d365LBDEnvironment.Automation.CheckForHealthIssues.CheckAllHardDisks.Enabled
             $HDErrorValue = $CheckForHardDriveDetails.HardDriveError
             $HDWarningValue = $CheckForHardDriveDetails.HardDriveWarning
             $foundHardDrivewithIssue = $false
-            if ($CheckForHardDriveDetails.Enabled -eq $true) {
+            if ($CheckForHardDriveDetails.Enabled -eq "true") {
                 $CheckedHardDrives = $true
                 ##check HD Start
                 Write-PSFMessage -Message "Checking Hard drive free space" -Level Verbose
