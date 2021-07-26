@@ -22,6 +22,7 @@ Need to rethink approach
 
   #>
     [alias("Export-D365Certificates")]
+    [CmdletBinding()]
     param
     (
         [Parameter(Mandatory = $true)]

@@ -11,6 +11,7 @@ function Send-D365LBDUpdateMSTeams {
 
   #>
     [alias("Send-D365UpdateMSTeams")]
+    [CmdletBinding()]
     param
     (
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",

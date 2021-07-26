@@ -2,6 +2,7 @@
 function Remove-D365LBDStuckApps {
     ##created for deployment bug when it cant clean properly this was fixed in later local agent versions
     [alias("Remove-D365StuckApps")]
+    [CmdletBinding()]
     param (
         [string]$SFServerCertificate,
         [string]$SFConnectionEndpoint,

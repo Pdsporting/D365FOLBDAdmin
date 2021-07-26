@@ -19,6 +19,7 @@ function Start-D365LBDMonitorDeployment {
 
   #>
     [alias("Start-D365MonitorDeployment")]
+    [CmdletBinding()]
     param
     (
         [Parameter(Mandatory = $true)]

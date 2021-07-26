@@ -11,6 +11,7 @@ function Set-D365LBDOptions {
 
   #>
     [alias("Set-D365Options")]
+    [CmdletBinding()]
     param
     (
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",

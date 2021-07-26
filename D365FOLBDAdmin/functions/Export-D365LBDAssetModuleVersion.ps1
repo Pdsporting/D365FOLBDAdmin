@@ -19,6 +19,7 @@ function Export-D365LBDAssetModuleVersion {
 
    #>
     [alias("Export-D365FOLBDAssetModuleVersion", "Export-D365AssetModuleVersion")]
+    [CmdletBinding()]
     param
     (
         [Parameter(ParameterSetName = 'AgentShare')]

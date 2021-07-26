@@ -13,6 +13,7 @@ function Import-D365LBDCertificates {
 
   #>
     [alias("Import-D365Certificates")]
+    [CmdletBinding()]
     param
     (
         [Parameter(Mandatory = $false)]

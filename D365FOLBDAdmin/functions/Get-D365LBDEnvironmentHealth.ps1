@@ -22,6 +22,7 @@ function Get-D365LBDEnvironmentHealth {
 
   #>
     [alias("Get-D365EnvironmentHealth")]
+    [CmdletBinding()]
     param
     (
         [int]$Timeout = 120,

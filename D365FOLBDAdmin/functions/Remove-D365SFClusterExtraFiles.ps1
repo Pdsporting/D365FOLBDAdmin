@@ -7,6 +7,7 @@ function Remove-D365SFClusterExtraFiles {
 Use Get-D365LBDConfig -ConfigImportFromFile to get config
   #>
     [alias("Remove-D365ClusterExtraFiles")]
+    [CmdletBinding()]
     param
     (
         [Parameter(ParameterSetName = 'AllAppServerList',

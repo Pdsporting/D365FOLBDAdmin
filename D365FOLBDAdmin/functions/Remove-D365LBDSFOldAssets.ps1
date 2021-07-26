@@ -2,6 +2,7 @@
 function Remove-D365LBDSFOldAssets {
    
     [alias("Remove-D365SFOldAssets")]
+    [CmdletBinding()]
     param
     (
         [Parameter(ValueFromPipeline = $True,

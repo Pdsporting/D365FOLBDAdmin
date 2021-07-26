@@ -2,6 +2,7 @@
 function Remove-D365LBDSFLogs {
    
     [alias("Remove-D365SFLogs")]
+    [CmdletBinding()]
     param
     (
         [Parameter(ValueFromPipeline = $True,

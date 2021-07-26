@@ -19,6 +19,7 @@ function Get-D365LBDOrchestrationLogs {
 
    #>
     [alias("Get-D365OrchestrationLogs")]
+    [CmdletBinding()]
     param ([Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,
             Mandatory = $false,
