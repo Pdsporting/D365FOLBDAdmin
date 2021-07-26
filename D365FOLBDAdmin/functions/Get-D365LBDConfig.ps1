@@ -443,6 +443,12 @@
                     $AllAppServerList += $ComputerName
                 }
             }
+            foreach ($ComputerName in $ManagementReporterServerName) {
+                if (($AllAppServerList -contains $ComputerName) -eq $false) {
+                    $AllAppServerList += $ComputerName
+                }
+            }
+            
             ##
             <# Source: https://stackoverflow.com/questions/8423541/how-do-you-run-a-sql-server-query-from-powershell
 #>

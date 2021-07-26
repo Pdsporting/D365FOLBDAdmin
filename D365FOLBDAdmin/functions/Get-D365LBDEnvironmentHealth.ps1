@@ -27,7 +27,9 @@ function Get-D365LBDEnvironmentHealth {
         [int]$Timeout = 120,
         [psobject]$Config,
         [string]$CustomModuleName,
-        [switch]$CheckForHardDriveDetails
+        [switch]$CheckForHardDriveDetails,
+        [int]$HDWarningValue,
+        [int]$HDErrorValue
     )
     BEGIN {
     }
@@ -60,6 +62,7 @@ function Get-D365LBDEnvironmentHealth {
             $ReportServerServerName = $using:ReportServerServerName
         }
         $SQLSSRSServer = New-Object ("Microsoft.SqlServer.Management.Smo.Server") $ReportServerServerName 
+        Write-PSFMessage -Level Verbose -Message "Connecting to $ReportServerServerName for AXDB Database and its system dbs"
         $SystemDatabasesWithIssues = 0
         $SystemDatabasesAccessible = 0
 
@@ -128,6 +131,7 @@ function Get-D365LBDEnvironmentHealth {
             $AXDatabaseServer = $using:AXDatabaseServer
         }
         $AXDatabaseServerConnection = New-Object ("Microsoft.SqlServer.Management.Smo.Server") $AXDatabaseServer
+        Write-PSFMessage -Level Verbose -Message "Connecting to $AXDatabaseServer for AXDB Database and its system dbs"
         $SystemDatabasesWithIssues = 0
         $SystemDatabasesAccessible = 0
         foreach ($database in $AXDatabaseServerConnection.Databases) {
@@ -179,26 +183,31 @@ function Get-D365LBDEnvironmentHealth {
         }
 
 
-
         $AgentShareLocation = $config.AgentShareLocation
-        $CheckedHardDrives = $false
+        $CheckedHardDrives = "false"
+        $ServerswithHDIssues = @()
         if (test-path $AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml) {
             ##additional details start
             Write-PSFMessage -Level Verbose -Message "Found AdditionalEnvironmentDetails config"
-           #$EnvironmentAdditionalConfig = get-childitem  "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
+            #$EnvironmentAdditionalConfig = get-childitem  "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
 
             [xml]$XMLAdditionalConfig = Get-Content "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
             [string]$CheckForHardDriveDetails = $XMLAdditionalConfig.d365LBDEnvironment.Automation.CheckForHealthIssues.CheckAllHardDisks.Enabled
-            $HDErrorValue = $CheckForHardDriveDetails.HardDriveError
-            $HDWarningValue = $CheckForHardDriveDetails.HardDriveWarning
+            if (!$HDErrorValue) {
+                $HDErrorValue = $CheckForHardDriveDetails.HardDriveError
+            }
+            if (!$HDWarningValue) {
+                $HDWarningValue = $CheckForHardDriveDetails.HardDriveWarning
+            }
+            
             $foundHardDrivewithIssue = $false
             if ($CheckForHardDriveDetails -eq "true") {
-                $CheckedHardDrives = $true
+                $CheckedHardDrives = "true"
                 ##check HD Start
                 Write-PSFMessage -Message "Checking Hard drive free space" -Level Verbose
-                foreach ($ApplicationServer in $config.AllAppServerList) {
-                    $HardDrives = Get-WmiObject -Class "Win32_LogicalDisk" -Namespace "root\CIMV2" -ComputerName $ApplicationServer
-                    if (!$HardDrives){
+                foreach ($ApplicationServer in $config.AllAppServerList.ComputerName) {
+                    $HardDrives = Get-WmiObject -Class "Win32_LogicalDisk" -Namespace "root\CIMV2" -Filter "DriveType = '3'" -ComputerName $ApplicationServer
+                    if (!$HardDrives) {
                         Write-PSFMessage -Level Verbose -Message " Having trouble accessing drives on $ApplicationServer"
                     }
                     foreach ($HardDrive in $HardDrives) {
@@ -209,18 +218,19 @@ function Get-D365LBDEnvironmentHealth {
                             $Properties = @{'Name' = "AXDBSystemDatabasesDatabase"
                                 'Details'          = $HardDrive.DeviceId
                                 'Status'           = "Down" 
-                                'ExtraInfo'        = ""
+                                'ExtraInfo'        = "$ServerswithHDIssues"
                                 'Source'           = $ApplicationServer
                             }
                             New-Object -TypeName psobject -Property $Properties
                             $foundHardDrivewithIssue = $true
+                            $ServerswithHDIssues += "$ApplicationServer"
 
                         }
                         elseif ($FreeSpace -lt $HDWarningValue) {
                             Write-PSFMessage -Message "WARNING: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Warning
                         }
                         else { 
-                            Write-PSFMessage -Message  "VERBOSE: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Verbose
+                            Write-PSFMessage -Message  "VERBOSE: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level VeryVerbose
                         }
                     }
                 }
@@ -240,13 +250,13 @@ function Get-D365LBDEnvironmentHealth {
             Write-PSFMessage -Message "Warning: Can't find additional environment Config. Not needed but recommend making one" -level warning  
         }
 
-        if ($CheckedHardDrives -eq $false -and $CheckForHardDriveDetails) {
+        if ($CheckedHardDrives -eq "false" -and ($CheckForHardDriveDetails -eq $true)) {
             $foundHardDrivewithIssue = $false
-            foreach ($ApplicationServer in $config.AllAppServerList) {
-                $HardDrives = Get-WmiObject -Class "Win32_LogicalDisk" -Namespace "root\CIMV2" -ComputerName $ApplicationServer
+            foreach ($ApplicationServer in $config.AllAppServerList.ComputerName) {
+                $HardDrives = Get-WmiObject -Class "Win32_LogicalDisk" -Namespace "root\CIMV2" -Filter "DriveType = '3'" -ComputerName $ApplicationServer
                 foreach ($HardDrive in $HardDrives) {
                     $FreeSpace = (($HardDrive.freespace / $HardDrive.size) * 100)
-                    Write-PSFMessage -Level Verbose -Message " $ApplicationServer - $($HardDrive.DeviceID) has $FreeSpace %"
+                    Write-PSFMessage -Level Verbose -Message "$ApplicationServer - $($HardDrive.DeviceID) has $FreeSpace %"
                     if ($FreeSpace -lt $HDErrorValue) {
                         Write-PSFMessage -Message "ERROR: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Warning
                         $Properties = @{
@@ -254,18 +264,19 @@ function Get-D365LBDEnvironmentHealth {
                             'Name'      = "AXDBSystemDatabasesDatabase"
                             'Details'   = $HardDrive.DeviceId
                             'State'     = "Down" 
-                            'ExtraInfo' = '';
+                            'ExtraInfo' = "$ServerswithHDIssues";
                             'Group'     = 'OS'
                                
                         }
                         New-Object -TypeName psobject -Property $Properties
                         $foundHardDrivewithIssue = $true
+                        $ServerswithHDIssues += "$ApplicationServer"
                     }
                     elseif ($FreeSpace -lt $HDWarningValue) {
                         Write-PSFMessage -Message "WARNING: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Warning
                     }
                     else {
-                        Write-PSFMessage -Message  "VERBOSE: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Verbose
+                        Write-PSFMessage -Message  "VERBOSE: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level VeryVerbose
                     }
                 }
             }
@@ -280,9 +291,8 @@ function Get-D365LBDEnvironmentHealth {
                 }
                 New-Object -TypeName psobject -Property $Properties
             }
-       
-        
-        }
+        }##Check HD end
+
     }
     END {
         if ($SFModuleSession) {
