@@ -356,7 +356,7 @@ function Get-D365LBDEnvironmentHealth {
         $HealthyApps = (Get-ServiceFabricApplication | Where-Object {$_.HealthState -eq "OK"}).Count
 
         if ($TotalApplications -eq $HealthyApps){
-            Write-PSFMessage -Message "All Service Fabric Applications are healthy HealthyApps / $TotalApplication" -Level VeryVerbose
+            Write-PSFMessage -Message "All Service Fabric Applications are healthy $HealthyApps / $TotalApplications" -Level VeryVerbose
             $Properties = @{'Name' = "ServiceFabricApplications"
                 'Details'          = "Healthy: $HealthyApps / Total: $TotalApplication"
                 'Status'           = "Operational" 
@@ -393,7 +393,7 @@ function Get-D365LBDEnvironmentHealth {
         foreach ($AXSFReplica in $AXSFReplicas){
             $NodeName = $AXSFReplica.NodeName
             [string]$EndpointString = $AXSFReplica.ReplicaAddress
-            $Index = $EndpointString.IndexOf('"{Endpoints":{"')
+            $Index = $EndpointString.IndexOf('":"https:')
             $EndpointString = $EndpointString.Substring(0,$Index)
             $EndpointString = $EndpointString.Replace('{"Endpoints":{"',"")
 
