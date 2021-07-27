@@ -844,6 +844,7 @@ ORDER BY [rh].[restore_date] DESC"
             if ($Session) {
                 Remove-PSSession -Session $SFModuleSession  
             }
+
             
             [PSCustomObject] $FinalOutput
         }
