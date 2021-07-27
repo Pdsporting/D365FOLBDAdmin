@@ -225,7 +225,7 @@ function Get-D365LBDEnvironmentHealth {
                         }
                         if ($FreeSpace -lt $HDErrorValue) {
                             Write-PSFMessage -Message "ERROR: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Warning
-                            $Properties = @{'Name' = "AXDBSystemDatabasesDatabase"
+                            $Properties = @{'Name' = "Hard Disk Space"
                                 'Details'          = $HardDrive.DeviceId
                                 'Status'           = "Down" 
                                 'ExtraInfo'        = "$ServerswithHDIssues"
@@ -358,7 +358,7 @@ function Get-D365LBDEnvironmentHealth {
         if ($TotalApplications -eq $HealthyApps){
             Write-PSFMessage -Message "All Service Fabric Applications are healthy $HealthyApps / $TotalApplications" -Level VeryVerbose
             $Properties = @{'Name' = "ServiceFabricApplications"
-                'Details'          = "Healthy: $HealthyApps / Total: $TotalApplication"
+                'Details'          = "Healthy: $HealthyApps / Total: $TotalApplications"
                 'Status'           = "Operational" 
                 'ExtraInfo'        = ""
                 'Source'           = $OrchestratorServerName
@@ -369,7 +369,7 @@ function Get-D365LBDEnvironmentHealth {
         }
         else{
             $NotHealthyApps = Get-ServiceFabricApplication | Where-Object {$_.HealthState -ne "OK"}
-            Write-PSFMessage -Message "Warning: Not all Service Fabric Applications are healthy $HealthyApps / $TotalApplication " -Level VeryVerbose
+            Write-PSFMessage -Message "Warning: Not all Service Fabric Applications are healthy $HealthyApps / $TotalApplications " -Level VeryVerbose
             Write-PSFMessage -Message "Issue App:" -Level VeryVerbose
             foreach ($NotHealthyApp in $NotHealthyApps)
             {
@@ -377,7 +377,7 @@ function Get-D365LBDEnvironmentHealth {
                 Write-PSFMessage -Message "$HealthReport" -Level VeryVerbose
             }
             $Properties = @{'Name' = "ServiceFabricApplications"
-                'Details'          = "Healthy: $HealthyApps / Total: $TotalApplication"
+                'Details'          = "Healthy: $HealthyApps / Total: $TotalApplications"
                 'Status'           = "Down" 
                 'ExtraInfo'        = "$NotHealthyApps"
                 'Source'           = $OrchestratorServerName
@@ -386,7 +386,35 @@ function Get-D365LBDEnvironmentHealth {
             $Output = New-Object -TypeName psobject -Property $Properties
             $OutputList += $Output
         }
+        
+        $ServiceFabricPartitionIdForAXSF = $(get-servicefabricpartition -servicename 'fabric:/AXSF/AXService').PartitionId
+        foreach ($node in $nodes) {
+            $nodename = $node.Nodename
+            $replicainstanceIdofnode = $(get-servicefabricreplica -partition $ServiceFabricPartitionIdForAXSF | Where-Object { $_.NodeName -eq "$NodeName" }).InstanceId
+            $ReplicaDetails = Get-Servicefabricdeployedreplicadetail -nodename $nodename -partitionid $ServiceFabricPartitionIdForAXSF -ReplicaOrInstanceId $replicainstanceIdofnode -replicatordetail
+            $endpoints = $ReplicaDetails.deployedservicereplicainstance.address | ConvertFrom-Json
+            $deployedinstancespecificguid = $($endpoints.Endpoints | Get-Member | Where-Object { $_.MemberType -eq "NoteProperty" }).Name
+            $httpsurl = $endpoints.Endpoints.$deployedinstancespecificguid
+            Write-PSFMessage -Level VeryVerbose -Message "$NodeName is accessible via $httpsurl with a guid $deployedinstancespecificguid"
 
+            if ($httpsurl.Length -gt 3){
+                $Status = "Operational"
+            }
+            else{
+                $Status = "Down"
+            }
+            $Properties = @{'Name' = "AXSFGUIDEndpoint"
+                'Details'          = "$deployedinstancespecificguid"
+                'Status'           = "$Status" 
+                'ExtraInfo'        = "$httpsurl"
+                'Source'           = $NodeName 
+                'Group'            = 'ServiceFabric'
+            }
+            $Output = New-Object -TypeName psobject -Property $Properties
+            $OutputList += $Output
+        }
+
+        <# OLD
         $AXSFPartitionID = $(Get-ServiceFabricPartition -ServiceName fabric:/AXSF/AXService).PartitionId
         $AXSFReplicas = Get-ServiceFabricReplica -PartitionId $AXSFPartitionID
 
@@ -412,7 +440,7 @@ function Get-D365LBDEnvironmentHealth {
             }
             $Output = New-Object -TypeName psobject -Property $Properties
             $OutputList += $Output
-        }
+        }#>
 
         [PSCustomObject]$OutputList
 

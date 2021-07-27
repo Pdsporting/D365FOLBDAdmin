@@ -315,6 +315,56 @@ function Send-D365LBDUpdateMSTeams {
 
         if ($MessageType -eq "StatusReport") {   
             Write-PSFMessage -Message "MessageType is: StatusReport" -Level VeryVerbose
+
+            if (!$CustomModuleName) {
+                $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
+            }
+            else {
+                $Config = Get-D365LBDConfig -ComputerName $ComputerName 
+            }
+            [int]$count = 0
+            while (!$connection) {
+                do {
+                    $OrchestratorServerName = $Config.OrchestratorServerNames | Select-Object -First 1 -Skip $count
+                    Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName to try and connect to the service fabric" -Level Verbose
+                    $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
+                    if (!$module) {
+                        $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
+                    }
+                    Write-PSFMessage -Message "-ConnectionEndpoint $($config.SFConnectionEndpoint) -X509Credential -FindType FindByThumbprint -FindValue $($config.SFServerCertificate) -ServerCertThumbprint $($config.SFServerCertificate) -StoreLocation LocalMachine -StoreName My" -Level Verbose
+                    $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                    if (!$connection) {
+                        $trialEndpoint = "https://$OrchestratorServerName" + ":198000"
+                        $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                    }
+                    $count = $count + 1
+                    if (!$connection) {
+                        Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
+                    }
+                } until ($connection -or ($count -eq $($Config.OrchestratorServerNames).Count))
+                if (($count -eq $($Config.OrchestratorServerNames).Count) -and (!$connection)) {
+                    Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
+                }
+            }
+            $TotalApplications = (Get-ServiceFabricApplication).Count
+            $HealthyApps = (Get-ServiceFabricApplication | Where-Object { $_.HealthState -eq "OK" }).Count
+
+            $Health = Get-D365LBDEnvironmentHealth -Config $config 
+            if ($Health.Status -contains "Down") {
+                $HealthCheck = "Down"
+            }
+            else {
+                $HealthCheck = "Operational"
+            }
+
+            $Dependency = Get-D365LBDDependencyHealth -config $Config
+            if ($Dependency.Status -contains "Down") {
+                $DependencyCheck = "Down"
+            }
+            else {
+                $DependencyCheck = "Operational"
+            }
+
             $bodyjson = @"
 {
     "@type": "MessageCard",
@@ -329,6 +379,15 @@ function Send-D365LBDUpdateMSTeams {
         },{
             "name": "Build Version",
             "value": "$MSTeamsBuildName"
+        },{
+            "name": "Healthy Apps/Total Apps",
+            "value": "$HealthyApps / $TotalApplications"
+        },{
+            "name": "D365 Health Check",
+            "value": "$HealthCheck"
+        },{
+            "name": "D365 Depencency Check",
+            "value": "$DependencyCheck"
         }],
         "markdown": true
     }]

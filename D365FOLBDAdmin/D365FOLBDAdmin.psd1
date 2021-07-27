@@ -69,7 +69,7 @@
 		'Get-D365LBDConfigTemplate',
 		'Get-D365LBDOrchestratorLastRunBookDetails',
 		'Restart-D365LBDOrchestratorLastJob',
-		'Remove-D365LBDSFImageStoreFiles'
+		'Remove-D365LBDSFImageStoreFiles','Get-D365LBDAXSFGuids'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
@@ -102,7 +102,7 @@
 	'Get-D365ConfigTemplate',
 	'Get-D365OrchestratorLastRunBookDetails',
 	"Restart-D365OrchestratorLastJob",
-	"Remove-D365SFImageStoreFiles")
+	"Remove-D365SFImageStoreFiles",'Get-D365AXSFGuids')
 	
 	# List of all modules packaged with this module
 	ModuleList = @()

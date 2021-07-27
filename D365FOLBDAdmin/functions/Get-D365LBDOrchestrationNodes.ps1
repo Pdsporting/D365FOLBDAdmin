@@ -83,5 +83,8 @@ function Get-D365LBDOrchestrationNodes {
         }
     }
     END {
+        if ($SFModuleSession) {
+            Remove-PSSession -Session $SFModuleSession  
+        }
     }
 }

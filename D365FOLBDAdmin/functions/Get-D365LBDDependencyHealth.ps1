@@ -439,5 +439,9 @@ function Get-D365LBDDependencyHealth {
         [PSCustomObject] $OutputList
     }
 
-    END {}
+    END {
+        if ($SFModuleSession) {
+            Remove-PSSession -Session $SFModuleSession  
+        }
+    }
 }

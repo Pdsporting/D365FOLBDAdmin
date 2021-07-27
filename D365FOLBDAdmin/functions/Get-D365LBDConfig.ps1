@@ -39,8 +39,7 @@
         [Parameter(Mandatory = $false)][string]$ConfigImportFromFile,
         [Parameter(Mandatory = $false)][string]$ConfigExportToFile,
         [Parameter(Mandatory = $false)][string]$CustomModuleName,
-        [switch]$HighLevelOnly,
-        [switch]$GetGuids
+        [switch]$HighLevelOnly
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
@@ -189,6 +188,7 @@
 
                 $AAD = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -EQ 'Aad' }
                 $ClientURL = $($AAD.Parameter | Where-Object { $_.Name -eq 'AADValidAudience' }).value + "namespaces/AXSF/"
+                $SFExplorerURL = $($ClientURL.Replace('//ax.', '//sf.')).Replace('/namespaces/AXSF/', ':19080')
 
                 $Infrastructure = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -EQ 'Infrastructure' }
                 $SessionAuthenticationCertificate = $($Infrastructure.Parameter | Where-Object { $_.Name -eq 'SessionAuthenticationCertificateThumbprint' }).value
@@ -377,19 +377,17 @@
                         Write-PSFMessage -Level Warning -Message "Warning: Invalid Node found. Suggest running Update-ServiceFabricD365ClusterConfig to help fix. $invalidnodes"
                     }
 
-                    If ($GetGuids) {
-                        $ServiceFabricPartitionIdForAXSF = $(get-servicefabricpartition -servicename 'fabric:/AXSF/AXService').PartitionId
-                        foreach ($node in $nodes) {
-                            $nodename = $node.Nodename
-                            $replicainstanceIdofnode = $(get-servicefabricreplica -partition $ServiceFabricPartitionIdForAXSF | Where-Object { $_.NodeName -eq "$NodeName" }).InstanceId
-                            $ReplicaDetails = Get-Servicefabricreplicadetail -nodename $nodename -partitionid $ServiceFabricPartitionIdForAXSF -ReplicaOrInstanceId $replicainstanceIdofnode -replicatordetail
-                            $endpoints = $ReplicaDetails.deployedservicereplicainstance.address | ConvertFrom-Json
-                            $deployedinstancespecificguid = $($endpoints.Endpoints | Get-Member | Where-Object { $_.MemberType -eq "NoteProperty" }).Name
-                            $httpsurl = $endpoints.Endpoints.$deployedinstancespecificguid
-                            Write-PSFMessage -Level VeryVerbose -Message "$NodeName is accessible via $httpsurl with a guid $deployedinstancespecificguid "
-                        }
-
+                    $ServiceFabricPartitionIdForAXSF = $(get-servicefabricpartition -servicename 'fabric:/AXSF/AXService').PartitionId
+                    foreach ($node in $nodes) {
+                        $nodename = $node.Nodename
+                        $replicainstanceIdofnode = $(get-servicefabricreplica -partition $ServiceFabricPartitionIdForAXSF | Where-Object { $_.NodeName -eq "$NodeName" }).InstanceId
+                        $ReplicaDetails = Get-Servicefabricdeployedreplicadetail -nodename $nodename -partitionid $ServiceFabricPartitionIdForAXSF -ReplicaOrInstanceId $replicainstanceIdofnode -replicatordetail
+                        $endpoints = $ReplicaDetails.deployedservicereplicainstance.address | ConvertFrom-Json
+                        $deployedinstancespecificguid = $($endpoints.Endpoints | Get-Member | Where-Object { $_.MemberType -eq "NoteProperty" }).Name
+                        $httpsurl = $endpoints.Endpoints.$deployedinstancespecificguid
+                        Write-PSFMessage -Level VeryVerbose -Message "$NodeName is accessible via $httpsurl with a guid $deployedinstancespecificguid "
                     }
+                    
                 }
                 catch {
                     Write-PSFMessage -message "Can't connect to Service Fabric $_" -Level Verbose
@@ -761,6 +759,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'ComponentsinSetupModule'                    = $componentsinsetupmodule
                 'LCSProjectID'                               = $LCSProjectID 
                 'LCSEnvironmentURL'                          = $LCSEnvironmentURL
+                'SFExplorerURL'                              = $SFExplorerURL
             }
 
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
@@ -853,6 +852,9 @@ ORDER BY [rh].[restore_date] DESC"
     END {
         if ($ConfigExportToFile) {
             $FinalOutput | Export-Clixml -Path $ConfigExportToFile
+        }
+        if ($SFModuleSession) {
+            Remove-PSSession -Session $SFModuleSession  
         }
     }
 }
