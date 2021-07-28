@@ -44,8 +44,15 @@ function Export-D365LBDConfigReport {
                 $Config = Get-D365LBDConfig -ComputerName $ComputerName
             }
         }
-
-
+        Write-PSFMessage -Level VeryVerbose -Message "Running Environment Health Check"
+        $Health = Get-D365LBDEnvironmentHealth -config $config
+        Write-PSFMessage -Level VeryVerbose -Message "Running Dependency Health Check"
+        $DependencyCheck = Get-D365DepencyHealth -Config $config
+        $HealthText = "<p class=""Success""><b>D365 Health looks great</b></p>"
+        if ($Health.Status -contains "Down") {
+            $HealthText = "<p class=""issue""><b>D365 Health issues:</b></p>"
+            $healthissues = $Health | Where-Object { $_.Status -eq "Down" }
+        }
         $html = "<html> <body>"
         $html += "<h1>$($Config.LCSEnvironmentName) </h1>"
         if ($CustomModuleName) {
@@ -59,6 +66,25 @@ function Export-D365LBDConfigReport {
         }
         
         $html += "<p><b>Total Apps in Healthy State:</b></p> <a href=""$($config.SFExplorerURL)""> $($Config.NumberOfAppsinServiceFabric) </a> "
+        $html += "$HealthText"
+        if ($healthissues) {
+            foreach ($healthissue in $healthissues) {
+                $html += "<p>Check: $($healthissue.Name) Source: $($healthissue.Source) Details: $($healthissue.Details)</p> "
+            }
+        }
+        if ($DependencyCheck.Count -gt 0) {
+            $DependencyCheckText = "<p class=""Success""><b>D365 Environment Dependencies Health looks great</b></p>"
+            if ($DependencyCheck.Status -contains "Down") {
+                $DependencyCheckText = "<p class=""issue""><b>D365 Health issues:</b></p>"
+                $DependencyCheckissues = $DependencyCheck | Where-Object { $_.Status -eq "Down" }
+            }
+            $html += "$DependencyCheckText"
+            if ($DependencyCheckissues) {
+                foreach ($DependencyCheckissue in $DependencyCheckissues) {
+                    $html += "<p>Check: $($DependencyCheckissue.Name) Source: $($DependencyCheckissue.Source) Details: $($DependencyCheckissue.Details)</p> "
+                }
+            }
+        }
 
         $CountofAXServerNames = $Config.AXSFServerNames.Count
         $html += "<p><b>Amount of AX SF Servers:</b></p> $($CountofAXServerNames) </p>"
@@ -94,12 +120,11 @@ function Export-D365LBDConfigReport {
            
         $html += "<p><b>Local Agent Version:</b></p> $($Config.OrchServiceLocalAgentVersionNumber)</p>"
 
-
         $html += '<table style="width:100%"><tr><th>Certificate</th>'
         if ($Detailed) {
             $html += '<th>Thumbprint</th>'
         }
-        $html += '<th>Expiration Day</th></tr>'
+        $html += '<th>Expiration Date</th></tr>'
 
         $html += '<tr><td>SF Client</td> '
         if ($Detailed) {
@@ -161,7 +186,6 @@ function Export-D365LBDConfigReport {
         }
         $html += "<td>$($Config.ReportingSSRSCertificateExpiresAfter)</td></tr>"
        
-
         if ($Config.DatabaseEncryptionCertificateExpiresAfter) {
             $html += '<tr><td>Database Encryption </td> '
             if ($Detailed) {
@@ -170,7 +194,7 @@ function Export-D365LBDConfigReport {
             $html += "<td>$($Config.DatabaseEncryptionCertificateExpiresAfter)</td></tr>"
         }
         else {
-            Write-PSFMessage -Level Warning -Message "DataEncipherment likely not configured in xml"
+            Write-PSFMessage -Level Warning -Message "Database Encryption not configured in xml or access issues to Database server"
         }
 
         $html += '<tr><td>Local Agent</td> '
@@ -179,7 +203,16 @@ function Export-D365LBDConfigReport {
         }
         $html += "<td>$($Config.LocalAgentCertificateExpiresAfter)</td></tr>"
         $html += "</table>"
-       
+        if ($Detailed){
+            $guids = Get-D365LBDAXSFGUIDS -Config $Config
+            $html +="<table style=""width:100%"">  <tr>    <th>Server</th>    <th>GUID</th>    <th>Endpoint</th>  </tr>"
+            
+            foreach ($guid in $guids) {
+                $html += "<tr><td>$($guid.Source)</td><td>$($guid.Details)</td><td>$($guid.ExtraInfo)</td></tr>"
+            }
+            $html += "</table>"
+        }
+        
         $html += "</body></html>"
         $html |  Out-File "$ExportLocation"  -Verbose
   

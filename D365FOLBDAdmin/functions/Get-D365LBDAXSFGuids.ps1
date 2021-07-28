@@ -59,6 +59,7 @@ Need to rethink approach
                 Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
             }
         }
+        $nodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "PrimaryNodeType") } 
         $ServiceFabricPartitionIdForAXSF = $(get-servicefabricpartition -servicename 'fabric:/AXSF/AXService').PartitionId
         foreach ($node in $nodes) {
             $nodename = $node.Nodename
