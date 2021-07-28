@@ -54,7 +54,7 @@ function Export-D365LBDConfigReport {
         $html += "<p><b>AX Kernel Version:</b></p> $($Config.AOSKernelVersion)"
         $html += "<p><b>Environment ID:</b></p> <a href=""$($config.LCSEnvironmentURL)""> $($config.LCSEnvironmentID)</a> "
         if ($Config.AXDatabaseRestoreDate) {
-            $html += "<p><b>Database Refresh/Restore Date:</b></p> $($Config.AXDatabaseRestoreDate)  "
+            $html += "<p><b>Database Refresh/Restore Date:</b></p> $($Config.AXDatabaseRestoreDate) "
             $html += "<p><b>Database Refresh/Restore file:</b></p> $($Config.AXDatabaseBackupFileUsedForRestore) "
         }
         
@@ -78,11 +78,11 @@ function Export-D365LBDConfigReport {
             $html += "</ul>"
         }
         $html += "<p><b>AX Database Connection Endpoint:</b></p> $($Config.AXDatabaseServer)"
-        $html += "<p><b>AX database is $($Config.DatabaseClusteredStatus)</p>"
+        $html += "<p><b>AX database is $($Config.DatabaseClusteredStatus)</b></p>"
         $DBCount = $Config.DatabaseClusterServerNames.Count
 
         if ($DBCount -gt 1) {
-            $html += "<p><b>Number of Database servers:</b> $($Config.DatabaseClusterServerNames.Count)</p>"
+            $html += "<p><b>Number of Database servers:</b></p> $($Config.DatabaseClusterServerNames.Count)"
             if ($Detailed) {
                 $html += "<p><b>Database server(s):</b></p> <ul>"
                 foreach ($AXDBServerName in $($Config.DatabaseClusterServerNames)) {
@@ -92,72 +92,94 @@ function Export-D365LBDConfigReport {
             }
         }
            
-        $html += "<p><b>Local Agent Version: $($Config.OrchServiceLocalAgentVersionNumber)</p>"
+        $html += "<p><b>Local Agent Version:</b></p> $($Config.OrchServiceLocalAgentVersionNumber)</p>"
 
-        if ($Detailed) {
-            $html += "<p><b>SF Client Thumbprint:</b></p><p> $($Config.SFClientCertificate)</p>"
-        }
-        $html += "<p><b>SF Client Cert Expires After:</b></p><p> $($Config.SFClientCertificateExpiresAfter)</p>"
 
+        $html += '<table style="width:100%"><tr><th>Certificate</th>'
         if ($Detailed) {
-            $html += "<p><b>SF Server Thumbprint:</b></p><p> $($Config.SFServerCertificate)</p>"
+            $html += '<th>Thumbprint</th>'
         }
-        $html += "<p><b>SF Server Cert Expires After:</b></p><p> $($Config.SFServerCertificateExpiresAfter)</p>"
+        $html += '<th>Expiration Day</th></tr>'
 
+        $html += '<tr><td>SF Client</td> '
         if ($Detailed) {
-            $html += "<p><b>Data Encryption Thumbprint:</b></p><p> $($Config.DataEncryptionCertificate)</p>"
+            $html += "<td> $($Config.SFClientCertificate)</td>"
         }
-        $html += "<p><b>Data Encryption Cert Expires After:</b></p><p> $($Config.DataEncryptionCertificateExpiresAfter)</p>"
+        $html += "<td> $($Config.SFClientCertificateExpiresAfter)</td></tr>"
 
+        $html += '<tr><td>SF Server</td> '
         if ($Detailed) {
-            $html += "<p><b>Data Signing Thumbprint:</b></p><p> $($Config.DataSigningCertificate)</p>"
+            $html += "<td>$($Config.SFServerCertificate)</td>"
         }
-        $html += "<p><b>Data Signing Cert Expires After:</b></p><p> $($Config.DataSigningCertificateExpiresAfter)</p>"
+        $html += "<td> $($Config.SFServerCertificateExpiresAfter)</td></tr>"
 
+        $html += '<tr><td>Data Encryption</td> '
         if ($Detailed) {
-            $html += "<p><b>Session Authentication Thumbprint:</b></p><p> $($Config.SessionAuthenticationCertificate)</p>"
+            $html += "<td> $($Config.DataEncryptionCertificate)</td>"
         }
-        $html += "<p><b>Session Authentication Cert Expires After:</b></p><p> $($Config.SessionAuthenticationCertificateExpiresAfter)</p>"
+        $html += "<td> $($Config.DataEncryptionCertificateExpiresAfter)</td></tr>"
 
+        $html += '<tr><td>Data Signing</td> '
         if ($Detailed) {
-            $html += "<p><b>Shared Access SMB Thumbprint:</b></p><p> $($Config.SharedAccessSMBCertificate)</p>"
+            $html += "<td>$($Config.DataSigningCertificate)</td>"
         }
-        $html += "<p><b>Shared Access SMB Cert Expires After:</b></p><p> $($Config.SharedAccessSMBCertificateExpiresAfter)</p>"
+        $html += "<td>$($Config.DataSigningCertificateExpiresAfter)</td></tr>"
+
+        $html += '<tr><td>Session Authentication</td> '
+        if ($Detailed) {
+            $html += "<td>$($Config.SessionAuthenticationCertificate)</td>"
+        }
+        $html += "<td>$($Config.SessionAuthenticationCertificateExpiresAfter)</td></tr>"
+
+        $html += '<tr><td>Shared Access</td> '
+        if ($Detailed) {
+            $html += "<td>$($Config.SharedAccessSMBCertificate)</td>"
+        }
+        $html += "<td>$($Config.SharedAccessSMBCertificateExpiresAfter)</td></tr>"
+
 
         if ($Config.DataEnciphermentCertificateExpiresAfter) {
+            $html += '<tr><td>Data Encipherment</td> '
             if ($Detailed) {
-                $html += "<p><b>Data Encipherment Thumbprint:</b></p><p> $($Config.DataEnciphermentCertificate)</p>"
+                $html += "<td>$($Config.DataEnciphermentCertificate)</td>"
             }
-            $html += "<p><b>Data Encipherment Cert Expires After:</b></p><p> $($Config.DataEnciphermentCertificateExpiresAfter)</p>"
+            $html += "<td>$($Config.DataEnciphermentCertificateExpiresAfter)</td></tr>"
         }
         else {
             Write-PSFMessage -Level Warning -Message "DataEncipherment likely not configured in xml"
         }
 
+        $html += '<tr><td>Financial Reporting (MR)</td> '
         if ($Detailed) {
-            $html += "<p><b>Financial Reporting (MR) Thumbprint:</b></p><p> $($Config.FinancialReportingCertificate)</p>"
+            $html += "<td>$($Config.FinancialReportingCertificate)</td>"
         }
-        $html += "<p><b>Financial Reporting (MR) Cert Expires After:</b></p><p> $($Config.FinancialReportingCertificateExpiresAfter)</p>"
+        $html += "<td>$($Config.FinancialReportingCertificateExpiresAfter)</td></tr>"
 
+        $html += '<tr><td>Reporting SSRS </td> '
         if ($Detailed) {
-            $html += "<p><b>Reporting SSRS Thumbprint:</b></p><p> $($Config.ReportingSSRSCertificate)</p>"
+            $html += "<td>$($Config.ReportingSSRSCertificate)</td>"
         }
-        $html += "<p><b>Reporting SSRS Cert Expires After:</b></p><p> $($Config.ReportingSSRSCertificateExpiresAfter)</p>"
+        $html += "<td>$($Config.ReportingSSRSCertificateExpiresAfter)</td></tr>"
        
 
         if ($Config.DatabaseEncryptionCertificateExpiresAfter) {
+            $html += '<tr><td>Database Encryption </td> '
             if ($Detailed) {
-                $html += "<p><b>Database Encryption Thumbprint:</b></p><p> $($Config.DatabaseEncryptionCertificate)</p>"
+                $html += "<td>$($Config.DatabaseEncryptionCertificate)</td>"
             }
-            $html += "<p><b>Database Encryption Cert Expires After:</b></p><p> $($Config.DatabaseEncryptionCertificateExpiresAfter)</p>"
+            $html += "<td>$($Config.DatabaseEncryptionCertificateExpiresAfter)</td></tr>"
         }
         else {
             Write-PSFMessage -Level Warning -Message "DataEncipherment likely not configured in xml"
         }
+
+        $html += '<tr><td>Local Agent</td> '
         if ($Detailed) {
-            $html += "<p><b>Local Agent Thumbprint:</b></p><p> $($Config.LocalAgentCertificate)</p>"
+            $html += "<td>$($Config.LocalAgentCertificate)</td>"
         }
-        $html += "<p><b>Local Agent Cert Expires After:</b></p><p> $($Config.LocalAgentCertificateExpiresAfter)</p>"
+        $html += "<td>$($Config.LocalAgentCertificateExpiresAfter)</td></tr>"
+        $html += "</table>"
+       
         $html += "</body></html>"
         $html |  Out-File "$ExportLocation"  -Verbose
   
