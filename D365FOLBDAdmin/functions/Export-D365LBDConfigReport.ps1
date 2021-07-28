@@ -208,7 +208,7 @@ function Export-D365LBDConfigReport {
             $html +="<table style=""width:100%"">  <tr>    <th>Server</th>    <th>GUID</th>    <th>Endpoint</th>  </tr>"
             
             foreach ($guid in $guids) {
-                $html += "<tr><td>$($guid.Source)</td><td>$($guid.Details)</td><td>$($guid.ExtraInfo)</td></tr>"
+                $html += "<tr><td>$($guid.Source)</td><td>$($guid.Details)</td><td><a href=""$($guid.ExtraInfo)"">$($guid.ExtraInfo)</a></td></tr>"
             }
             $html += "</table>"
         }
