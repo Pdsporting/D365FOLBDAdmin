@@ -56,7 +56,13 @@ function Export-D365LBDConfigReport {
             $healthissues = $Health | Where-Object { $_.Status -eq "Down" }
         }
         $html = "<html> <body>"
-        $html += "<h1><a href = ""$($Config.ClientURL)"">$($Config.LCSEnvironmentName)</a> </h1>"
+        if ($Detailed){
+            $html += "<h1><a href = ""$($Config.ClientURL)"">$($Config.LCSEnvironmentName)</a> </h1>"
+        }
+        else{
+            $html += "<h1>$($Config.LCSEnvironmentName)</h1>"
+        }
+        
         if ($CustomModuleName) {
             $html += "<p><b>Custom Code $CustomModuleName Version:</b></p> $($Config.CustomModuleVersion)"
         }

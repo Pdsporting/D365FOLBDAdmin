@@ -38,7 +38,7 @@ function Remove-D365LBDSFOldAssets {
             if ($ScanForInvalidZips){
                 $job = $null
                 $job = start-job -ScriptBlock { Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead($using:StandaloneSetupZip) }
-                if (Wait-Job $j -Timeout 300) { Receive-Job $job }else {
+                if (Wait-Job $job -Timeout 300) { Receive-Job $job }else {
                     Write-PSFMessage -Level VeryVerbose -message "Invalid Zip file $StandaloneSetupZip."
                     Write-PSFMessage -Message "$AssetFolder is invalid - deleting" -Level VeryVerbose
                     Get-ChildItem $AssetFolder.Fullname | Remove-Item -Recurse -Force
