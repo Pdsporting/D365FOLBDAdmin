@@ -47,7 +47,7 @@ function Export-D365LBDConfigReport {
         Write-PSFMessage -Level VeryVerbose -Message "Running Environment Health Check"
         $Health = Get-D365LBDEnvironmentHealth -config $config
         Write-PSFMessage -Level VeryVerbose -Message "Running Dependency Health Check"
-        $DependencyCheck = Get-D365DepencyHealth -Config $config
+        $DependencyCheck = Get-D365LBDDependencyHealth -Config $config
         $HealthText = "<p class=""Success""><b>D365 Health looks great</b></p>"
         if ($Health.Status -contains "Down") {
             $HealthText = "<p class=""issue""><b>D365 Health issues:</b></p>"
@@ -69,7 +69,7 @@ function Export-D365LBDConfigReport {
         $html += "$HealthText"
         if ($healthissues) {
             foreach ($healthissue in $healthissues) {
-                $html += "<p>Check: $($healthissue.Name) Source: $($healthissue.Source) Details: $($healthissue.Details)</p> "
+                $html += "<p><b>Check:</b> $($healthissue.Name) <b>Source:</b> $($healthissue.Source) <b>Details:</b> $($healthissue.Details) <b>Additional Info:</b> $($healthissue.ExtraInfo) </p>"
             }
         }
         if ($DependencyCheck.Count -gt 0) {
@@ -81,7 +81,7 @@ function Export-D365LBDConfigReport {
             $html += "$DependencyCheckText"
             if ($DependencyCheckissues) {
                 foreach ($DependencyCheckissue in $DependencyCheckissues) {
-                    $html += "<p>Check: $($DependencyCheckissue.Name) Source: $($DependencyCheckissue.Source) Details: $($DependencyCheckissue.Details)</p> "
+                    $html += "<p><b>Check:</b> $($DependencyCheckissue.Name) <b>Source:</b> $($DependencyCheckissue.Source) <b>Details:</b> $($DependencyCheckissue.Details)  <b>Additional Info:</b> $($DependencyCheckissue.ExtraInfo) </p></p> "
                 }
             }
         }

@@ -86,19 +86,6 @@ Need to rethink approach
             New-Object -TypeName psobject -Property $Properties
 
         }
-<# OLD
-        $AXSFPartitionID = $(Get-ServiceFabricPartition -ServiceName fabric:/AXSF/AXService).PartitionId
-        $AXSFReplicas = Get-ServiceFabricReplica -PartitionId $AXSFPartitionID
-
-        foreach ($AXSFReplica in $AXSFReplicas){
-            $NodeName = $AXSFReplica.NodeName
-            [string]$EndpointString = $AXSFReplica.ReplicaAddress
-            $Index = $EndpointString.IndexOf('":"https:')
-            $EndpointString = $EndpointString.Substring(0,$Index)
-            $EndpointString = $EndpointString.Replace('{"Endpoints":{"',"")
-
-           
-        }#>
         
     }
     END {
