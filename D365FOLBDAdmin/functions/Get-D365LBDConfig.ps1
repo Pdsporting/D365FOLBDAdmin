@@ -769,7 +769,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'CustomModuleName'                           = $CustomModuleName
             }
 
-            $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
+            $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificates')
             $CertificateExpirationHash = @{}
             if ($HighLevelOnly) {
                 if ($messagecount -eq 0) {
@@ -799,7 +799,7 @@ ORDER BY [rh].[restore_date] DESC"
                             if (!$certexpiration) {
                                 $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\Trust | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value
                             }
-                            if ($cert -eq 'DatabaseEncryptionCertificate' -and !$certexpiration) {
+                            if ($cert -eq 'DatabaseEncryptionCertificates' -and !$certexpiration) {
                                 try {
                                     foreach ($DatabaseClusterServerName in $DatabaseClusterServerNames) {
                                         if (!$certexpiration) {
