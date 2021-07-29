@@ -814,7 +814,7 @@ ORDER BY [rh].[restore_date] DESC"
                                     }
                                 }
                                 catch {
-                                    Write-PSFMessage -Level Warning "Warning: Issue grabbing DatabaseEncryptionCertificate information. $_"
+                                    Write-PSFMessage -Level Warning "Warning: Issue grabbing DatabaseEncryptionCertificate $value information. $_"
                                 }
                             }
                             if ($certexpiration) {

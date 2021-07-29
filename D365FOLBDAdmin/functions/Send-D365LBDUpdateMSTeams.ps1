@@ -348,6 +348,20 @@ function Send-D365LBDUpdateMSTeams {
             }
             $TotalApplications = (Get-ServiceFabricApplication).Count
             $HealthyApps = (Get-ServiceFabricApplication | Where-Object { $_.HealthState -eq "OK" }).Count
+            if (!$EnvironmentName) {
+                $LCSEnvironmentName = $Config.LCSEnvironmentName
+            }
+            else {
+                $LCSEnvironmentName = $EnvironmentName
+            }
+            if (!$EnvironmentURL) {
+                $EnvironmentURL = $Config.ClientURL
+            }
+            
+            if (!$MSTeamsBuildName) {
+                $MSTeamsBuildName = $Config.CustomModuleVersion
+
+            }
 
             $Health = Get-D365LBDEnvironmentHealth -Config $config 
             if ($Health.Status -contains "Down") {
@@ -386,7 +400,7 @@ function Send-D365LBDUpdateMSTeams {
             "name": "D365 Health Check",
             "value": "$HealthCheck"
         },{
-            "name": "D365 Depencency Check",
+            "name": "D365 Dependency Check",
             "value": "$DependencyCheck"
         }],
         "markdown": true
