@@ -236,8 +236,8 @@ function Export-D365LBDConfigReport {
                 if ($Detailed) {
                     $html += "<td>$($DatabaseEncryptionCertificate)</td>"
                 }
-                if ($Config.DatabaseEncryptionCertificateExpiresAfter) {
-                    $html += "<td>$($Config.DatabaseEncryptionCertificateExpiresAfter)</td></tr>"
+                if ($Config.DatabaseEncryptionCertificatesExpiresAfter) {
+                    $html += "<td>$($Config.DatabaseEncryptionCertificatesExpiresAfter)</td></tr>"
                 }
                 else {
                     $html += "<td>Can't get Expiration (Permissions on SQL OS level)</td></tr>"

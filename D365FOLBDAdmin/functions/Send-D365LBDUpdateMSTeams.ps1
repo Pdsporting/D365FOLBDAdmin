@@ -317,10 +317,10 @@ function Send-D365LBDUpdateMSTeams {
             Write-PSFMessage -Message "MessageType is: StatusReport" -Level VeryVerbose
 
             if (!$CustomModuleName) {
-                $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
+                $Config = Get-D365LBDConfig -ComputerName $ComputerName 
             }
             else {
-                $Config = Get-D365LBDConfig -ComputerName $ComputerName 
+                $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName
             }
             [int]$count = 0
             while (!$connection) {
@@ -389,7 +389,7 @@ function Send-D365LBDUpdateMSTeams {
     "sections": [{
         "facts": [{
             "name": "Environment",
-            "value": "[$LCSEnvironmentName]($clienturl)"
+            "value": "[$LCSEnvironmentName]($EnvironmentURL)"
         },{
             "name": "Build Version",
             "value": "$MSTeamsBuildName"
