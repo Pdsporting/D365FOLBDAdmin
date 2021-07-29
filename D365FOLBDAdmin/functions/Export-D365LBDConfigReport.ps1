@@ -46,34 +46,45 @@ function Export-D365LBDConfigReport {
         }
         Write-PSFMessage -Level VeryVerbose -Message "Running Environment Health Check"
         $Health = Get-D365LBDEnvironmentHealth -config $config
+        $HealthGroups = $($Health.Group | Select-Object -unique)
         Write-PSFMessage -Level VeryVerbose -Message "Running Dependency Health Check"
         $DependencyCheck = Get-D365LBDDependencyHealth -Config $config
+        $DependencyGroups = $($DependencyCheck.Group | Select-Object -unique)
         $HealthText = "<p class=""Success""><b>D365 Health looks great</b></p>"
         if ($Health.Status -contains "Down") {
             $HealthText = "<p class=""issue""><b>D365 Health issues:</b></p>"
             $healthissues = $Health | Where-Object { $_.Status -eq "Down" }
         }
         $html = "<html> <body>"
-        $html += "<h1>$($Config.LCSEnvironmentName) </h1>"
+        $html += "<h1><a href = ""$($Config.ClientURL)"">$($Config.LCSEnvironmentName)</a> </h1>"
         if ($CustomModuleName) {
             $html += "<p><b>Custom Code $CustomModuleName Version:</b></p> $($Config.CustomModuleVersion)"
         }
         $html += "<p><b>AX Kernel Version:</b></p> $($Config.AOSKernelVersion)"
-        $html += "<p><b>Environment ID:</b></p> <a href=""$($config.LCSEnvironmentURL)""> $($config.LCSEnvironmentID)</a> "
+        $html += "<p><b>LCS Project and Environment ID:</b></p>$ ($config.LCSProjectID)  -  <a href=""$($config.LCSEnvironmentURL)""> $($config.LCSEnvironmentID)</a> "
+      
         if ($Config.AXDatabaseRestoreDate) {
             $html += "<p><b>Database Refresh/Restore Date:</b></p> $($Config.AXDatabaseRestoreDate) "
-            $html += "<p><b>Database Refresh/Restore file:</b></p> $($Config.AXDatabaseBackupFileUsedForRestore) "
+            if ($Detailed) {
+                $html += "<p><b>Database Refresh/Restore file:</b></p> $($Config.AXDatabaseBackupFileUsedForRestore) "
+            }
         }
         
-        $html += "<p><b>Total Apps in Healthy State:</b></p> <a href=""$($config.SFExplorerURL)""> $($Config.NumberOfAppsinServiceFabric) </a> "
+        $html += "<p><b>Number of  Apps in Healthy State:</b></p> <a href=""$($config.SFExplorerURL)""> $($Config.NumberOfAppsinServiceFabric) </a> "
         $html += "$HealthText"
         if ($healthissues) {
             foreach ($healthissue in $healthissues) {
                 $html += "<p><b>Check:</b> $($healthissue.Name) <b>Source:</b> $($healthissue.Source) <b>Details:</b> $($healthissue.Details) <b>Additional Info:</b> $($healthissue.ExtraInfo) </p>"
             }
         }
+        $html += "<b><p>Health Check Groups: </b></p> <ul>"
+        foreach ($HealthGroup in $HealthGroups) {
+            $html += "<li>$HealthGroup</li>"
+        }
+        $html += "</ul>"
+
         if ($DependencyCheck.Count -gt 0) {
-            $DependencyCheckText = "<p class=""Success""><b>D365 Environment Dependencies Health looks great</b></p>"
+            $DependencyCheckText = "<p class=""Success""><b>D365 Environment Dependencies Health looks great.</b></p>"
             if ($DependencyCheck.Status -contains "Down") {
                 $DependencyCheckText = "<p class=""issue""><b>D365 Health issues:</b></p>"
                 $DependencyCheckissues = $DependencyCheck | Where-Object { $_.Status -eq "Down" }
@@ -84,10 +95,19 @@ function Export-D365LBDConfigReport {
                     $html += "<p><b>Check:</b> $($DependencyCheckissue.Name) <b>Source:</b> $($DependencyCheckissue.Source) <b>Details:</b> $($DependencyCheckissue.Details)  <b>Additional Info:</b> $($DependencyCheckissue.ExtraInfo) </p></p> "
                 }
             }
+            $html += "<b><p>Dependency Groups: </b></p> <ul>"
+            foreach ($DependencyGroup in $DependencyGroups) {
+                $html += "<li>$DependencyGroup</li>"
+            }
+            $html += "</ul>"
+ 
         }
+        $html += "<p><b>Orchestrator Job State:</b> $($Config.OrchestratorJobState) <b>Last Ran Orchestrator Job ID:</b> $($Config.LastOrchJobId) </p> "
+        $html += "<p><b>Run Book Task State:</b> $($Config.OrchestratorRunBookState) <b>Last Ran Run Book Task ID:</b> $($Config.LastRunbookTaskId) </p></p> "
+        
 
         $CountofAXServerNames = $Config.AXSFServerNames.Count
-        $html += "<p><b>Amount of AX SF Servers:</b></p> $($CountofAXServerNames) </p>"
+        $html += "<p><b>Number of AX SF Servers:</b></p> $($CountofAXServerNames)"
         if ($Detailed) {
             $html += "<b><p>AX SF Servers: </b></p> <ul>"
             foreach ($axsfserver in $Config.AXSFServerNames) {
@@ -95,7 +115,7 @@ function Export-D365LBDConfigReport {
             }
             $html += "</ul>"
         }
-        $html += "<p><b>Number of Orchestrator Servers: </b> $($Config.OrchestratorServerNames.Count)</p>"
+        $html += "<p><b>Number of Orchestrator Servers: </b> </p>$($Config.OrchestratorServerNames.Count)</p>"
         if ($Detailed) {
             $html += "<p><b>Orchestrator Servers:</b></p> <ul>"
             foreach ($AXOrchServerName in $Config.OrchestratorServerNames) {
@@ -103,7 +123,10 @@ function Export-D365LBDConfigReport {
             }
             $html += "</ul>"
         }
-        $html += "<p><b>AX Database Connection Endpoint:</b></p> $($Config.AXDatabaseServer)"
+        if ($Detailed) {  
+            $html += "<p><b>AX Database Connection Endpoint:</b></p> $($Config.AXDatabaseServer)"
+        }
+
         $html += "<p><b>AX database is $($Config.DatabaseClusteredStatus)</b></p>"
         $DBCount = $Config.DatabaseClusterServerNames.Count
 
@@ -113,6 +136,27 @@ function Export-D365LBDConfigReport {
                 $html += "<p><b>Database server(s):</b></p> <ul>"
                 foreach ($AXDBServerName in $($Config.DatabaseClusterServerNames)) {
                     $html += "<li>$AXDBServerName</li>"
+                }
+                $html += "</ul>"
+            }
+        }
+
+        $html += "<p><b>Number of SSRS Report Servers: </b> </p>$($Config.SSRSClusterServerNames.Count)</p>"
+        if ($Detailed) {
+            $html += "<p><b>SSRS Servers:</b></p> <ul>"
+            foreach ($SSRSClusterServerName in $Config.SSRSClusterServerNames) {
+                $html += "<li>$SSRSClusterServerName</li>"
+            }
+            $html += "</ul>"
+        }
+        if ($Config.ComponentsinSetupModule -contains "financialreporting") {
+
+        
+            $html += "<p><b>Number of Management Reporter Servers: </b> </p>$($Config.ManagementReporterServers.Count)</p>"
+            if ($Detailed) {
+                $html += "<p><b>Management Reporter Servers:</b></p> <ul>"
+                foreach ($ManagementReporterServer in $Config.ManagementReporterServers) {
+                    $html += "<li>$ManagementReporterServer</li>"
                 }
                 $html += "</ul>"
             }
@@ -186,12 +230,20 @@ function Export-D365LBDConfigReport {
         }
         $html += "<td>$($Config.ReportingSSRSCertificateExpiresAfter)</td></tr>"
        
-        if ($Config.DatabaseEncryptionCertificateExpiresAfter) {
-            $html += '<tr><td>Database Encryption </td> '
-            if ($Detailed) {
-                $html += "<td>$($Config.DatabaseEncryptionCertificate)</td>"
+        if ($Config.DatabaseEncryptionCertificates) {
+            foreach ($DatabaseEncryptionCertificate in $Config.DatabaseEncryptionCertificates) {
+
+                $html += '<tr><td>Database Connection Configured Encryption </td> '
+                if ($Detailed) {
+                    $html += "<td>$($DatabaseEncryptionCertificate)</td>"
+                }
+                if ($Config.DatabaseEncryptionCertificateExpiresAfter) {
+                    $html += "<td>$($Config.DatabaseEncryptionCertificateExpiresAfter)</td></tr>"
+                }
+                else {
+                    $html += "<td>Can't get Expiration (Permissions on SQL OS level)</td></tr>"
+                }
             }
-            $html += "<td>$($Config.DatabaseEncryptionCertificateExpiresAfter)</td></tr>"
         }
         else {
             Write-PSFMessage -Level Warning -Message "Database Encryption not configured in xml or access issues to Database server"
@@ -203,9 +255,9 @@ function Export-D365LBDConfigReport {
         }
         $html += "<td>$($Config.LocalAgentCertificateExpiresAfter)</td></tr>"
         $html += "</table>"
-        if ($Detailed){
+        if ($Detailed) {
             $guids = Get-D365LBDAXSFGUIDS -Config $Config
-            $html +="<table style=""width:100%"">  <tr>    <th>Server</th>    <th>GUID</th>    <th>Endpoint</th>  </tr>"
+            $html += "<table style=""width:100%"">  <tr>    <th>Server</th>    <th>GUID</th>    <th>Endpoint</th>  </tr>"
             
             foreach ($guid in $guids) {
                 $html += "<tr><td>$($guid.Source)</td><td>$($guid.Details)</td><td><a href=""$($guid.ExtraInfo)"">$($guid.ExtraInfo)</a></td></tr>"

@@ -36,6 +36,7 @@ Need to rethink approach
             $Config = Get-D365LBDConfig -ComputerName $ComputerName
         }
         [int]$count = 0
+        $OutputList = @()
         while (!$connection) {
             do {
                 $OrchestratorServerName = $Config.OrchestratorServerNames | Select-Object -First 1 -Skip $count
@@ -83,9 +84,11 @@ Need to rethink approach
                 'Source'           = $NodeName 
                 'Group'            = 'ServiceFabric'
             }
-            New-Object -TypeName psobject -Property $Properties
+            $Output = New-Object -TypeName psobject -Property $Properties
+            $OutputList += $Output
 
         }
+        [PSCustomObject] $OutputList | Sort-Object {$_.Source}
         
     }
     END {
