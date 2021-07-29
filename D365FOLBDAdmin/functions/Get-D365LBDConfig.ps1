@@ -288,7 +288,15 @@
                     $DatabaseClusteredStatus = 'NonClustered'
                 }
                 if (!$CustomModuleName) {
+                    if ($($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName.'#text'))
+                    {
+                        $CustomModuleNameinConfig = $($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName.'#text').TrimStart()
+                    }
+                    else{
+                        $CustomModuleNameinConfig = $($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName).TrimStart()
+                    }
                     $CustomModuleNameinConfig = $($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName.'#text').TrimStart()
+                    $($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName.'#text').TrimStart()
                     $CustomModuleNameinConfig = $CustomModuleNameinConfig.TrimEnd()
                     if ($CustomModuleNameinConfig.Length -gt 0) {
                         $CustomModuleName = $CustomModuleNameinConfig
