@@ -236,19 +236,7 @@
                     Write-PSFMessage -Level Warning -Message "Warning: Can't gather information from the Reporting Server $ReportServerServerName"
                 }
             }
-            $CustomModuleVersion = ''
-            if (($CustomModuleName)) {
-                try {
-                    $CustomModuleDll = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\Packages\$CustomModuleName\bin\Dynamics.AX.$CustomModuleName.dll"
-                    if (-not (Test-Path $CustomModuleDll)) {
-                        Write-PSFMessage -Message "Warning: Custom Module not found; version unable to be found" -Level Warning
-                    }
-                    else {
-                        $CustomModuleVersion = $CustomModuleDll.VersionInfo.FileVersion
-                    }
-                }
-                catch {}
-            }
+            
             $AXServiceConfigXMLFile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config" | Sort-Object { $_.CreationTime } | Select-Object -First 1
             Write-PSFMessage -Message "Reading $AXServiceConfigXMLFile" -Level Verbose 
             if (!$AXServiceConfigXMLFile) {
@@ -288,20 +276,30 @@
                     $DatabaseClusteredStatus = 'NonClustered'
                 }
                 if (!$CustomModuleName) {
-                    if ($($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName.'#text'))
-                    {
+                    if ($($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName.'#text')) {
                         $CustomModuleNameinConfig = $($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName.'#text').TrimStart()
                     }
-                    else{
+                    else {
                         $CustomModuleNameinConfig = $($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName).TrimStart()
                     }
-                    $CustomModuleNameinConfig = $($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName.'#text').TrimStart()
-                    $($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName.'#text').TrimStart()
                     $CustomModuleNameinConfig = $CustomModuleNameinConfig.TrimEnd()
                     if ($CustomModuleNameinConfig.Length -gt 0) {
                         $CustomModuleName = $CustomModuleNameinConfig
                     }
                 }
+            }
+            $CustomModuleVersion = ''
+            if (($CustomModuleName)) {
+                try {
+                    $CustomModuleDll = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\Packages\$CustomModuleName\bin\Dynamics.AX.$CustomModuleName.dll"
+                    if (-not (Test-Path $CustomModuleDll)) {
+                        Write-PSFMessage -Message "Warning: Custom Module not found; version unable to be found" -Level Warning
+                    }
+                    else {
+                        $CustomModuleVersion = $CustomModuleDll.VersionInfo.FileVersion
+                    }
+                }
+                catch {}
             }
            
             ##checking for after deployment added servers
@@ -768,6 +766,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'LCSProjectID'                               = $LCSProjectID 
                 'LCSEnvironmentURL'                          = $LCSEnvironmentURL
                 'SFExplorerURL'                              = $SFExplorerURL
+                'CustomModuleName'                           = $CustomModuleName
             }
 
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificate')
