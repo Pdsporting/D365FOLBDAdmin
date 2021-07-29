@@ -61,7 +61,7 @@ function Export-D365LBDConfigReport {
             $html += "<p><b>Custom Code $CustomModuleName Version:</b></p> $($Config.CustomModuleVersion)"
         }
         $html += "<p><b>AX Kernel Version:</b></p> $($Config.AOSKernelVersion)"
-        $html += "<p><b>LCS Project and Environment ID:</b></p>$ ($config.LCSProjectID)  -  <a href=""$($config.LCSEnvironmentURL)""> $($config.LCSEnvironmentID)</a> "
+        $html += "<p><b>LCS Project and Environment ID:</b></p> $($config.LCSProjectID)  -  <a href=""$($config.LCSEnvironmentURL)""> $($config.LCSEnvironmentID)</a> "
       
         if ($Config.AXDatabaseRestoreDate) {
             $html += "<p><b>Database Refresh/Restore Date:</b></p> $($Config.AXDatabaseRestoreDate) "
@@ -102,9 +102,9 @@ function Export-D365LBDConfigReport {
             $html += "</ul>"
  
         }
-        $html += "<p><b>Orchestrator Job State:</b> $($Config.OrchestratorJobState) <b>Last Ran Orchestrator Job ID:</b> $($Config.LastOrchJobId) </p> "
-        $html += "<p><b>Run Book Task State:</b> $($Config.OrchestratorRunBookState) <b>Last Ran Run Book Task ID:</b> $($Config.LastRunbookTaskId) </p></p> "
-        
+        $html += "<p><b>Orchestrator Job State:</b> $($Config.OrchestratorJobState)  <b>Last Ran Orchestrator Job ID:</b> $($Config.LastOrchJobId) </p>"
+        $html += "<p><b>Run Book Task State:</b> $($Config.OrchestratorJobRunBookState)  <b>Last Ran Run Book Task ID:</b> $($Config.LastRunbookTaskId) </p>"
+       
 
         $CountofAXServerNames = $Config.AXSFServerNames.Count
         $html += "<p><b>Number of AX SF Servers:</b></p> $($CountofAXServerNames)"
@@ -149,9 +149,8 @@ function Export-D365LBDConfigReport {
             }
             $html += "</ul>"
         }
-        if ($Config.ComponentsinSetupModule -contains "financialreporting") {
 
-        
+        if ($Config.ComponentsinSetupModule -contains "financialreporting") {  
             $html += "<p><b>Number of Management Reporter Servers: </b> </p>$($Config.ManagementReporterServers.Count)</p>"
             if ($Detailed) {
                 $html += "<p><b>Management Reporter Servers:</b></p> <ul>"
@@ -164,7 +163,7 @@ function Export-D365LBDConfigReport {
            
         $html += "<p><b>Local Agent Version:</b></p> $($Config.OrchServiceLocalAgentVersionNumber)</p>"
 
-        $html += '<table style="width:100%"><tr><th>Certificate</th>'
+        $html += '<table style="width:100%" class="Thumbprints"><tr><th>Certificate</th>'
         if ($Detailed) {
             $html += '<th>Thumbprint</th>'
         }
@@ -255,9 +254,10 @@ function Export-D365LBDConfigReport {
         }
         $html += "<td>$($Config.LocalAgentCertificateExpiresAfter)</td></tr>"
         $html += "</table>"
+
         if ($Detailed) {
             $guids = Get-D365LBDAXSFGUIDS -Config $Config
-            $html += "<table style=""width:100%"">  <tr>    <th>Server</th>    <th>GUID</th>    <th>Endpoint</th>  </tr>"
+            $html += "<p></p><table style=""width:100%"" class=""GUIDS"">  <tr>    <th>Server</th>    <th>GUID</th>    <th>Endpoint</th>  </tr>"
             
             foreach ($guid in $guids) {
                 $html += "<tr><td>$($guid.Source)</td><td>$($guid.Details)</td><td><a href=""$($guid.ExtraInfo)"">$($guid.ExtraInfo)</a></td></tr>"

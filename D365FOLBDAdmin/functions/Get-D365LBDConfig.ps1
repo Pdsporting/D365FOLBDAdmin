@@ -689,13 +689,13 @@ ORDER BY [rh].[restore_date] DESC"
             }
             try {
                 Write-PSFMessage -Level Verbose -Message "Looking for process AXService $AXSFConfigServerName to get the running folder"
-                $RunningAXCodeFolder = Invoke-Command -ComputerName $AXSFConfigServerName -ScriptBlock { $($process = Get-Process | Where-Object { $_.Name -eq "AXService" }; if ($process) { split-path $($process | select *).Path -Parent }) }
+                $RunningAXCodeFolder = Invoke-Command -ComputerName $AXSFConfigServerName -ScriptBlock { $($process = Get-Process | Where-Object { $_.Name -eq "AXService" }; if ($process) { split-path $($process | Select-Object *).Path -Parent }) }
             }
             catch {
 
             }
             $WPFolder = join-path $AgentShareLocation "wp\$LCSEnvironmentName"
-            $SetupJson = Get-ChildItem "$WPFolder\StandaloneSetup-*\setupmodules.json" | select -First 1
+            $SetupJson = Get-ChildItem "$WPFolder\StandaloneSetup-*\setupmodules.json" | Select-Object -First 1
             $json = Get-Content $SetupJson.FullName -Raw | ConvertFrom-Json 
             $componentsinsetupmodule = $json.components.name
             $SSRSClusterServerNames = $ReportServerServerName
@@ -807,6 +807,9 @@ ORDER BY [rh].[restore_date] DESC"
                                         }
                                         if (!$certexpiration) {
                                             $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value -ErrorAction Stop
+                                        }
+                                        if(!$certexpiration) {
+                                            $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\Root | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value -ErrorAction Stop
                                         }
                                     }
                                 }
