@@ -1,15 +1,21 @@
 function Restart-D365LBDSFAppServers {
     <#
-      .SYNOPSIS
-  
+    .SYNOPSIS
+    Restarts all application nodes in the service fabric layer. Also has the ability to reboot the whole Operating system (OS) and also to restart the orchestrator nodes (full OS restart only)
    .DESCRIPTION
-   
+   Restarts all application nodes in the service fabric layer. Also has the ability to reboot the whole Operating system (OS) and also to restart the orchestrator nodes (full OS restart only)
    .EXAMPLE
    Restart-D365LBDSFAppServers
-  
+   Based on the local server it will determine all the environment's servers and restart the service fabric nodes in the service fabric layer.
    .EXAMPLE
-    Enable-D365LBDSFAppServers -ComputerName "LBDServerName" -verbose
-   
+    Restart-D365LBDSFAppServers -ComputerName "LBDServerName" -verbose
+    Based on the defined server it will determine all the environment's servers and restart the service fabric nodes in the service fabric layer.
+   .EXAMPLE
+    Restart-D365LBDSFAppServers -config $config -RebootWholeOS -verbose
+    Based on the defined config it will determine all the environment's AX SF application servers and restart the whole Operating system of each.
+    .EXAMPLE
+    Restart-D365LBDSFAppServers -config $config -RebootWholeOSIncludingOrch -verbose -waittillhealthy
+    Based on the config it will determine all the environment's servers including orchestrator nodes and restart the whole Operating system of each and will wait till the servers are "healthy" (can be accessed for more commands).
    .PARAMETER ComputerName
    String
    The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.

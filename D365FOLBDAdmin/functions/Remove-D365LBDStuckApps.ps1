@@ -1,18 +1,8 @@
 
 function Remove-D365LBDStuckApps {
      <#
-   .SYNOPSIS
-  
-  .DESCRIPTION
-
-  .EXAMPLE
-
-
-  .EXAMPLE
-
-
+  ##created for deployment bug when the local agent can't clean up properly this was fixed in later local agent versions but still has value when but use only in extreme situations
   #>
-    ##created for deployment bug when it cant clean properly this was fixed in later local agent versions
     [alias("Remove-D365StuckApps")]
     [CmdletBinding()]
     param (

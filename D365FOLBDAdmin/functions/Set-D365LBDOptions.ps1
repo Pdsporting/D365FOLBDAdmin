@@ -1,14 +1,26 @@
 function Set-D365LBDOptions {
     <#
    .SYNOPSIS
-  Uses switches to set different deployment options
+  Uses switches to set different deployment options created for expanding the pre and post deployment scripts. 
   .DESCRIPTION
-
+  Uses switches to set different deployment options created for expanding the pre and post deployment scripts. 
+  Recommend: Run multiple times for each task then the last run run with the teams communication.
   .EXAMPLE
-  Set-D365LBDOptions -RemoveMR
-
+  $config = Get-D365Config
+  Set-D365LBDOptions -RemoveMR -predeployment -config $config
+  Prevents the installation of Management reporter in the predeployment stage
   .EXAMPLE
-
+   $config = Get-D365Config
+    Set-D365LBDOptions -predeployment -enableuserid 'stefan' -config $config
+    Enables user stefan in the predeployment stage
+ .EXAMPLE
+   $config = Get-D365Config
+     Set-D365LBDOptions -predeployment -OtherTaskName 'TalkedToMyself' -OtherTaskStatus 'Success' -config $config
+    Adds a custom task and status to the predeployment list for communication
+  .EXAMPLE
+   $config = Get-D365Config
+    Set-D365LBDOptions -postdeployment -MSTEAMSCustomStatus 'Deployment Finished' -MSTeamsURI 'https://fake.outlook.com/webhook/fakeurl/123123' -MSTeamsBuildName '2021.03.04.01' -MSTeamsExtraDetails 'Web Search' -MSTeamsExtraDetailsURI 'https://google.com' -config $config
+    Custom status of deployment finished and added an extra field called Web Search with a link to google. Also says the Build name as '2021.03.04.01' (recommend making a build name related to the config)
   #>
     [alias("Set-D365Options")]
     [CmdletBinding()]
@@ -33,9 +45,6 @@ function Set-D365LBDOptions {
         [string]$DisableUserid,
         [string]$OtherTaskName,
         [string]$OtherTaskStatus
-
-
-
     )
     BEGIN {
     }

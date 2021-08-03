@@ -42,9 +42,23 @@ function Remove-D365LBDSFOldAssets {
         if (!$Config) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly   
         }
+        if (!$NumberofAssetsToKeep){
+            $AgentShareLocation = $Config.AgentShareLocation
+            if (test-path $AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml) {
+                Write-PSFMessage -Level Verbose -Message "Found AdditionalEnvironmentDetails config"
+                $EnvironmentAdditionalConfig = get-childitem "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
+                [xml]$EnvironmentAdditionalConfigXML = get-content  $EnvironmentAdditionalConfig
+                if ($EnvironmentAdditionalConfigXML.D365LBDEnvironment.Automation.CleanupAssets.Enabled -eq "true"){
+                    $NumberofAssetsToKeep = [int]$EnvironmentAdditionalConfigXML.D365LBDEnvironment.Automation.CleanupAssets.AssetsToKeep
+                }
+            }
+        }
+        if (!$NumberofAssetsToKeep){
+            Stop-PSFFunction -Message "Error: Number of Assets not defined and Additional Environment Details configured" -EnableException $True -FunctionName $_ 
+        }
 
         if ($NumberofAssetsToKeep -lt 2) {
-            Stop-PSFFunction -Message "Error: Number of Assets to keep must be 2 or larger as you should always keep the main and backup" -EnableException $True  
+            Stop-PSFFunction -Message "Error: Number of Assets to keep must be 2 or more (currently set at: $NumberofAssetsToKeep) as you should always keep the main and backup. " -EnableException $True -FunctionName $_ 
         }
         $AssetsFolderinAgentShareLocation = join-path -Path $Config.AgentShareLocation -ChildPath "\assets"
         $Onedayold = $(get-date).AddDays(-1)

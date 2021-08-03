@@ -5,11 +5,7 @@ function Start-D365LBDDBSync {
    .DESCRIPTION
    Starts a Database Synchronization on a Dynamics 365 Finance and Operations Server using the "Microsoft.Dynamics.AX.Deployment.Setup.exe" executable
    .EXAMPLE
-   Start-D365FOLBDDBSync
-   
-   .EXAMPLE
-    Start-D365FOLBDDBSync
-   
+    Start-D365FOLBDDBSync -config $config -SQLuser 'axdbadmin' -sqluserpassword 'fakepassword123' -verbose
    .PARAMETER AXSFServer
    Parameter 
    string 
@@ -35,7 +31,6 @@ function Start-D365LBDDBSync {
    Parameter 
    int 
    The timeout period of the database synchronization
-   
    #>
     [alias("Start-D365DBSync", "Start-D365FOLBDDBSync")]
     [CmdletBinding()]

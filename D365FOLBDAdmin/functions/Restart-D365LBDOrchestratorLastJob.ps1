@@ -3,13 +3,21 @@ function Restart-D365LBDOrchestratorLastJob {
    .SYNOPSIS
   Restarts the state of the orchestratorjob and runbooktaskid tables last executed jobs
   .DESCRIPTION
-
+  Restarts the state of the orchestratorjob and runbooktaskid tables last executed jobs by changing the values in the orchestrator database.
   .EXAMPLE
-   
-
+  $config = get-d365Config
+   Restart-D365LBDOrchestratorLastJob -config $config
   .EXAMPLE
-
-
+   Restart-D365LBDOrchestratorLastJob -OrchDatabaseServer 'DBSERVER01' -OrchDatabaseName 'OrchDatabaseServer'
+  .PARAMETER ComputerName
+   String
+   The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
+   .PARAMETER OrchDatabaseServer
+    string
+    The name of the orchestrator database server can be defined with OrchDatabaseName to restart without a config
+   .PARAMETER OrchDatabaseName
+   string 
+   The name of the orchestrator database (usually OrchestratorData) can be defined with OrchDatabaseServer to restart without a config
   #>
     [CmdletBinding()]
     [alias("Restart-D365OrchestratorLastJob")]
@@ -25,7 +33,6 @@ function Restart-D365LBDOrchestratorLastJob {
         [Parameter(ParameterSetName = 'Directly')]
         [string]$OrchDatabaseServer,
         [string]$OrchDatabaseName
-
     )
     BEGIN {
     } 
@@ -90,7 +97,6 @@ function Restart-D365LBDOrchestratorLastJob {
             Write-PSFMessage -Level VeryVerbose -Message "Can't run OrchJob is already in running on completed successfully state"
         }
         else {
-           
             $RestartQuery1 = "Update OrchestratorJob set State = 1 where JobId = '$LastOrchJobId'"
             $RestartQuery2 = "Update RunBookTask set State = 1, Retries = 1 where RunbookTaskId = '$LastRunbookTaskId'"
             Write-PSFMessage -Level VeryVerbose -Message "$RestartQuery1 Running on $OrchDatabaseServer against $OrchDatabaseName"
@@ -148,7 +154,6 @@ function Restart-D365LBDOrchestratorLastJob {
                 'PartitionId'                  = $PartitionIdString;
             }
         }
-
     }
     END {
     }

@@ -9,6 +9,7 @@ function Remove-D365LBDSFLogs {
    Remove-D365SFLogs -verbose
     Will remove the log files on each server that are older than 1 day on the local machines environment. Recommended to run on verbose to see what server/step its at.
    .EXAMPLE
+   $config = get-d365Config
     Remove-D365SFLogs config $config -CleanupOlderThanDays 2 -verbose
    Will remove the log files on each server that are older than 2 days on the defined configurations environment. Recommended to run on verbose to see what server/step its at.
    .PARAMETER ComputerName

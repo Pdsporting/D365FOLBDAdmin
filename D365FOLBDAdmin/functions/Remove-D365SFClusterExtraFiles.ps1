@@ -1,8 +1,8 @@
 function Remove-D365SFClusterExtraFiles {
     <#
    .SYNOPSIS
-   When removing cluster.
-   Run Clean fabric scripts on each server then run this to do final cleanup.
+   When removing cluster the cleanup usually messes up and needs further cleanup.
+   Run Clean fabric scripts on each server then run this to do final cleanup. If any files are locked restart computers
    Restart then remake cluster.
 Use Get-D365LBDConfig -ConfigImportFromFile to get config
   #>
