@@ -1,11 +1,31 @@
 
 function Remove-D365LBDSFOldAssets {
-   
+    <#
+    .SYNOPSIS
+  Removes deployment assets that are no longer needed based on age and how many that are left as backup.
+   .DESCRIPTION
+    Removes deployment assets that are no longer needed based on age and how many that are left as backup.
+   .EXAMPLE
+   Remove-D365LBDSFOldAssets -numberofassetstokeep 4
+  Location of assets based on the local machine config. Keep the newest 4 builds while removing the older assets.
+   .EXAMPLE
+    Remove-D365LBDSFOldAssets -Config $config -NumberofAssetsToKeep 5 -ScanForInvalidZips 
+    Location of assets based on the config. Keep the newest 5 builds while removing the older assets and scan for all assets that are invalid.
+   .PARAMETER ComputerName
+   String
+   The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
+   .PARAMETER Config
+    Custom PSObject
+    Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
+    .PARAMETER NumberOfAssetsToKeep
+    Integer 
+    Define how many assets to keep in the assets folder (must be greater than 2). If not defined will scan if defined in additional environment config. 
+
+   #>
     [alias("Remove-D365SFOldAssets")]
     [CmdletBinding()]
     param
-    (
-        [Parameter(ValueFromPipeline = $True,
+    ([Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,
             Mandatory = $false,
             HelpMessage = 'D365FO Local Business Data Server Name',

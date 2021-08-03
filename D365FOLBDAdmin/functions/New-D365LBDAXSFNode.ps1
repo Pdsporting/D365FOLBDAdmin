@@ -1,5 +1,5 @@
 function New-D365LBDAXSFNode {
-    <#
+    <# TODO: Needs better testing.
     .SYNOPSIS
    Can only be ran on the local machine not fully functional need to add fd and ud logic right now its just parameter 
    #>

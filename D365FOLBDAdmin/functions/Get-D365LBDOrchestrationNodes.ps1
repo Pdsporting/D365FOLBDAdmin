@@ -1,40 +1,39 @@
 ##Get Primary and Secondary
 function Get-D365LBDOrchestrationNodes {
-    <#
+    <# 
     .SYNOPSIS
-  
+  Quick command to find the primary and secondary orchestrator nodes (Note it can change during deployment if applications crash)
    .DESCRIPTION
-   
+    Quick command to find the primary and secondary orchestrator nodes (Note it can change during deployment if applications crash)
    .EXAMPLE
    Get-D365LBDOrchestrationNodes
-  
+  Gathers the primary and secondary orchestrators based on the local machines environment
    .EXAMPLE
     Get-D365LBDOrchestrationNodes -ComputerName "LBDServerName" -verbose
-   
+   Gathers the primary and secondary orchestrators based on the defined machines environment
+   .EXAMPLE
+   $config = Get-d365config
+    Get-D365LBDOrchestrationNodes -config $config -verbose
+   Gathers the primary and secondary orchestrators based on the defined machines environment
    .PARAMETER ComputerName
    String
    The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
    .PARAMETER Config
     Custom PSObject
     Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
-
    #>
     [alias("Get-D365OrchestrationNodes")]
     [CmdletBinding()]
     param([Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,
             Mandatory = $false,
-            HelpMessage = 'D365FO Local Business Data Server Name',
-            ParameterSetName = 'NoConfig')]
+            HelpMessage = 'D365FO Local Business Data Server Name')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
-        [string]$Thumbprint,
-        [Parameter(ParameterSetName = 'Config',
-            ValueFromPipeline = $True)]
+        [Parameter(ValueFromPipeline = $True)]
         [psobject]$Config)
     BEGIN {
     }
     PROCESS {
-
         if (!$Config) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
         }
@@ -70,6 +69,7 @@ function Get-D365LBDOrchestrationNodes {
         $nodes = Get-ServiceFabricReplica -PartitionId "$PartitionIdString"
         $primary = $nodes | Where-Object { $_.ReplicaRole -eq "Primary" -or $_.ReplicaType -eq "Primary" }
         $secondary = $nodes | Where-Object { $_.ReplicaRole -eq "ActiveSecondary" -or $_.ReplicaType -eq "ActiveSecondary" }
+        Write-PSFMessage -Level VeryVerbose -Message "Primary Orchestrator Currently is : $($primary.NodeName) and Secondary Orchestrator: $($secondary.NodeName) "
         New-Object -TypeName PSObject -Property `
         @{'PrimaryNodeName'                = $primary.NodeName;
             'SecondaryNodeName'            = $secondary.NodeName;

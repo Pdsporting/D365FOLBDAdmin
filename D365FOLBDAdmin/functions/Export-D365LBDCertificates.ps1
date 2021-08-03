@@ -1,7 +1,6 @@
 function Export-D365LBDCertificates {
-    <#
+    <# TODO: Need to rethink approach doesnt work smoothly
    .SYNOPSIS
-Need to rethink approach
 
   .DESCRIPTION
    Exports 

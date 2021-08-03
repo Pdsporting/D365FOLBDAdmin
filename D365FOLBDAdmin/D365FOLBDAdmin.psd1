@@ -67,7 +67,6 @@
 		'Get-D365LBDDependencyHealth',
 		'Remove-D365SFClusterExtraFiles',
 		'Get-D365LBDConfigTemplate',
-		'Get-D365LBDOrchestratorLastRunBookDetails',
 		'Restart-D365LBDOrchestratorLastJob',
 		'Remove-D365LBDSFImageStoreFiles','Get-D365LBDAXSFGuids'
 		)
@@ -100,7 +99,6 @@
 	'Send-D365UpdateMSTeams',
 	'Get-D365DependencyHealth',
 	'Get-D365ConfigTemplate',
-	'Get-D365OrchestratorLastRunBookDetails',
 	"Restart-D365OrchestratorLastJob",
 	"Remove-D365SFImageStoreFiles",'Get-D365AXSFGuids')
 	

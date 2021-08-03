@@ -1,23 +1,37 @@
 function Get-D365LBDDependencyHealth {
     <#
     .SYNOPSIS
-   
+   Checks and validates the dependencies configured in the AdditionalEnvironmentDetails.xml 
    .DESCRIPTION
-
+    Checks and validates the dependencies configured in the AdditionalEnvironmentDetails.xml This can check web addresses, services running, processes open, and databases being accessible.
+    This is recommended to be ran from the environment itself as some dependencies are better ran from the required environment.
    .EXAMPLE
-    Export-D365LBDConfigReport
-
+    Get-D365LBDDependencyHealth
+   Checks and validates the dependencies configured in the AdditionalEnvironmentDetails.xml on the local server's environment
    .EXAMPLE
-   Export-D365LBDConfigReport -computername 'AXSFServer01'
-  
+   Get-D365LBDDependencyHealth -config $Config 
+   Checks and validates the dependencies configured in the AdditionalEnvironmentDetails.xml on the defined configuration's environment
    .PARAMETER ComputerName
    String
    The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
    .PARAMETER Config
     Custom PSObject
     Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
-
-
+   .PARAMETER CustomModuleName
+   optional string 
+   The name of the custom module you will be using to capture the version number
+   .PARAMETER WebsiteChecksOnly
+   switch
+   If you want to only check the website dependencies
+   .PARAMETER SendAlertIfIssue
+    switch
+   If you want to only to send alerts when there is a found issue with a dependency
+   .PARAMETER SMTPServer
+   string
+   Email smtp server to email the alerts if issue (that switch must be on as well)
+   .PARAMETER MSTeamsURI
+   string
+   MSTeams URI smtp server to email the alerts if issue (that switch must be on as well)
    #>
     [alias("Get-D365DependencyHealth")]
     [CmdletBinding()]
@@ -33,7 +47,8 @@ function Get-D365LBDDependencyHealth {
         [string]$CustomModuleName,
         [switch]$WebsiteChecksOnly,
         [switch]$SendAlertIfIssue,
-        [string]$SMTPServer
+        [string]$SMTPServer,
+        [string]$MSTeamsURI
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
@@ -48,9 +63,12 @@ function Get-D365LBDDependencyHealth {
             }
         }
         $AgentShareLocation = $config.AgentShareLocation 
-        $EnvironmentAdditionalConfig = get-childitem  "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
-        [xml]$EnvironmentAdditionalConfigXML = get-content $EnvironmentAdditionalConfig.FullName
         $OutputList = @()
+        $EnvironmentAdditionalConfig = get-childitem  "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
+        if (!$EnvironmentAdditionalConfig) {
+            Stop-PSFFunction -Message "Error: AdditionalEnvironmentDetails.xml not configured at $AgentShareLocation\scripts\D365FOLBDAdmin" -EnableException $true -FunctionName $_
+        }
+        [xml]$EnvironmentAdditionalConfigXML = get-content $EnvironmentAdditionalConfig.FullName
 
         ##checking WebURLS
         $EnvironmentAdditionalConfigXML.D365LBDEnvironment.Dependencies.CustomWebURLDependencies.CustomWebURL | ForEach-Object -Process { 
@@ -431,14 +449,28 @@ function Get-D365LBDDependencyHealth {
                 $FoundIssue = $True
                 if ($SendAlertIfIssue) {
                     $EnvironmentOwnerEmail = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.EnvironmentOwnerEmail
-                    Send-MailMessage -to "$EnvironmentOwnerEmail" -Body "$output" -Verbose -SmtpServer "$SMTPServer" 
+                    if ($SMTPServer) {
+                        Write-PSFMessage -Level VeryVerbose -Message "Sending email to $EnvironmentOwnerEmail using $SMTPServer"
+                        Send-MailMessage -to "$EnvironmentOwnerEmail" -Body "$scanneditem is down for $($Config.LCSEnvironmentName) " -Verbose -SmtpServer "$SMTPServer" -Subject "D365 Found issue with $($Config.LCSEnvironmentName)"
+                    }
+                    else {
+                        Write-PSFMessage -Level VeryVerbose -Message "WARNING: Configure SMTP Server to send emails"
+
+                    }
+                    if ($MSTeamsURI) {
+                        Send-D365LBDUpdateMSTeams -messageType "StatusReport" -MSTeamsURI "$MSTeamsURI"
+                    }
+                    else {
+                        $MSTEAMSURLS = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.Communication.Webhooks.Webhook | Where-Object { $_.type.'#text'.trim() -eq "MSTEAMS" } | select ChannelWebHookURL
+                        foreach ($MSTEAMSURL in $MSTEAMSURLS) {
+                            Send-D365LBDUpdateMSTeams -messageType "StatusReport" -MSTeamsURI "htts://fakemicrosoft.office.com/webhookb2/98984684987156465-4654/incominginwebhook/ea5s6d4sa6" -config $Config
+                        }
+                    }
                 }
             }
         }
-
         [PSCustomObject] $OutputList
     }
-
     END {
         if ($SFModuleSession) {
             Remove-PSSession -Session $SFModuleSession  

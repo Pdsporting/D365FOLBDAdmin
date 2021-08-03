@@ -1,6 +1,29 @@
 
 function Remove-D365LBDSFLogs {
-   
+    <#
+   .SYNOPSIS
+  Removes older files in the service fabric fabric logs folder
+   .DESCRIPTION
+   Removes older files in the service fabric fabric logs folder
+   .EXAMPLE
+   Remove-D365SFLogs -verbose
+    Will remove the log files on each server that are older than 1 day on the local machines environment. Recommended to run on verbose to see what server/step its at.
+   .EXAMPLE
+    Remove-D365SFLogs config $config -CleanupOlderThanDays 2 -verbose
+   Will remove the log files on each server that are older than 2 days on the defined configurations environment. Recommended to run on verbose to see what server/step its at.
+   .PARAMETER ComputerName
+   String
+   The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
+   .PARAMETER Config
+    Custom PSObject
+    Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
+   .PARAMETER CleanupOlderThanDays 
+   integer
+   Value in days that would be considered not needed. Example if set to 5 the cert expires in less than 5 days it delete all logs older than 5 days. Default of 1.
+   .PARAMETER ControlFile
+   switch
+   Turns on making/appending a control file in the log folder saying how many files were deleted.
+     #>
     [alias("Remove-D365SFLogs")]
     [CmdletBinding()]
     param
@@ -13,7 +36,6 @@ function Remove-D365LBDSFLogs {
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [psobject]$Config,
         [int]$CleanupOlderThanDays = 1,
-        [string]$CustomModuleName,
         [switch]$ControlFile
     )
     BEGIN {
@@ -21,6 +43,9 @@ function Remove-D365LBDSFLogs {
     PROCESS {
         if (!$Config) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly   
+        }
+        if ($CleanupOlderThanDays -lt 1){
+            Stop-PSFFunction -Message "Error: CleanupOlderThanDays can't be less than 1 day". -EnableException $true -FunctionName $_ 
         }
         Foreach ($SFServerName in $($config.AllAppServerList | Select-Object ComputerName).ComputerName) {
             $LogFolder = Get-ChildItem -Path "\\$SFServerName\c$\ProgramData\SF\DiagnosticsStore\fabriclogs*\*\Fabric*" | Select-Object -First 1 -ExpandProperty FullName

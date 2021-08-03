@@ -1,8 +1,6 @@
 function Get-D365LBDConfigTemplate {
-    <#
+    <# TODO: Need to rethink this command
     .SYNOPSIS
- 
-
    #>
     [CmdletBinding()]
     [alias("Get-D365ConfigTemplate")]

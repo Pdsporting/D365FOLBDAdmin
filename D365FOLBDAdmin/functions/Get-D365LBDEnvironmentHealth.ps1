@@ -2,29 +2,48 @@
 function Get-D365LBDEnvironmentHealth {
     <#
    .SYNOPSIS
-  Looks inside the agent share extracts the version from the zip by using the custom module name. Puts an xml in root for easy idenitification
+   Checks and validates the health of the D365 environment.  
   .DESCRIPTION
-   Exports 
+    Checks and validates the health of the D365 environment. This includes checking for AXSF endpoints, D365 system databases (including ssrs), Certificates being valid and hard drive space.
   .EXAMPLE
     Get-D365LBDEnvironmentHealth
-
+   Checks and validates the health of the D365 environment on the local machines environment
   .EXAMPLE
-   Get-D365LBDEnvironmentHealth
-
-  .PARAMETER AgentShare
-  optional string 
-   The location of the Agent Share
-  .PARAMETER CustomModuleName
-  optional string 
-  The name of the custom module you will be using to capture the version number
-
-  ##Switch fix minor issues 
-
+  $config = get-d365Config
+   Get-D365LBDEnvironmentHealth -config $config
+   Checks and validates the health of the D365 environment on the specified configurations environment
+  .PARAMETER ComputerName
+   String
+   The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
+   .PARAMETER Config
+    Custom PSObject
+    Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
+   .PARAMETER CustomModuleName
+   optional string 
+   The name of the custom module you will be using to capture the version number
+   .PARAMETER CheckForHardDriveDetails
+   switch 
+   When gathering the health of the environment to iterate through each server to check for hard drives being full
+   .PARAMETER HDWarningValue
+   integer
+   Value in percentage that would be considered a warning in free space. Example if set to 5 if hard drive is less than 5% free it would result in a warning. if not defined will try using additional config.
+   .PARAMETER HDErrorValue
+   integer
+   Value in percentage that would be considered a error in free space. Example if set to 2 if hard drive is less than 2% free it would result in a error. if not defined will try using additional config.
+   .PARAMETER CertWarningValue
+   integer
+   Value in days that would be considered a warning in days until the certificate is no longer valid. Example if set to 30 the cert expires in less than 30 days it would result in a warning. Default of 30.
+   .PARAMETER CertErrorValue
+   integer
+   Value in days that would be considered a error in days until the certificate is no longer valid. Example if set to 5 the cert expires in less than 5 days it would result in a error. Default of 5.
   #>
     [alias("Get-D365EnvironmentHealth")]
     [CmdletBinding()]
-    param
-    (
+    param([Parameter(ValueFromPipeline = $True,
+            ValueFromPipelineByPropertyName = $True,
+            Mandatory = $false,
+            HelpMessage = 'D365FO Local Business Data Server Name')]
+        [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [int]$Timeout = 120,
         [psobject]$Config,
         [string]$CustomModuleName,
@@ -32,7 +51,7 @@ function Get-D365LBDEnvironmentHealth {
         [int]$HDWarningValue, ## integer that checks percentage
         [int]$HDErrorValue, ## integer that checks percentage
         [int]$CertWarningValue = 30, ##in Days
-        [int]$CertErrorValue = 1 ## in Days
+        [int]$CertErrorValue = 5 ## in Days
     )
     BEGIN {
     }
@@ -49,13 +68,6 @@ function Get-D365LBDEnvironmentHealth {
         $ReportServerServerName = $Config.ReportServerServerName
         $AXDatabaseServer = $Config.AXDatabaseServer
         $SourceAXSFServer = $Config.SourceAXSFServer
-        <#$SFModuleSession = New-PSSession -ComputerName $SourceAXSFServer
-        Invoke-Command -Session $SFModuleSession -ScriptBlock {
-            $AssemblyList = "Microsoft.SqlServer.Management.Common", "Microsoft.SqlServer.Smo", "Microsoft.SqlServer.Management.Smo"
-            foreach ($Assembly in $AssemblyList) {
-                $AssemblyLoad = [Reflection.Assembly]::LoadWithPartialName($Assembly) 
-            }
-        }#>
          
         $AssemblyList = "Microsoft.SqlServer.Management.Common", "Microsoft.SqlServer.Smo", "Microsoft.SqlServer.Management.Smo"
         foreach ($Assembly in $AssemblyList) {
@@ -118,7 +130,7 @@ function Get-D365LBDEnvironmentHealth {
                 'Source'           = $ReportServerServerName
                 'Group'            = 'Database'
             }
-            $Output =New-Object -TypeName psobject -Property $Properties
+            $Output = New-Object -TypeName psobject -Property $Properties
             $OutputList += $Output
         }
         else {
@@ -177,7 +189,7 @@ function Get-D365LBDEnvironmentHealth {
                 'Source'           = $AXDatabaseServer
                 'Group'            = 'Database'
             }
-            $Output =New-Object -TypeName psobject -Property $Properties
+            $Output = New-Object -TypeName psobject -Property $Properties
             $OutputList += $Output
         }
         else {
@@ -188,7 +200,7 @@ function Get-D365LBDEnvironmentHealth {
                 'Source'           = $AXDatabaseServer
                 'Group'            = 'Database'
             }
-            $Output =New-Object -TypeName psobject -Property $Properties
+            $Output = New-Object -TypeName psobject -Property $Properties
             $OutputList += $Output
         }
 
@@ -222,7 +234,7 @@ function Get-D365LBDEnvironmentHealth {
                     foreach ($HardDrive in $HardDrives) {
                         $FreeSpace = (($HardDrive.freespace / $HardDrive.size) * 100)
                         Write-PSFMessage -Level Verbose -Message " $ApplicationServer - $($HardDrive.DeviceID) has $FreeSpace %"
-                        if (!$HDErrorValue){
+                        if (!$HDErrorValue) {
                             $HDErrorValue = 2
                         }
                         if ($FreeSpace -lt $HDErrorValue) {
@@ -271,7 +283,7 @@ function Get-D365LBDEnvironmentHealth {
                 foreach ($HardDrive in $HardDrives) {
                     $FreeSpace = (($HardDrive.freespace / $HardDrive.size) * 100)
                     Write-PSFMessage -Level Verbose -Message "$ApplicationServer - $($HardDrive.DeviceID) has $FreeSpace %"
-                    if (!$HDErrorValue){
+                    if (!$HDErrorValue) {
                         $HDErrorValue = 2
                     }
                     if ($FreeSpace -lt $HDErrorValue) {
@@ -322,7 +334,7 @@ function Get-D365LBDEnvironmentHealth {
             }
 
             if ($foundHardDrivewithIssue -eq $true) {
-                $issuelist = $OutputList | Where-Object {$_.Operational -eq "Down" -and $_.Name -eq "Hard Disk Space"}
+                $issuelist = $OutputList | Where-Object { $_.Operational -eq "Down" -and $_.Name -eq "Hard Disk Space" }
                 Write-PSFMessage -Level Error -Message "Error: Found Hard Drive Issues on $issuelist"
             }
         }##Check HD end
@@ -355,9 +367,9 @@ function Get-D365LBDEnvironmentHealth {
             }
         }
         $TotalApplications = (Get-ServiceFabricApplication).Count
-        $HealthyApps = (Get-ServiceFabricApplication | Where-Object {$_.HealthState -eq "OK"}).Count
+        $HealthyApps = (Get-ServiceFabricApplication | Where-Object { $_.HealthState -eq "OK" }).Count
 
-        if ($TotalApplications -eq $HealthyApps){
+        if ($TotalApplications -eq $HealthyApps) {
             Write-PSFMessage -Message "All Service Fabric Applications are healthy $HealthyApps / $TotalApplications" -Level VeryVerbose
             $Properties = @{'Name' = "ServiceFabricApplications"
                 'Details'          = "Healthy: $HealthyApps / Total: $TotalApplications"
@@ -369,12 +381,11 @@ function Get-D365LBDEnvironmentHealth {
             $Output = New-Object -TypeName psobject -Property $Properties
             $OutputList += $Output
         }
-        else{
-            $NotHealthyApps = Get-ServiceFabricApplication | Where-Object {$_.HealthState -ne "OK"}
+        else {
+            $NotHealthyApps = Get-ServiceFabricApplication | Where-Object { $_.HealthState -ne "OK" }
             Write-PSFMessage -Message "Warning: Not all Service Fabric Applications are healthy $HealthyApps / $TotalApplications " -Level VeryVerbose
             Write-PSFMessage -Message "Issue App:" -Level VeryVerbose
-            foreach ($NotHealthyApp in $NotHealthyApps)
-            {
+            foreach ($NotHealthyApp in $NotHealthyApps) {
                 $HealthReport = Get-ServiceFabricApplicationHealth -ApplicationName $NotHealthyApp.ApplicationName
                 Write-PSFMessage -Message "$HealthReport" -Level VeryVerbose
             }
@@ -399,10 +410,10 @@ function Get-D365LBDEnvironmentHealth {
             $httpsurl = $endpoints.Endpoints.$deployedinstancespecificguid
             Write-PSFMessage -Level VeryVerbose -Message "$NodeName is accessible via $httpsurl with a guid $deployedinstancespecificguid"
 
-            if ($httpsurl.Length -gt 3){
+            if ($httpsurl.Length -gt 3) {
                 $Status = "Operational"
             }
-            else{
+            else {
                 $Status = "Down"
             }
             $Properties = @{'Name' = "AXSFGUIDEndpoint"
@@ -420,403 +431,403 @@ function Get-D365LBDEnvironmentHealth {
         $ErrorDateCerts = $CurrentDate.AddDays(-$CertErrorValue)
         $WarningDateCerts = $CurrentDate.AddDays(-$CertWarningValue)
 
-        if ($Config.SessionAuthenticationCertificateExpiresAfter){
-            if ($Config.SessionAuthenticationCertificateExpiresAfter -lt $ErrorDateCerts){
+        if ($Config.SessionAuthenticationCertificateExpiresAfter) {
+            if ($Config.SessionAuthenticationCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "SessionAuthentication"
-                'Status'           = "Down" 
-                'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
-                'Source'           = $Config.SessionAuthenticationCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "SessionAuthentication"
+                    'Status'           = "Down" 
+                    'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
+                    'Source'           = $Config.SessionAuthenticationCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
             elseif ($Config.SessionAuthenticationCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "SessionAuthentication"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
-                'Source'           = $Config.SessionAuthenticationCertificate
-                'Group'            = 'D365Certificates'
+                    'Details'          = "SessionAuthentication"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
+                    'Source'           = $Config.SessionAuthenticationCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                Write-PSFMessage -Level Warning -Message "WARNING: SessionAuthentication is expiring soon $($Config.SessionAuthenticationCertificateExpiresAfter)"
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
-            Write-PSFMessage -Level Warning -Message "WARNING: SessionAuthentication is expiring soon $($Config.SessionAuthenticationCertificateExpiresAfter)"
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
-            }
-            else{
+            else {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "SessionAuthentication"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
-                'Source'           = $Config.SessionAuthenticationCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "SessionAuthentication"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
+                    'Source'           = $Config.SessionAuthenticationCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
         }
-        else{
+        else {
             Write-PSFMessage -Level VeryVerbose -Message "Expiration not found for SessionAuthenticationCertificate"
         }
 
         
-        if ($Config.SFClientCertificateExpiresAfter){
-            if ($Config.SFClientCertificateExpiresAfter -lt $ErrorDateCerts){
+        if ($Config.SFClientCertificateExpiresAfter) {
+            if ($Config.SFClientCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "SFClientCertificate"
-                'Status'           = "Down" 
-                'ExtraInfo'        = "$($Config.SFClientCertificateExpiresAfter)"
-                'Source'           = $Config.SFClientCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "SFClientCertificate"
+                    'Status'           = "Down" 
+                    'ExtraInfo'        = "$($Config.SFClientCertificateExpiresAfter)"
+                    'Source'           = $Config.SFClientCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
             elseif ($Config.SFClientCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "SessionAuthentication"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.SFClientCertificateExpiresAfter)"
-                'Source'           = $Config.SFClientCertificate
-                'Group'            = 'D365Certificates'
+                    'Details'          = "SessionAuthentication"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.SFClientCertificateExpiresAfter)"
+                    'Source'           = $Config.SFClientCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                Write-PSFMessage -Level Warning -Message "WARNING: SFClientCertificate is expiring soon $($Config.SFClientCertificateExpiresAfter)"
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
-            Write-PSFMessage -Level Warning -Message "WARNING: SFClientCertificate is expiring soon $($Config.SFClientCertificateExpiresAfter)"
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
-            }
-            else{
+            else {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "SessionAuthentication"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.SFClientCertificateExpiresAfter)"
-                'Source'           = $Config.SFClientCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "SessionAuthentication"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.SFClientCertificateExpiresAfter)"
+                    'Source'           = $Config.SFClientCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
         }
-        else{
+        else {
             Write-PSFMessage -Level VeryVerbose -Message "Expiration not found for SFClientCertificate"
         }
 
         #SFServerCertificate
 
-        if ($Config.SFServerCertificateExpiresAfter){
-            if ($Config.SFServerCertificateExpiresAfter -lt $ErrorDateCerts){
+        if ($Config.SFServerCertificateExpiresAfter) {
+            if ($Config.SFServerCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "SFServerCertificate"
-                'Status'           = "Down" 
-                'ExtraInfo'        = "$($Config.SFServerCertificateExpiresAfter)"
-                'Source'           = $Config.SFServerCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "SFServerCertificate"
+                    'Status'           = "Down" 
+                    'ExtraInfo'        = "$($Config.SFServerCertificateExpiresAfter)"
+                    'Source'           = $Config.SFServerCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
             elseif ($Config.SFServerCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "SFServerCertificate"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.SFServerCertificateExpiresAfter)"
-                'Source'           = $Config.SFServerCertificate
-                'Group'            = 'D365Certificates'
+                    'Details'          = "SFServerCertificate"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.SFServerCertificateExpiresAfter)"
+                    'Source'           = $Config.SFServerCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                Write-PSFMessage -Level Warning -Message "WARNING: SFServerCertificate is expiring soon $($Config.SFServerCertificateExpiresAfter)"
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
-            Write-PSFMessage -Level Warning -Message "WARNING: SFServerCertificate is expiring soon $($Config.SFServerCertificateExpiresAfter)"
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
-            }
-            else{
+            else {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "SFServerCertificate"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.SFServerCertificateExpiresAfter)"
-                'Source'           = $Config.SFServerCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "SFServerCertificate"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.SFServerCertificateExpiresAfter)"
+                    'Source'           = $Config.SFServerCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
         }
-        else{
+        else {
             Write-PSFMessage -Level VeryVerbose -Message "Expiration not found for SFServerCertificate"
         }
 
 
-        if ($Config.DataEncryptionCertificateExpiresAfter){
-            if ($Config.DataEncryptionCertificateExpiresAfter -lt $ErrorDateCerts){
+        if ($Config.DataEncryptionCertificateExpiresAfter) {
+            if ($Config.DataEncryptionCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "DataEncryptionCertificate"
-                'Status'           = "Down" 
-                'ExtraInfo'        = "$($Config.DataEncryptionCertificateExpiresAfter)"
-                'Source'           = $Config.DataEncryptionCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "DataEncryptionCertificate"
+                    'Status'           = "Down" 
+                    'ExtraInfo'        = "$($Config.DataEncryptionCertificateExpiresAfter)"
+                    'Source'           = $Config.DataEncryptionCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
             elseif ($Config.DataEncryptionCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "DataEncryptionCertificate"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.DataEncryptionCertificateExpiresAfter)"
-                'Source'           = $Config.DataEncryptionCertificate
-                'Group'            = 'D365Certificates'
+                    'Details'          = "DataEncryptionCertificate"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.DataEncryptionCertificateExpiresAfter)"
+                    'Source'           = $Config.DataEncryptionCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                Write-PSFMessage -Level Warning -Message "WARNING: DataEncryptionCertificate is expiring soon $($Config.DataEncryptionCertificateExpiresAfter)"
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
-            Write-PSFMessage -Level Warning -Message "WARNING: DataEncryptionCertificate is expiring soon $($Config.DataEncryptionCertificateExpiresAfter)"
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
-            }
-            else{
+            else {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "DataEncryptionCertificate"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.DataEncryptionCertificateExpiresAfter)"
-                'Source'           = $Config.DataEncryptionCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "DataEncryptionCertificate"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.DataEncryptionCertificateExpiresAfter)"
+                    'Source'           = $Config.DataEncryptionCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
         }
-        else{
+        else {
             Write-PSFMessage -Level VeryVerbose -Message "Expiration not found for DataEncryptionCertificate"
         }
-        if ($Config.DataSigningCertificateExpiresAfter){
-            if ($Config.DataSigningCertificateExpiresAfter -lt $ErrorDateCerts){
+        if ($Config.DataSigningCertificateExpiresAfter) {
+            if ($Config.DataSigningCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "DataSigningCertificate"
-                'Status'           = "Down" 
-                'ExtraInfo'        = "$($Config.DataSigningCertificateExpiresAfter)"
-                'Source'           = $Config.DataSigningCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "DataSigningCertificate"
+                    'Status'           = "Down" 
+                    'ExtraInfo'        = "$($Config.DataSigningCertificateExpiresAfter)"
+                    'Source'           = $Config.DataSigningCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
             elseif ($Config.DataSigningCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "DataSigningCertificate"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.DataSigningCertificateExpiresAfter)"
-                'Source'           = $Config.DataSigningCertificate
-                'Group'            = 'D365Certificates'
+                    'Details'          = "DataSigningCertificate"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.DataSigningCertificateExpiresAfter)"
+                    'Source'           = $Config.DataSigningCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                Write-PSFMessage -Level Warning -Message "WARNING: DataSigningCertificate is expiring soon $($Config.DataSigningCertificateExpiresAfter)"
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
-            Write-PSFMessage -Level Warning -Message "WARNING: DataSigningCertificate is expiring soon $($Config.DataSigningCertificateExpiresAfter)"
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
-            }
-            else{
+            else {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "DataSigningCertificate"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.DataSigningCertificateExpiresAfter)"
-                'Source'           = $Config.DataSigningCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "DataSigningCertificate"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.DataSigningCertificateExpiresAfter)"
+                    'Source'           = $Config.DataSigningCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
         }
-        else{
+        else {
             Write-PSFMessage -Level VeryVerbose -Message "Expiration not found for DataSigningCertificate"
         }
 
-        if ($Config.SessionAuthenticationCertificateExpiresAfter){
-            if ($Config.SessionAuthenticationCertificateExpiresAfter -lt $ErrorDateCerts){
+        if ($Config.SessionAuthenticationCertificateExpiresAfter) {
+            if ($Config.SessionAuthenticationCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "SessionAuthenticationCertificate"
-                'Status'           = "Down" 
-                'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
-                'Source'           = $Config.SessionAuthenticationCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "SessionAuthenticationCertificate"
+                    'Status'           = "Down" 
+                    'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
+                    'Source'           = $Config.SessionAuthenticationCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
             elseif ($Config.SessionAuthenticationCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "SessionAuthenticationCertificate"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
-                'Source'           = $Config.SessionAuthenticationCertificate
-                'Group'            = 'D365Certificates'
+                    'Details'          = "SessionAuthenticationCertificate"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
+                    'Source'           = $Config.SessionAuthenticationCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                Write-PSFMessage -Level Warning -Message "WARNING: SessionAuthenticationCertificate is expiring soon $($Config.SessionAuthenticationCertificateExpiresAfter)"
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
-            Write-PSFMessage -Level Warning -Message "WARNING: SessionAuthenticationCertificate is expiring soon $($Config.SessionAuthenticationCertificateExpiresAfter)"
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
-            }
-            else{
+            else {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "SessionAuthenticationCertificate"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
-                'Source'           = $Config.SessionAuthenticationCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "SessionAuthenticationCertificate"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
+                    'Source'           = $Config.SessionAuthenticationCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
         }
-        else{
+        else {
             Write-PSFMessage -Level VeryVerbose -Message "Expiration not found for SessionAuthenticationCertificate"
         }
 
-        if ($Config.FinancialReportingCertificateExpiresAfter){
-            if ($Config.FinancialReportingCertificateExpiresAfter -lt $ErrorDateCerts){
+        if ($Config.FinancialReportingCertificateExpiresAfter) {
+            if ($Config.FinancialReportingCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "FinancialReportingCertificate"
-                'Status'           = "Down" 
-                'ExtraInfo'        = "$($Config.FinancialReportingCertificateExpiresAfter)"
-                'Source'           = $Config.FinancialReportingCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "FinancialReportingCertificate"
+                    'Status'           = "Down" 
+                    'ExtraInfo'        = "$($Config.FinancialReportingCertificateExpiresAfter)"
+                    'Source'           = $Config.FinancialReportingCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
             elseif ($Config.FinancialReportingCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "FinancialReportingCertificate"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.FinancialReportingCertificateExpiresAfter)"
-                'Source'           = $Config.FinancialReportingCertificate
-                'Group'            = 'D365Certificates'
+                    'Details'          = "FinancialReportingCertificate"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.FinancialReportingCertificateExpiresAfter)"
+                    'Source'           = $Config.FinancialReportingCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                Write-PSFMessage -Level Warning -Message "WARNING: FinancialReportingCertificate is expiring soon $($Config.FinancialReportingCertificateExpiresAfter)"
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
-            Write-PSFMessage -Level Warning -Message "WARNING: FinancialReportingCertificate is expiring soon $($Config.FinancialReportingCertificateExpiresAfter)"
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
-            }
-            else{
+            else {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "FinancialReportingCertificate"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.FinancialReportingCertificateExpiresAfter)"
-                'Source'           = $Config.FinancialReportingCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "FinancialReportingCertificate"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.FinancialReportingCertificateExpiresAfter)"
+                    'Source'           = $Config.FinancialReportingCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
         }
-        else{
+        else {
             Write-PSFMessage -Level VeryVerbose -Message "Expiration not found for FinancialReportingCertificate"
         }
-        if ($Config.ReportingSSRSCertificateExpiresAfter){
-            if ($Config.ReportingSSRSCertificateExpiresAfter -lt $ErrorDateCerts){
+        if ($Config.ReportingSSRSCertificateExpiresAfter) {
+            if ($Config.ReportingSSRSCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "ReportingSSRSCertificate"
-                'Status'           = "Down" 
-                'ExtraInfo'        = "$($Config.ReportingSSRSCertificateExpiresAfter)"
-                'Source'           = $Config.ReportingSSRSCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "ReportingSSRSCertificate"
+                    'Status'           = "Down" 
+                    'ExtraInfo'        = "$($Config.ReportingSSRSCertificateExpiresAfter)"
+                    'Source'           = $Config.ReportingSSRSCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
             elseif ($Config.ReportingSSRSCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "ReportingSSRSCertificate"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.ReportingSSRSCertificateExpiresAfter)"
-                'Source'           = $Config.ReportingSSRSCertificate
-                'Group'            = 'D365Certificates'
+                    'Details'          = "ReportingSSRSCertificate"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.ReportingSSRSCertificateExpiresAfter)"
+                    'Source'           = $Config.ReportingSSRSCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                Write-PSFMessage -Level Warning -Message "WARNING: ReportingSSRSCertificate is expiring soon $($Config.ReportingSSRSCertificateExpiresAfter)"
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
-            Write-PSFMessage -Level Warning -Message "WARNING: ReportingSSRSCertificate is expiring soon $($Config.ReportingSSRSCertificateExpiresAfter)"
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
-            }
-            else{
+            else {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "ReportingSSRSCertificate"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.ReportingSSRSCertificateExpiresAfter)"
-                'Source'           = $Config.ReportingSSRSCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "ReportingSSRSCertificate"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.ReportingSSRSCertificateExpiresAfter)"
+                    'Source'           = $Config.ReportingSSRSCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
         }
-        else{
+        else {
             Write-PSFMessage -Level VeryVerbose -Message "Expiration not found for ReportingSSRSCertificate"
         }
-        if ($Config.LocalAgentCertificateExpiresAfter){
-            if ($Config.LocalAgentCertificateExpiresAfter -lt $ErrorDateCerts){
+        if ($Config.LocalAgentCertificateExpiresAfter) {
+            if ($Config.LocalAgentCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "LocalAgentCertificate"
-                'Status'           = "Down" 
-                'ExtraInfo'        = "$($Config.LocalAgentCertificateExpiresAfter)"
-                'Source'           = $Config.LocalAgentCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "LocalAgentCertificate"
+                    'Status'           = "Down" 
+                    'ExtraInfo'        = "$($Config.LocalAgentCertificateExpiresAfter)"
+                    'Source'           = $Config.LocalAgentCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
             elseif ($Config.LocalAgentCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "LocalAgentCertificate"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.LocalAgentCertificateExpiresAfter)"
-                'Source'           = $Config.LocalAgentCertificate
-                'Group'            = 'D365Certificates'
+                    'Details'          = "LocalAgentCertificate"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.LocalAgentCertificateExpiresAfter)"
+                    'Source'           = $Config.LocalAgentCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                Write-PSFMessage -Level Warning -Message "WARNING: LocalAgentCertificate is expiring soon $($Config.LocalAgentCertificateExpiresAfter)"
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
-            Write-PSFMessage -Level Warning -Message "WARNING: LocalAgentCertificate is expiring soon $($Config.LocalAgentCertificateExpiresAfter)"
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
-            }
-            else{
+            else {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "LocalAgentCertificate"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.LocalAgentCertificateExpiresAfter)"
-                'Source'           = $Config.LocalAgentCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "LocalAgentCertificate"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.LocalAgentCertificateExpiresAfter)"
+                    'Source'           = $Config.LocalAgentCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
         }
-        else{
+        else {
             Write-PSFMessage -Level VeryVerbose -Message "Expiration not found for LocalAgentCertificate"
         }
-        if ($Config.DataEnciphermentCertificateExpiresAfter){
-            if ($Config.DataEnciphermentCertificateExpiresAfter -lt $ErrorDateCerts){
+        if ($Config.DataEnciphermentCertificateExpiresAfter) {
+            if ($Config.DataEnciphermentCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "DataEnciphermentCertificate"
-                'Status'           = "Down" 
-                'ExtraInfo'        = "$($Config.DataEnciphermentCertificateExpiresAfter)"
-                'Source'           = $Config.DataEnciphermentCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "DataEnciphermentCertificate"
+                    'Status'           = "Down" 
+                    'ExtraInfo'        = "$($Config.DataEnciphermentCertificateExpiresAfter)"
+                    'Source'           = $Config.DataEnciphermentCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
             elseif ($Config.DataEnciphermentCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "DataEnciphermentCertificate"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.DataEnciphermentCertificateExpiresAfter)"
-                'Source'           = $Config.DataEnciphermentCertificate
-                'Group'            = 'D365Certificates'
+                    'Details'          = "DataEnciphermentCertificate"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.DataEnciphermentCertificateExpiresAfter)"
+                    'Source'           = $Config.DataEnciphermentCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                Write-PSFMessage -Level Warning -Message "WARNING: DataEnciphermentCertificate is expiring soon $($Config.DataEnciphermentCertificateExpiresAfter)"
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
-            Write-PSFMessage -Level Warning -Message "WARNING: DataEnciphermentCertificate is expiring soon $($Config.DataEnciphermentCertificateExpiresAfter)"
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
-            }
-            else{
+            else {
                 $Properties = @{'Name' = "D365Certificates"
-                'Details'          = "DataEnciphermentCertificate"
-                'Status'           = "Operational" 
-                'ExtraInfo'        = "$($Config.DataEnciphermentCertificateExpiresAfter)"
-                'Source'           = $Config.DataEnciphermentCertificate
-                'Group'            = 'D365Certificates'
-            }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+                    'Details'          = "DataEnciphermentCertificate"
+                    'Status'           = "Operational" 
+                    'ExtraInfo'        = "$($Config.DataEnciphermentCertificateExpiresAfter)"
+                    'Source'           = $Config.DataEnciphermentCertificate
+                    'Group'            = 'D365Certificates'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
             }
         }
-        else{
+        else {
             Write-PSFMessage -Level VeryVerbose -Message "Expiration not found forDataEnciphermentCertificate"
         }
 

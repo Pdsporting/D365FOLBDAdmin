@@ -1,39 +1,41 @@
 function Export-D365LBDAssetModuleVersion {
     <#
-    .SYNOPSIS
-   Looks inside the agent share extracts the version from the zip by using the custom module name. Puts an xml in root for easy idenitification
+    .SYNOPSIS 
+   Exports the version inside downloaded assets of the custom module name and also creates an xml in root for easy idenitification
    .DESCRIPTION
-    Exports 
+    Looks inside the agent share then extracts the version from the zip by using the custom module name. 
+   Exports the version and also creates an xml in root for easy idenitification. 
+   This is also a way to determine if a build has been fully prepped.
    .EXAMPLE
    Export-D365LBDAssetModuleVersion
- 
+ Exports all the assets in the agent share on the specified configurations environment
    .EXAMPLE
-    Export-D365LBDAssetModuleVersion
-
+   $config = get-d365Config
+    Export-D365LBDAssetModuleVersion -config $Config
+    Exports all the assets in the agent share on the specified configurations environment
    .PARAMETER AgentShareLocation
    optional string 
     The location of the Agent Share
    .PARAMETER CustomModuleName
    optional string 
    The name of the custom module you will be using to capture the version number
-
+   .PARAMETER Timeout
+    Integer 
+    Timeout in seconds for how long for the command to run has a default of 120 seconds
    #>
     [alias("Export-D365FOLBDAssetModuleVersion", "Export-D365AssetModuleVersion")]
     [CmdletBinding()]
     param
     (
-        [Parameter(ParameterSetName = 'AgentShare')]
         [Alias('AgentShare')]
         [string]$AgentShareLocation,
         [string]$CustomModuleName,
         [Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,
             Mandatory = $false,
-            HelpMessage = 'D365FO Local Business Data Server Name',
-            ParameterSetName = 'NoConfig')]
+            HelpMessage = 'D365FO Local Business Data Server Name')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
-        [Parameter(ParameterSetName = 'Config',
-            ValueFromPipeline = $True)]
+        [Parameter(ValueFromPipeline = $True)]
         [psobject]$Config,
         [int]$Timeout = 120
         
@@ -46,6 +48,14 @@ function Export-D365LBDAssetModuleVersion {
         if (!$AgentShareLocation) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
             $AgentShareLocation = $Config.AgentShareLocation
+        }
+        if (!$CustomModuleName) {
+            if ($Config.CustomModuleName) {
+                $CustomModuleName = $Config.CustomModuleName
+            }
+            else {
+                Stop-PSFFunction -Message "Error: Custom Module Name must be defined in parameter or in config." -EnableException $true -FunctionName $_
+            }
         }
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         $Filter = "*/Apps/AOS/AXServiceApp/AXSF/InstallationRecords/MetadataModelInstallationRecords/$CustomModuleName*.xml"
@@ -66,7 +76,7 @@ function Export-D365LBDAssetModuleVersion {
                 $job = start-job -ScriptBlock { Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead($using:StandaloneSetupZip) }
                 if (Wait-Job $job -Timeout $Timeout) { Receive-Job $job }else {
                     Write-PSFMessage -Level VeryVerbose -message "Invalid Zip file $StandaloneSetupZip."
-    $invalidfile = $true
+                    $invalidfile = $true
                 }
                 if ($invalidfile -eq $false) {
                     $zip = [System.IO.Compression.ZipFile]::OpenRead($StandaloneSetupZip)
@@ -98,7 +108,6 @@ function Export-D365LBDAssetModuleVersion {
                         $zip.Dispose()
                     }
                     ##Closes Zip
-                    ## $zip.Dispose()
                     $NewfileWithoutVersionPath = $SpecificAssetFolder + "\$CustomModuleName.xml"
                     Write-PSFMessage -Message "$SpecificAssetFolder\$FileName exported" -Level Verbose
 

@@ -1,8 +1,16 @@
 function Restart-D365LBDOrchestratorLastJob {
-    <#
-    .SYNOPSIS
-Restarts the state of the orchestratorjob and runbooktaskid tables last executed jobs
-   #>
+     <#
+   .SYNOPSIS
+  Restarts the state of the orchestratorjob and runbooktaskid tables last executed jobs
+  .DESCRIPTION
+
+  .EXAMPLE
+   
+
+  .EXAMPLE
+
+
+  #>
     [CmdletBinding()]
     [alias("Restart-D365OrchestratorLastJob")]
     param ([Parameter(ValueFromPipeline = $True,

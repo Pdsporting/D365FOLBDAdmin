@@ -1,31 +1,27 @@
 function Get-D365LBDAXSFGuids {
     <#
    .SYNOPSIS
-Need to rethink approach
-
+    Gathers Each AXSF Endpoint details includes its GUID (used for single server issue diagnostics), https endpoint and its current status.
   .DESCRIPTION
-   Exports 
-
+    Gathers Each AXSF Endpoint details includes its GUID (used for single server issue diagnostics), https endpoint and its current status.
   .EXAMPLE
-  Export-D365LBDCertificates
-
+  $config = get-d365Config
+  Get-D365LBDAXSFGuids -config $Config 
+ Gathers Each AXSF Endpoint details based on the configuration that was gathered
   .EXAMPLE
-  Export-D365LBDCertificates -exportlocation "C:/certs" -username Stefan -certthumbprint 'A5234656'
-
-  .PARAMETER ExportLocation
-  optional string 
-  The location where the certificates will export to.
-
-  .PARAMETER Username
-  optional string 
-  The username this will be protected to
-
+  Get-D365LBDAXSFGuids
+ Gathers Each AXSF Endpoint details based on the the local machines environment
+  .PARAMETER Config
+    Custom PSObject
+    Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
+    .PARAMETER ComputerName
+   String
+   The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
   #>
     [alias("Get-D365AXSFGuids")]
     [CmdletBinding()]
     param
     (
-        [int]$Timeout = 120,
         [psobject]$Config,
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME"
     )

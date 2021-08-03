@@ -9,6 +9,9 @@ function Get-D365LBDOrchestrationLogs {
   
    .EXAMPLE
      Get-D365LBDOrchestrationLogs -ComputerName "LBDServerName" -verbose
+    .EXAMPLE
+    $config = Get-D365Config
+     Get-D365OrchestrationLogs -config $config -numberofevents 5
    
    .PARAMETER ComputerName
    String
@@ -23,12 +26,10 @@ function Get-D365LBDOrchestrationLogs {
     param ([Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,
             Mandatory = $false,
-            HelpMessage = 'D365FO Local Business Data Server Name',
-            ParameterSetName = 'NoConfig')]
+            HelpMessage = 'D365FO Local Business Data Server Name')]
         [string]$ComputerName,
         [int]$NumberofEvents = 5,
-        [Parameter(ParameterSetName = 'Config',
-            ValueFromPipeline = $True)]
+        [Parameter(ValueFromPipeline = $True)]
         [psobject]$Config
     )
     BEGIN {

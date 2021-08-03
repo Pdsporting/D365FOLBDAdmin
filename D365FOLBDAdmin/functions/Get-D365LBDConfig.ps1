@@ -4,7 +4,7 @@
    Grabs the configuration of the local business data environment
    .DESCRIPTION
    Grabs the configuration of the local business data environment through logic using the Service Fabric Cluster XML,
-   AXSF.Package.Current.xml and OrchestrationServicePkg.Package.Current.xml
+   AXSF.Package.Current.xml and OrchestrationServicePkg.Package.Current.xml Also loads this modules custom XML (AdditionalEnvironmentDetails.xml) if configured
    .EXAMPLE
    Get-D365LBDConfig
    Will get config from the local machine.
@@ -23,11 +23,10 @@
    The name of the config file to export 
    .PARAMETER CustomModuleName
    optional string 
-   The name of the custom module you will be using to caputre the version number
+   The name of the custom module you will be using to capture the version number
    .PARAMETER HighLevelOnly
    optional switch
    for quicker runs grab the config without verifying or grabbing additional details from the service fabric cluster
-
    #>
     [alias("Get-D365Config")]
     [CmdletBinding()]
@@ -808,7 +807,7 @@ ORDER BY [rh].[restore_date] DESC"
                                         if (!$certexpiration) {
                                             $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value -ErrorAction Stop
                                         }
-                                        if(!$certexpiration) {
+                                        if (!$certexpiration) {
                                             $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\Root | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value -ErrorAction Stop
                                         }
                                     }

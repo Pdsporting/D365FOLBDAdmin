@@ -1,22 +1,26 @@
 function Disable-D365LBDSFAppServers {
     <#
     .SYNOPSIS
-  
+    Disables all the D365 application servers inside of service fabric (not orchestrator nodes).
    .DESCRIPTION
-   
+   Connects to service fabric then disables all the D365 application servers inside of service fabric (not orchestrator nodes).
+   To Enable after disable use the Enable-D365LBDSFAppServers command
    .EXAMPLE
    Disable-D365LBDSFAppServers
-  
+  Disables all the application servers on the local machines environment
    .EXAMPLE
     Disable-D365LBDSFAppServers -ComputerName "LBDServerName" -verbose
-   
+   Disables all the application servers on the specified servers environment
+    .EXAMPLE 
+    $config = get-d365Config
+    Disable-D365LBDSFAppServers -config $Config 
+   Disables all the application servers on the specified configs environment
    .PARAMETER ComputerName
    String
    The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
    .PARAMETER Config
     Custom PSObject
     Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
-
    #>
     [alias("Disable-D365SFAppServers")]
     [CmdletBinding()]
@@ -65,7 +69,7 @@ function Disable-D365LBDSFAppServers {
         $AppNodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType") -or ($_.NodeType -eq "ReportServerType") } 
         $primarynodes = get-servicefabricnode | Where-Object { ($_.NodeType -eq "PrimaryNodeType") } 
         if ($primarynodes.count -gt 0) {
-            Stop-PSFFunction -Message "Error: Primary Node configuration not supported with enable or disable. Restart-D365LBDSFAppServers is supported." -EnableException $true -FunctionName $_
+            Stop-PSFFunction -Message "Error: Primary Node configuration not supported with enable or disable due to architectural issues. Restart-D365LBDSFAppServers is what is recommended." -EnableException $true -FunctionName $_
         }
         foreach ($AppNode in $AppNodes) {
             Disable-ServiceFabricNode -NodeName $AppNode.NodeName -Intent RemoveData -force -timeoutsec 30

@@ -5,9 +5,10 @@ function Send-D365LBDUpdateMSTeams {
   .DESCRIPTION
 
   .EXAMPLE
-  Set-D365LBDOptions -RemoveMR
+  Send-D365LBDUpdateMSTeams -messageType "StatusReport" -MSTeamsURI "htts://fakemicrosoft.office.com/webhookb2/98984684987156465-4654/incominginwebhook/ea5s6d4sa6"
 
   .EXAMPLE
+
 
   #>
     [alias("Send-D365UpdateMSTeams")]

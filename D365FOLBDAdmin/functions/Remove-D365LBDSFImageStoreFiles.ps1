@@ -1,15 +1,16 @@
 function Remove-D365LBDSFImageStoreFiles {
-    <#
+    <# TODO: Needs more testing
     .SYNOPSIS
-  
+  Created to clean service fabric image store. needs more testing.
    .DESCRIPTION
-   
+   Created to clean service fabric image store. needs more testing.
    .EXAMPLE
-   Remove-D365LBDSFImageStoreFiles
-  
+   Remove-D365LBDSFImageStoreFiles 
+  Removes Image store files inside of the local environments Service fabric.
    .EXAMPLE
-    Remove-D365LBDSFImageStoreFiles
-   
+   $config = get-d365Config
+    Remove-D365LBDSFImageStoreFiles -config $config
+    Removes Image store files inside of the defined environments Service fabric.
    .PARAMETER ComputerName
    String
    The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
@@ -23,11 +24,9 @@ function Remove-D365LBDSFImageStoreFiles {
     param([Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,
             Mandatory = $false,
-            HelpMessage = 'D365FO Local Business Data Server Name',
-            ParameterSetName = 'NoConfig')]
+            HelpMessage = 'D365FO Local Business Data Server Name')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
-        [Parameter(ParameterSetName = 'Config',
-            ValueFromPipeline = $True)]
+        [Parameter(ValueFromPipeline = $True)]
         [psobject]$Config)
     BEGIN {
     }

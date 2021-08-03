@@ -1,21 +1,28 @@
 function Enable-D365LBDSFAppServers {
     <#
       .SYNOPSIS
-  
+  Enables all the D365 application servers inside of service fabric (not orchestrator nodes)
    .DESCRIPTION
-   
+   Connects to service fabric then enables all the D365 application servers inside of service fabric (not orchestrator nodes).
    .EXAMPLE
    Enable-D365LBDSFAppServers
-  
+   Enables all the application servers on the local machines environment
    .EXAMPLE
     Enable-D365LBDSFAppServers -ComputerName "LBDServerName" -verbose
-   
+    Enables all the application servers on the specified servers environment
+    .EXAMPLE
+    $config = get-d365Config
+   Enable-D365LBDSFAppServers -config $Config 
+    Enables all the application servers on the specified configurations environment
    .PARAMETER ComputerName
    String
    The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
    .PARAMETER Config
     Custom PSObject
     Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
+    .PARAMETER Timeout 
+    Integer 
+    Timeout in seconds for how long for the command to run has a default of 600 seconds
    #>
     [alias("Enable-D365SFAppServers")]
     [CmdletBinding()]
@@ -36,7 +43,8 @@ function Enable-D365LBDSFAppServers {
     PROCESS {
         if (!$Config) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName
-        }[int]$count = 0
+        }
+        [int]$count = 0
         while (!$connection) {
             do {
                 $OrchestratorServerName = $Config.OrchestratorServerNames | Select-Object -First 1 -Skip $count
@@ -57,7 +65,7 @@ function Enable-D365LBDSFAppServers {
                 }
             } until ($connection -or ($count -eq $($Config.OrchestratorServerNames).Count))
             if (($count -eq $($Config.OrchestratorServerNames).Count) -and (!$connection)) {
-                Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
+                Stop-PSFFunction -Message "Error: Can't connect to Service Fabric" -EnableException $true -FunctionName $_
             }
         }
         $AppNodes = Get-ServiceFabricNode | Where-Object { ($_.NodeType -eq "AOSNodeType") -or ($_.NodeType -eq "MRType") -or ($_.NodeType -eq "ReportServerType") } 

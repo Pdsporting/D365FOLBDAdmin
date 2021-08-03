@@ -1,5 +1,5 @@
 function Import-D365LBDCertificates {
-    <#
+    <# TODO: Need to rethink approach doesnt work smoothly
    .SYNOPSIS
   Looks inside the agent share extracts the version from the zip by using the custom module name. Puts an xml in root for easy idenitification
   .DESCRIPTION

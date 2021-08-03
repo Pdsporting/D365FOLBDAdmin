@@ -30,7 +30,10 @@ function Set-D365LBDOptions {
         [string]$MSTeamsCustomStatus,
         [string]$SQLQueryToRun,
         [string]$EnableUserid,
-        [string]$DisableUserid
+        [string]$DisableUserid,
+        [string]$OtherTaskName,
+        [string]$OtherTaskStatus
+
 
 
     )
@@ -82,6 +85,12 @@ function Set-D365LBDOptions {
                 $newfile = Get-ChildItem $agentsharelocation\scripts\D365FOLBDAdmin\$filenameprename$LastRunbookTaskId.xml
                 $CLIXML = Import-Clixml "$agentsharelocation\scripts\D365FOLBDAdmin\$filenameprename$LastRunbookTaskId.xml"
             } 
+        }
+        if ($OtherTaskName){
+            if (!$OtherTaskStatus){
+                $OtherTaskStatus = "Success"
+            }
+            $CLIXML += @{"$OtherTaskName" = "$OtherTaskStatus" }  
         }
         
         if ($RemoveMR) {

@@ -1,37 +1,38 @@
 function Get-D365LBDDBEvents {
     <#
     .SYNOPSIS
-  Checks the event viewer of the primary and secondary orchestrator nodes.
+   Checks the event viewer of the for the latest Database Synchronization events.
    .DESCRIPTION
-   Checks the event viewer of the primary and secondary orchestrator nodes.
+   Checks the event viewer of the for the latest Database Synchronization events.
    .EXAMPLE
    Get-D365LBDDBEvents 
-  
+   Gets the latest Database Synchronization events on the application servers on the local machines environment
    .EXAMPLE
     Get-D365LBDDBEvents  -ComputerName "LBDServerName" -verbose
-   
+   Gets the latest Database Synchronization events on the application servers on the specified machines environment
+    .EXAMPLE
+    $config = get-d365Config
+    Get-D365DBEvents -config $config -numberofevents 3
+    Gets the latest Database Synchronization events on the application servers on the specified configuration's environment
    .PARAMETER ComputerName
    String
    The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
    .PARAMETER NumberofEvents
    Integer
-   Number of Events to be pulled defaulted to 20
+   Number of Events to be pulled defaulted to 20 (suggest grabbing less for reading easy)
    .PARAMETER Config
     Custom PSObject
     Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
-
    #>
     [CmdletBinding()]
     [alias("Get-D365DBEvents")]
     param ([Parameter(ValueFromPipeline = $True,
             ValueFromPipelineByPropertyName = $True,
             Mandatory = $false,
-            HelpMessage = 'D365FO Local Business Data Server Name',
-            ParameterSetName = 'NoConfig')]
+            HelpMessage = 'D365FO Local Business Data Server Name')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [int]$NumberofEvents = 20,
-        [Parameter(ParameterSetName = 'Config',
-            ValueFromPipeline = $True)]
+        [Parameter(ValueFromPipeline = $True)]
         [psobject]$Config
     )
     BEGIN {
