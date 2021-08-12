@@ -61,12 +61,13 @@ function Get-D365LBDOrchestrationNodes {
             }
         }
         $PartitionId = $(Get-ServiceFabricServiceHealth -ServiceName 'fabric:/LocalAgent/OrchestrationService').PartitionHealthStates | Select-Object PartitionId
-        [string]$PartitionIdString = $PartitionId 
-        $PartitionIdString = $PartitionIdString.Trim("@{PartitionId=")
-        $PartitionIdString = $PartitionIdString.Substring(0, $PartitionIdString.Length - 1)
+        #[string]$PartitionIdString = $PartitionId 
+        $PartitionIDGUID = $PartitionId.PartitionId
+        #$PartitionIdString = $PartitionIdString.Trim("@{PartitionId=")
+        #$PartitionIdString = $PartitionIdString.Substring(0, $PartitionIdString.Length - 1)
        
-        Write-PSFMessage -Message "Looking up PartitionID $PartitionIdString." -Level Verbose
-        $nodes = Get-ServiceFabricReplica -PartitionId "$PartitionIdString"
+        Write-PSFMessage -Message "Looking up PartitionID $PartitionIDGUID." -Level Verbose
+        $nodes = Get-ServiceFabricReplica -PartitionId "$PartitionIDGUID"
         $primary = $nodes | Where-Object { $_.ReplicaRole -eq "Primary" -or $_.ReplicaType -eq "Primary" }
         $secondary = $nodes | Where-Object { $_.ReplicaRole -eq "ActiveSecondary" -or $_.ReplicaType -eq "ActiveSecondary" }
         Write-PSFMessage -Level VeryVerbose -Message "Primary Orchestrator Currently is : $($primary.NodeName) and Secondary Orchestrator: $($secondary.NodeName) "

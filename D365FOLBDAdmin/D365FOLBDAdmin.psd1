@@ -97,7 +97,7 @@
 	'Remove-D365SFOldAssets',
 	'Remove-D365SFLogs',
 	'Send-D365UpdateMSTeams',
-	'Get-D365DependencyHealth',
+	'Get-D365DependencyHealth','Export-D365ConfigReport',
 	'Get-D365ConfigTemplate',
 	"Restart-D365OrchestratorLastJob",
 	"Remove-D365SFImageStoreFiles",'Get-D365AXSFGuids')

@@ -37,7 +37,8 @@ function Restart-D365LBDSFAppServers {
         [int]$Timeout = 600,
         [switch]$waittillhealthy,
         [switch]$RebootWholeOS,
-        [switch]$RebootWholeOSIncludingOrch
+        [switch]$RebootWholeOSIncludingOrch,
+        [int]$TimeToWaitforServiceFabrictoComeup = 30
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
@@ -97,6 +98,33 @@ function Restart-D365LBDSFAppServers {
             foreach ($AppNode in $AppNodes) {
                 Restart-ServiceFabricNode -NodeName $AppNode.NodeName -CommandCompletionMode Verify -Timeout 200
             }
+        }
+        [int]$count = 0
+        while (!$connection) {
+            do {
+                $OrchestratorServerName = $Config.OrchestratorServerNames | Select-Object -First 1 -Skip $count
+                Write-PSFMessage -Message "Verbose: Disconnected Connection Reaching out to $OrchestratorServerName to try and connect to the service fabric." -Level Verbose
+                if ($count -eq 0){
+                    if ($waittillhealthy){
+                        Write-PSFMessage -Message "Verbose: Waiting $TimeToWaitforServiceFabrictoComeup seconds for service fabric to be able to be connected to." -Level Verbose
+                        Start-Sleep -Seconds $TimeToWaitforServiceFabrictoComeup -Verbose
+                    }
+                }
+                $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
+                if (!$module) {
+                    $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
+                }
+                Write-PSFMessage -Message "-ConnectionEndpoint $($config.SFConnectionEndpoint) -X509Credential -FindType FindByThumbprint -FindValue $($config.SFServerCertificate) -ServerCertThumbprint $($config.SFServerCertificate) -StoreLocation LocalMachine -StoreName My" -Level Verbose
+                $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                $count = $count + 1
+                if (!$connection) {
+                    $trialEndpoint = "https://$OrchestratorServerName" + ":198000"
+                    $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                }
+                if (!$connection) {
+                    Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
+                }
+            } until ($connection -or ($count -eq $($Config.OrchestratorServerNames).Count))
         }
       
         Start-Sleep -Seconds 5
