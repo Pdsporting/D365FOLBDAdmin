@@ -61,10 +61,7 @@ function Get-D365LBDOrchestrationNodes {
             }
         }
         $PartitionId = $(Get-ServiceFabricServiceHealth -ServiceName 'fabric:/LocalAgent/OrchestrationService').PartitionHealthStates | Select-Object PartitionId
-        #[string]$PartitionIdString = $PartitionId 
         $PartitionIDGUID = $PartitionId.PartitionId
-        #$PartitionIdString = $PartitionIdString.Trim("@{PartitionId=")
-        #$PartitionIdString = $PartitionIdString.Substring(0, $PartitionIdString.Length - 1)
        
         Write-PSFMessage -Message "Looking up PartitionID $PartitionIDGUID." -Level Verbose
         $nodes = Get-ServiceFabricReplica -PartitionId "$PartitionIDGUID"
@@ -80,7 +77,7 @@ function Get-D365LBDOrchestrationNodes {
             'SecondaryLastinBuildDuration' = $secondary.LastinBuildDuration;
             'PrimaryHealthState'           = $primary.HealthState;
             'SecondaryHealthState'         = $secondary.HealthState;
-            'PartitionId'                  = $PartitionIdString;
+            'PartitionId'                  = $PartitionIDGUID;
         }
     }
     END {

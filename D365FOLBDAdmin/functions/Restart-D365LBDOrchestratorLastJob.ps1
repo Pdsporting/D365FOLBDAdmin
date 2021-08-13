@@ -135,11 +135,10 @@ function Restart-D365LBDOrchestratorLastJob {
         if ($connection) {
             Write-PSFMessage -Level VeryVerbose -Message "Connected to Service Fabric"
             $PartitionId = $(Get-ServiceFabricServiceHealth -ServiceName 'fabric:/LocalAgent/OrchestrationService').PartitionHealthStates | Select-Object PartitionId
-            [string]$PartitionIdString = $PartitionId 
-            $PartitionIdString = $PartitionIdString.Trim("@{PartitionId=")
-            $PartitionIdString = $PartitionIdString.Substring(0, $PartitionIdString.Length - 1)
        
-            $nodes = Get-ServiceFabricReplica -PartitionId "$PartitionIdString"
+        $PartitionIDGUID = $PartitionId.PartitionId
+       
+            $nodes = Get-ServiceFabricReplica -PartitionId $PartitionIDGUID
             $primary = $nodes | Where-Object { $_.ReplicaRole -eq "Primary" -or $_.ReplicaType -eq "Primary" }
             $secondary = $nodes | Where-Object { $_.ReplicaRole -eq "ActiveSecondary" -or $_.ReplicaType -eq "ActiveSecondary" }
             New-Object -TypeName PSObject -Property `
@@ -151,7 +150,7 @@ function Restart-D365LBDOrchestratorLastJob {
                 'SecondaryLastinBuildDuration' = $secondary.LastinBuildDuration;
                 'PrimaryHealthState'           = $primary.HealthState;
                 'SecondaryHealthState'         = $secondary.HealthState;
-                'PartitionId'                  = $PartitionIdString;
+                'PartitionId'                  = $PartitionIDGUID;
             }
         }
     }

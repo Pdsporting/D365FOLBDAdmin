@@ -86,10 +86,10 @@ function Get-D365LBDDBEvents {
             foreach ($event in $events) {
                 if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.")) -and $SyncStatusFound -eq $false) {
                     if ($event.message -contains "Table synchronization failed.") {
-                        Write-PSFMessage -Message "Found a DB Sync Failure $event" -Level Verbose
+                        Write-PSFMessage -Message "Found a DB Sync Failure $($event.ServerWithLatestLog) ($($event.TimeCreated)" -Level Verbose
                     }
                     if ($event.message -contains "Database Synchronize Succeeded.") {
-                        Write-PSFMessage -Message "Found a DB Sync Success $event" -Level Verbose
+                        Write-PSFMessage -Message "Found a DB Sync Success $($event.ServerWithLatestLog) ($($event.TimeCreated)" -Level Verbose
                     }
                     $SyncStatusFound = $true
                 }

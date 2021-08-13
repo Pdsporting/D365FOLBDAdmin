@@ -164,7 +164,7 @@ function Restart-D365LBDSFAppServers {
                     } until ($health.aggregatedhealthstate -eq "Ok" -or $timer -gt $Timeout)
                 }
                 if ($timer -gt $Timeout) {
-                    Write-PSFMessage -Message "Warning: Timeout occured" -Level Warning
+                    Write-PSFMessage -Message "Warning: Timeout occured $Timeout seconds" -Level Warning
                 }
             }
 
