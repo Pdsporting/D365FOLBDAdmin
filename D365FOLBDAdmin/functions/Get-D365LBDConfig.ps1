@@ -109,7 +109,7 @@
                     }
                 }
             }
-            $fabricfolder = get-childitem "\\$OrchestratorServerName\C$\ProgramData\SF\*\Fabric" | Sort-Object { $_.LastWriteTime } | Select-Object -First 1
+            $fabricfolder = get-childitem "\\$OrchestratorServerName\C$\ProgramData\SF\*\Fabric" | Sort-Object { $_.LastWriteTime }  -Descending | Select-Object -First 1
             if ($(Test-Path "$fabricfolder\clusterManifest.current.xml") -eq $True) {
                 Write-PSFMessage -Message "Gathering Current Manifest from $ComputerName as it exists"
                 $ClusterManifestXMLFile = get-childitem "$fabricfolder\clusterManifest.current.xml"
@@ -198,7 +198,7 @@
             }
 
             $AgentShareLocation = $downloadfolderLocation.Value
-            $AgentShareWPConfigJson = Get-ChildItem "$AgentShareLocation\wp\*\StandaloneSetup-*\config.json" | Sort-Object { $_.CreationTime } | Select-Object -First 1
+            $AgentShareWPConfigJson = Get-ChildItem "$AgentShareLocation\wp\*\StandaloneSetup-*\config.json" | Sort-Object { $_.CreationTime } -Descending | Select-Object -First 1
 
 
             if ($AgentShareWPConfigJson) {
@@ -214,7 +214,7 @@
                 $TenantID = ""
                 $LCSEnvironmentName = ""
             }
-            $LCSProjectID = $($($(Get-ChildItem $AgentShareLocation\assets\*\*\*\packages | Sort-Object { $_.CreationTime } | Where-Object { $_.Name -ne "chk" -and $_.Name -ne "topology.xml" -and $_.Name -ne "ControlFile.txt" } | Select-Object -First 1).Parent).Parent).Name
+            $LCSProjectID = $($($(Get-ChildItem $AgentShareLocation\assets\*\*\*\packages | Sort-Object { $_.CreationTime } -Descending | Where-Object { $_.Name -ne "chk" -and $_.Name -ne "topology.xml" -and $_.Name -ne "ControlFile.txt" } | Select-Object -First 1).Parent).Parent).Name
             if ($LCSProjectID -and $LCSEnvironmentId) {
                 $LCSEnvironmentURL = "https://lcs.dynamics.com/v2/EnvironmentDetailsV3New/$LCSProjectID" + "?" + "EnvironmentId=$LCSEnvironmentId"
             }
@@ -236,7 +236,7 @@
                 }
             }
             
-            $AXServiceConfigXMLFile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config" | Sort-Object { $_.CreationTime } | Select-Object -First 1
+            $AXServiceConfigXMLFile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\work\Applications\AXSFType_App*\AXSF.Code*\AXService.exe.config" | Sort-Object { $_.CreationTime } -Descending | Select-Object -First 1
             Write-PSFMessage -Message "Reading $AXServiceConfigXMLFile" -Level Verbose 
             if (!$AXServiceConfigXMLFile) {
                 Write-PSFMessage -Message "Warning: AXSF doesnt seem installed; config cannot be found" -Level Warning
@@ -303,7 +303,7 @@
            
             ##checking for after deployment added servers
             try {
-                $currentclustermanifestxmlfile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\clustermanifest.current.xml" | Sort-Object { $_.CreationTime } | Select-Object -First 1
+                $currentclustermanifestxmlfile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\clustermanifest.current.xml" | Sort-Object { $_.CreationTime } -Descending| Select-Object -First 1
                 [xml]$currentclustermanifestxml = Get-Content $currentclustermanifestxmlfile
                 $AXSFServerListToCompare = $currentclustermanifestxml.clusterManifest.Infrastructure.NodeList.Node | Where-Object { $_.NodeTypeRef -eq 'AOSNodeType' -or $_.NodeTypeRef -eq 'PrimaryNodeType' }
                 $SFClusterCertificate = $(($($currentclustermanifestxml.ClusterManifest.FabricSettings.Section | Where-Object { $_.Name -eq "Security" })).Parameter | Where-Object { $_.Name -eq "ClusterCertThumbprints" }).value
@@ -681,7 +681,7 @@ ORDER BY [rh].[restore_date] DESC"
                     }
                 }
             }
-            $WPAssetIDTXT = Get-ChildItem $AgentShareLocation\wp\*\AssetID.txt |  Sort-Object LastWriteTime | Select-Object -First 1
+            $WPAssetIDTXT = Get-ChildItem $AgentShareLocation\wp\*\AssetID.txt |  Sort-Object LastWriteTime -Descending | Select-Object -First 1
             if ($WPAssetIDTXT) {
                 $WPAssetIDTXTContent = Get-Content $WPAssetIDTXT.FullName
                 $DeploymentAssetIDinWPFolder = $WPAssetIDTXTContent[0] -replace "AssetID: ", ""
