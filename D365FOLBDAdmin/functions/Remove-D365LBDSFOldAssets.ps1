@@ -98,7 +98,7 @@ function Remove-D365LBDSFOldAssets {
 
         }
         Write-PSFMessage -Level Verbose -Message "Starting Clean on $AssetsFolderinAgentShareLocation"
-        $FilesThatAreBeingDeleted = Get-ChildItem $AssetsFolderinAgentShareLocation | Where-Object { $_.Name -ne "chk" -and $_.Name -ne "topology.xml" -and $_.Name -ne "$AlreadyDeployedAssetIDInWPFolder" -and $_.CreateDate -lt $Onedayold -and $_.Name -ne "ControlFile.txt" } | Sort-Object LastWriteTime | Select-Object -SkipLast $NumberofAssetsToKeep
+        $FilesThatAreBeingDeleted = Get-ChildItem $AssetsFolderinAgentShareLocation | Where-Object { $_.Name -ne "chk" -and $_.Name -ne "topology.xml" -and $_.Name -ne "$AlreadyDeployedAssetIDInWPFolder" -and $_.CreateDate -lt $Onedayold -and $_.Name -ne "ControlFile.txt" } | Sort-Object CreationTime -Descending | Select-Object -SkipLast $NumberofAssetsToKeep
         $FileCount = $FilesThatAreBeingDeleted.Count
         if ($FileCount -or $FileCount -ne 0) {
             $FilesThatAreBeingDeleted.FullName | Remove-Item -Force -Recurse

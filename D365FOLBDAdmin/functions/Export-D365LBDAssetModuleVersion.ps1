@@ -59,7 +59,7 @@ function Export-D365LBDAssetModuleVersion {
         }
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         $Filter = "*/Apps/AOS/AXServiceApp/AXSF/InstallationRecords/MetadataModelInstallationRecords/$CustomModuleName*.xml"
-        $AssetFolders = Get-ChildItem "$AgentShareLocation\assets" | Where-Object { $_.Name -ne "topology.xml" -and $_.Name -ne "chk" } | Sort-Object LastWriteTime 
+        $AssetFolders = Get-ChildItem "$AgentShareLocation\assets" | Where-Object { $_.Name -ne "topology.xml" -and $_.Name -ne "chk" } | Sort-Object LastWriteTime -Descending
 
         foreach ($AssetFolder in $AssetFolders ) {
             Write-PSFMessage -Message "Checking $AssetFolder" -Level Verbose
