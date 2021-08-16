@@ -36,7 +36,7 @@ function Export-D365LBDConfigReport {
         [Parameter(ValueFromPipeline = $True)]
         [psobject]$Config,
         [switch]$Detailed,
-        [switch]$RunningQueries,
+        [switch]$QueriesandEvents,
         [Parameter(Mandatory = $True)]
         [string]$ExportLocation, ##mandatory should end in html
         [string]$CustomModuleName
@@ -267,7 +267,7 @@ function Export-D365LBDConfigReport {
             $html += "</table>"
         }
         
-        if ($RunningQueries) {
+        if ($QueriesandEvents) {
             <# Source: https://stackoverflow.com/questions/8423541/how-do-you-run-a-sql-server-query-from-powershell
 #>
             function Invoke-SQL {
@@ -292,11 +292,31 @@ function Export-D365LBDConfigReport {
                 $connection.Close()
                 $dataSet.Tables
             }
+
             $SqlQueryToGetRunningSQL = "SELECT stext.TEXT,req.total_elapsed_time,req.session_id,req.status,req.command FROM sys.dm_exec_requests req   CROSS APPLY sys.dm_exec_sql_text(sql_handle) stext" 
             $AXDatabaseName = $Config.AXDatabaseName
             $AXDatabaseServer = $Config.AXDatabaseServer
             $SqlresultsToGetRunningSQL = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SqlQueryToGetRunningSQL 
+            $html += "<h2>Running Queries </h2>"
             $html += "$SqlresultsToGetRunningSQL"
+            $html += "<h2>Last Orchestrator Events: </h2>"
+            $orchevents = Get-D365OrchestrationLogs -config $Config -NumberofEvents 10
+            $html += "<p></p><table style=""width:100%"" class=""OrchLogs"">  <tr>    <th>Server</th>    <th>MessageType</th>    <th>DateTime</th> <th>EventMessage</th><th>EventDetails</th> </tr>"
+            
+            foreach ($orchevent in $orchevents) {
+    
+                $html += "<tr><td>$($orchevent.MachineName)</td><td>$($orchevent.Message)</td><td>$($orchevent.TimeCreated)</td><td>$($orchevent.EventMessage)</td><td>$($orchevent.EventDetails)</td></tr>"
+            }
+            $html += "</table>"
+
+            $html += "<h2>Last Database Synchronize Events: </h2>"
+            $dbevents = Get-D365DBEvents -config $Config -NumberofEvents 10
+            $html += "<p></p><table style=""width:100%"" class=""OrchLogs"">  <tr>    <th>Server</th>    <th>MessageType</th>    <th>DateTime</th> <th>EventMessage</th><th>EventDetails</th> </tr>"
+            foreach ($dbevent in $dbevents) {
+    
+                $html += "<tr><td>$($dbevent.MachineName)</td><td>$($dbevent.Message)</td><td>$($dbevent.TimeCreated)</td><td>$($dbevent.EventMessage)</td><td>$($dbevent.EventDetails)</td></tr>"
+            }
+            $html += "</table>"
 
         }
         $html += "</body></html>"
