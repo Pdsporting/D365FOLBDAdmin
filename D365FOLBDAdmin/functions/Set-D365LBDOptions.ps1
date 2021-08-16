@@ -106,7 +106,7 @@ function Set-D365LBDOptions {
             Write-PSFMessage -Level Verbose -Message "Attempting to Remove MR"
             if ($PreDeployment -eq $True) {
                 $JsonLocation = Get-ChildItem $AgentShareLocation\wp\*\StandaloneSetup-*\SetupModules.json | Sort-Object { $_.CreationTime } -Descending | Select-Object -First 1 
-                $JsonLocationRoot = Get-ChildItem $AgentShareLocation\wp\*\StandaloneSetup-*\
+                $JsonLocationRoot = Get-ChildItem $AgentShareLocation\wp\*\StandaloneSetup-*\  | Sort-Object { $_.CreationTime } -Descending | Select-Object -First 1
                 copy-item $JsonLocation.fullName -Destination $AgentShareLocation\OriginalSetupModules.json
                 $json = Get-Content $JsonLocation.FullName -Raw | ConvertFrom-Json
                 $json.components = $json.components | Where-Object { $_.name -ne 'financialreporting' }
