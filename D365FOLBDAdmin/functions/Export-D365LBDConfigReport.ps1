@@ -36,6 +36,7 @@ function Export-D365LBDConfigReport {
         [Parameter(ValueFromPipeline = $True)]
         [psobject]$Config,
         [switch]$Detailed,
+        [switch]$RunningQueries,
         [Parameter(Mandatory = $True)]
         [string]$ExportLocation, ##mandatory should end in html
         [string]$CustomModuleName
@@ -64,13 +65,13 @@ function Export-D365LBDConfigReport {
             $healthissues = $Health | Where-Object { $_.Status -eq "Down" }
         }
         $html = "<html> <body>"
-        if ($Detailed){
+        if ($Detailed) {
             $html += "<h1><a href = ""$($Config.ClientURL)"">$($Config.LCSEnvironmentName)</a> </h1>"
         }
-        else{
+        else {
             $html += "<h1>$($Config.LCSEnvironmentName)</h1>"
         }  
-        if (!$CustomModuleName){
+        if (!$CustomModuleName) {
             $CustomModuleName = $Config.CustomModuleName
         }
         if ($CustomModuleName) {
@@ -264,6 +265,39 @@ function Export-D365LBDConfigReport {
                 $html += "<tr><td>$($guid.Source)</td><td>$($guid.Details)</td><td><a href=""$($guid.ExtraInfo)"">$($guid.ExtraInfo)</a></td></tr>"
             }
             $html += "</table>"
+        }
+        
+        if ($RunningQueries) {
+            <# Source: https://stackoverflow.com/questions/8423541/how-do-you-run-a-sql-server-query-from-powershell
+#>
+            function Invoke-SQL {
+                param(
+                    [string] $dataSource = ".\SQLEXPRESS",
+                    [string] $database = "MasterData",
+                    [string] $sqlCommand = $(throw "Please specify a query.")
+                )
+
+                $connectionString = "Data Source=$dataSource; " +
+                "Integrated Security=SSPI; " +
+                "Initial Catalog=$database"
+
+                $connection = new-object system.data.SqlClient.SQLConnection($connectionString)
+                $command = new-object system.data.sqlclient.sqlcommand($sqlCommand, $connection)
+                $connection.Open()
+    
+                $adapter = New-Object System.Data.sqlclient.sqlDataAdapter $command
+                $dataset = New-Object System.Data.DataSet
+
+                $adapter.Fill($dataSet) | Out-Null
+                $connection.Close()
+                $dataSet.Tables
+            }
+            $SqlQueryToGetRunningSQL = "SELECT stext.TEXT,req.total_elapsed_time,req.session_id,req.status,req.command FROM sys.dm_exec_requests req   CROSS APPLY sys.dm_exec_sql_text(sql_handle) stext" 
+            $AXDatabaseName = $Config.AXDatabaseName
+            $AXDatabaseServer = $Config.AXDatabaseServer
+            $SqlresultsToGetRunningSQL = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SqlQueryToGetRunningSQL 
+            $html += "$SqlresultsToGetRunningSQL"
+
         }
         $html += "</body></html>"
         $html |  Out-File "$ExportLocation"  -Verbose

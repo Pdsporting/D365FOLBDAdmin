@@ -279,10 +279,12 @@
                         $CustomModuleNameinConfig = $($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName.'#text').TrimStart()
                     }
                     else {
-                        $CustomModuleNameinConfig = $($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName).TrimStart()
+                        if ($($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName)) {
+                            $CustomModuleNameinConfig = $($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName).TrimStart()
+                        }
                     }
-                    $CustomModuleNameinConfig = $CustomModuleNameinConfig.TrimEnd()
                     if ($CustomModuleNameinConfig.Length -gt 0) {
+                        $CustomModuleNameinConfig = $CustomModuleNameinConfig.TrimEnd()
                         $CustomModuleName = $CustomModuleNameinConfig
                     }
                 }
@@ -303,7 +305,7 @@
            
             ##checking for after deployment added servers
             try {
-                $currentclustermanifestxmlfile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\clustermanifest.current.xml" | Sort-Object { $_.CreationTime } -Descending| Select-Object -First 1
+                $currentclustermanifestxmlfile = get-childitem "\\$AXSFConfigServerName\C$\ProgramData\SF\*\Fabric\clustermanifest.current.xml" | Sort-Object { $_.CreationTime } -Descending | Select-Object -First 1
                 [xml]$currentclustermanifestxml = Get-Content $currentclustermanifestxmlfile
                 $AXSFServerListToCompare = $currentclustermanifestxml.clusterManifest.Infrastructure.NodeList.Node | Where-Object { $_.NodeTypeRef -eq 'AOSNodeType' -or $_.NodeTypeRef -eq 'PrimaryNodeType' }
                 $SFClusterCertificate = $(($($currentclustermanifestxml.ClusterManifest.FabricSettings.Section | Where-Object { $_.Name -eq "Security" })).Parameter | Where-Object { $_.Name -eq "ClusterCertThumbprints" }).value
@@ -388,9 +390,15 @@
                         $replicainstanceIdofnode = $(get-servicefabricreplica -partition $ServiceFabricPartitionIdForAXSF | Where-Object { $_.NodeName -eq "$NodeName" }).InstanceId
                         $ReplicaDetails = Get-Servicefabricdeployedreplicadetail -nodename $nodename -partitionid $ServiceFabricPartitionIdForAXSF -ReplicaOrInstanceId $replicainstanceIdofnode -replicatordetail
                         $endpoints = $ReplicaDetails.deployedservicereplicainstance.address | ConvertFrom-Json
-                        $deployedinstancespecificguid = $($endpoints.Endpoints | Get-Member | Where-Object { $_.MemberType -eq "NoteProperty" }).Name
-                        $httpsurl = $endpoints.Endpoints.$deployedinstancespecificguid
-                        Write-PSFMessage -Level VeryVerbose -Message "$NodeName is accessible via $httpsurl with a guid $deployedinstancespecificguid "
+                        if ($endpoints.Endpoints){
+                            $deployedinstancespecificguid = $($endpoints.Endpoints | Get-Member | Where-Object { $_.MemberType -eq "NoteProperty" }).Name
+                            $httpsurl = $endpoints.Endpoints.$deployedinstancespecificguid
+                            Write-PSFMessage -Level VeryVerbose -Message "$NodeName is accessible via $httpsurl with a guid $deployedinstancespecificguid "
+                        }
+                        else{
+                            Write-PSFMessage -Level VeryVerbose -Message "Warning: $nodename doesnt have an endpoint. Likely AXSF is down on that node"
+                        }
+                       
                     }
                     
                 }
