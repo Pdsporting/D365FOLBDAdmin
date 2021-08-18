@@ -66,7 +66,7 @@ function Get-D365LBDOrchestrationNodes {
         Write-PSFMessage -Message "Looking up PartitionID $PartitionIDGUID." -Level Verbose
         $nodes = Get-ServiceFabricReplica -PartitionId "$PartitionIDGUID"
         $primary = $nodes | Where-Object { $_.ReplicaRole -eq "Primary" -or $_.ReplicaType -eq "Primary" }
-        $secondary = $nodes | Where-Object { $_.ReplicaRole -eq "ActiveSecondary" -or $_.ReplicaType -eq "ActiveSecondary" }
+        $secondary = $nodes | Where-Object { $_.ReplicaRole -eq "ActiveSecondary" -or $_.ReplicaType -eq "ActiveSecondary" } | Select -First 1
         Write-PSFMessage -Level VeryVerbose -Message "Primary Orchestrator Currently is : $($primary.NodeName) and Secondary Orchestrator: $($secondary.NodeName) "
         New-Object -TypeName PSObject -Property `
         @{'PrimaryNodeName'                = $primary.NodeName;

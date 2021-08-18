@@ -140,7 +140,7 @@ function Restart-D365LBDOrchestratorLastJob {
        
             $nodes = Get-ServiceFabricReplica -PartitionId $PartitionIDGUID
             $primary = $nodes | Where-Object { $_.ReplicaRole -eq "Primary" -or $_.ReplicaType -eq "Primary" }
-            $secondary = $nodes | Where-Object { $_.ReplicaRole -eq "ActiveSecondary" -or $_.ReplicaType -eq "ActiveSecondary" }
+            $secondary = $nodes | Where-Object { $_.ReplicaRole -eq "ActiveSecondary" -or $_.ReplicaType -eq "ActiveSecondary" } | Select -First 1
             New-Object -TypeName PSObject -Property `
             @{'PrimaryNodeName'                = $primary.NodeName;
                 'SecondaryNodeName'            = $secondary.NodeName;

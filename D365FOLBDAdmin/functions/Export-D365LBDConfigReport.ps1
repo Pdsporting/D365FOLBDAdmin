@@ -298,7 +298,14 @@ function Export-D365LBDConfigReport {
             $AXDatabaseServer = $Config.AXDatabaseServer
             $SqlresultsToGetRunningSQL = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SqlQueryToGetRunningSQL 
             $html += "<h2>Running Queries </h2>"
-            $html += "$SqlresultsToGetRunningSQL"
+            $html += "<p></p><table style=""width:100%"" class=""SQLQueries"">  <tr>    <th>Command Type</th>    <th>Command</th>    <th>Elapsed Time</th> <th>Session ID</th> <th>Status</th> </tr>"
+            
+             foreach ($SQLResult in $SqlresultsToGetRunningSQL) {
+    
+                $html += "<tr><td>$($SQLResult.command)</td><td>$($SQLResult.TEXT)</td><td>$($SQLResult.total_elapsed_time)</td><td>$($SQLResult.session_id)</td><td>$($SQLResult.status)</td></tr>"
+            }
+            $html += "</table>"
+
             $html += "<h2>Last Orchestrator Events: </h2>"
             $orchevents = Get-D365OrchestrationLogs -config $Config -NumberofEvents 10
             $html += "<p></p><table style=""width:100%"" class=""OrchLogs"">  <tr>    <th>Server</th>    <th>MessageType</th>    <th>DateTime</th> <th>EventMessage</th><th>EventDetails</th> </tr>"
