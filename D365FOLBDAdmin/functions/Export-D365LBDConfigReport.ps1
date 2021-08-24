@@ -60,9 +60,9 @@ function Export-D365LBDConfigReport {
         $DependencyCheck = Get-D365LBDDependencyHealth -Config $config
         $DependencyGroups = $($DependencyCheck.Group | Select-Object -unique)
         $HealthText = "<p class=""Success""><b>D365 Health looks great</b></p>"
-        if ($Health.Status -contains "Down") {
+        if ($Health.State -contains "Down") {
             $HealthText = "<p class=""issue""><b>D365 Health issues:</b></p>"
-            $healthissues = $Health | Where-Object { $_.Status -eq "Down" }
+            $healthissues = $Health | Where-Object { $_.State -eq "Down" }
         }
         $html = "<html> <body>"
         if ($Detailed) {
@@ -100,9 +100,9 @@ function Export-D365LBDConfigReport {
         $html += "</ul>"
         if ($DependencyCheck.Count -gt 0) {
             $DependencyCheckText = "<p class=""Success""><b>D365 Environment Dependencies Health looks great.</b></p>"
-            if ($DependencyCheck.Status -contains "Down") {
+            if ($DependencyCheck.State -contains "Down") {
                 $DependencyCheckText = "<p class=""issue""><b>D365 Health issues:</b></p>"
-                $DependencyCheckissues = $DependencyCheck | Where-Object { $_.Status -eq "Down" }
+                $DependencyCheckissues = $DependencyCheck | Where-Object { $_.State -eq "Down" }
             }
             $html += "$DependencyCheckText"
             if ($DependencyCheckissues) {
