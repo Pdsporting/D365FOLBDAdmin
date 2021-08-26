@@ -1,9 +1,9 @@
 
-function Remove-D365LBDStuckApps {
+function Remove-D365LBDSFInstalledFinancialReporting {
     <#
-  ##created for deployment bug when the local agent can't clean up properly this was fixed in later local agent versions but still has value when but use only in extreme situations
-  #>
-    [alias("Remove-D365StuckApps")]
+ ##created for deployment bug when the local agent can't clean up properly this was fixed in later local agent versions but still has value when but use only in extreme situations
+ #>
+    [alias("Remove-D365SFInstalledFinancialReporting")]
     [CmdletBinding()]
     param (
         [string]$SFServerCertificate,
@@ -63,7 +63,7 @@ function Remove-D365LBDStuckApps {
             $environmentwp = get-childitem $(Join-path $config.AgentShareLocation -ChildPath "\wp")
             $archivefolder = $(Join-path $config.AgentShareLocation -ChildPath "\archive")
         }
-        
+       
         if ((Test-Path $archivefolder) -eq $false) {
             Write-PSFMessage -Message "Creating archive folder" -Level Verbose
             mkdir $archivefolder
@@ -74,24 +74,14 @@ function Remove-D365LBDStuckApps {
                 Write-PSFMessage -Level VeryVerbose -Message "WP Folder already cleaned up"
             }
         }
-        
-        Write-PSFMessage -Message "Deleting applications inside of Service Fabric" -Level Verbose
+       
+        Write-PSFMessage -Message "Deleting Financial Reporting applications inside of Service Fabric" -Level Verbose
 
-        $applicationNamesToIgnore = @('fabric:/LocalAgent', 'fabric:/Agent-Monitoring', 'fabric:/Agent-LBDTelemetry')
-        $applicationTypeNamesToIgnore = @('MonitoringAgentAppType-Agent', 'LocalAgentType', 'LBDTelemetryType-Agent')
- 
-        Get-ServiceFabricApplication |  Where-Object { $_.ApplicationName -notin $applicationNamesToIgnore } |    Remove-ServiceFabricApplication -Force
- 
-        Get-ServiceFabricApplicationType | Where-Object { $_.ApplicationTypeName -notin $applicationTypeNamesToIgnore } |   Unregister-ServiceFabricApplicationType -Force
+        Get-ServiceFabricApplication |  Where-Object { $_.ApplicationName -eq "fabric:/FinancialReporting" } |  Remove-ServiceFabricApplication -Force
+        Get-ServiceFabricApplicationType |  Where-Object { $_.ApplicationTypeName -eq "FinancialReportingType" } |      Unregister-ServiceFabricApplicationType -Force
 
-        if (!$environmentwp) {
-        }
-        else {
-            Write-PSFMessage "Moving $($environmentwp.FullName) to $archivefolder " -Level VeryVerbose
-            Move-Item -Path $environmentwp.FullName -Destination $archivefolder -Force -Verbose
-        }
-    
-        Write-PSFMessage -Level Verbose -Message "Trigger deployment/retry in LCS"
+     
+       
     }
     END {
     }

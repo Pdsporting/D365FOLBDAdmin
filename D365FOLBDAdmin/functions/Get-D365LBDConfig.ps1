@@ -487,7 +487,7 @@
             }
             try {
                 if ($CustomModuleName) {
-                    $path = Get-ChildItem "$agentsharelocation\wp\*\StandaloneSetup-*\Apps\AOS\AXServiceApp\AXSF\InstallationRecords\MetadataModelInstallationRecords" | Select-Object -first 1 -ExpandProperty FullName
+                    $path = Get-ChildItem "$agentsharelocation\wp\*\StandaloneSetup-*\Apps\AOS\AXServiceApp\AXSF\InstallationRecords\MetadataModelInstallationRecords" | Sort-Object { $_.CreationTime } -Descending | Select-Object -first 1 -ExpandProperty FullName
                     $pathtoxml = "$path\$CustomModuleName.xml"
                     if ($path) {
                         [xml]$xml = Get-Content $pathtoxml
