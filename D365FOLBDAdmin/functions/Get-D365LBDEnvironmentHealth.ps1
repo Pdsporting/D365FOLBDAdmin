@@ -255,7 +255,7 @@ function Get-D365LBDEnvironmentHealth {
                             $Properties = @{'Name' = "Hard Disk Space"
                                 'Details'          = $HardDrive.DeviceId
                                 'State'           = "Down" 
-                                'ExtraInfo'        = "$ServerswithHDIssues"
+                                'ExtraInfo'        = "Free Space Percentage: $freespace"
                                 'Source'           = $ApplicationServer
                             }
                             $Output = New-Object -TypeName psobject -Property $Properties

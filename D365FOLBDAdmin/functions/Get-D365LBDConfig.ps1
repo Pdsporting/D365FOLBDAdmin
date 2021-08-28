@@ -825,9 +825,13 @@ ORDER BY [rh].[restore_date] DESC"
                                 }
                             }
                             if ($certexpiration) {
+                                
                                 Write-PSFMessage -Level Verbose -Message "$value expires at $certexpiration"
                             }
                             else {
+                                if($value -eq 'DatabaseEncryptionCertificate' -or $value -eq ''){
+
+                                }
                                 Write-PSFMessage -Level Verbose -Message "Could not find Certificate $cert $value"
                             }
                         }
@@ -840,6 +844,9 @@ ORDER BY [rh].[restore_date] DESC"
                     $currdate = get-date
                     if ($currdate -gt $certexpiration -and $certexpiration) {
                         Write-PSFMessage -Level Warning -Message "WARNING: Expired Certificate $name with an expiration of $certexpiration"
+                        if ($name -eq "DatabaseEncryptionCertificate" -or $name -eq 'DataEnciphermentCertificate'){
+                            Write-PSFMessage -Level Warning -Message "Note: Expired Certificate $name is not dynamically pulled so this could be a false negative"
+                        }
                     }
                     $hash = $CertificateExpirationHash.Add($name, $certexpiration)
                 }
