@@ -261,19 +261,7 @@
                 Write-PSFMessage -Message "Reading $EnvironmentAdditionalConfig" -Level Verbose
                 [xml]$EnvironmentAdditionalConfigXML = get-content  $EnvironmentAdditionalConfig
                 $EnvironmentType = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentType.'#text'.Trim()
-                $DatabaseClusterServerNames = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.SQLDetails.SQLServer | ForEach-Object -Process { New-Object -TypeName psobject -Property `
-                    @{'DatabaseClusterServerNames' = $_.ServerName } }
-                $DatabaseEncryptionThumbprints = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.SQLDetails.SQLServer | ForEach-Object -Process { New-Object -TypeName psobject -Property `
-                    @{'DatabaseEncryptionCertificates' = $_.DatabaseEncryptionThumbprint } }
-                $DatabaseEncryptionThumbprints = $DatabaseEncryptionThumbprints.DatabaseEncryptionCertificates
-                $DatabaseClusterServerNames = $DatabaseClusterServerNames.DatabaseClusterServerNames
-                $DataEnciphermentCertificate = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.DataEnciphermentCertThumbprint
-                if ($DatabaseClusterServerNames.Count -gt 1) {
-                    $DatabaseClusteredStatus = 'Clustered'
-                }
-                else {
-                    $DatabaseClusteredStatus = 'NonClustered'
-                }
+                
                 if (!$CustomModuleName) {
                     if ($($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName.'#text')) {
                         $CustomModuleNameinConfig = $($EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.CustomModuleName.'#text').TrimStart()
@@ -390,17 +378,15 @@
                         $replicainstanceIdofnode = $(get-servicefabricreplica -partition $ServiceFabricPartitionIdForAXSF | Where-Object { $_.NodeName -eq "$NodeName" }).InstanceId
                         $ReplicaDetails = Get-Servicefabricdeployedreplicadetail -nodename $nodename -partitionid $ServiceFabricPartitionIdForAXSF -ReplicaOrInstanceId $replicainstanceIdofnode -replicatordetail
                         $endpoints = $ReplicaDetails.deployedservicereplicainstance.address | ConvertFrom-Json
-                        if ($endpoints.Endpoints){
+                        if ($endpoints.Endpoints) {
                             $deployedinstancespecificguid = $($endpoints.Endpoints | Get-Member | Where-Object { $_.MemberType -eq "NoteProperty" }).Name
                             $httpsurl = $endpoints.Endpoints.$deployedinstancespecificguid
                             Write-PSFMessage -Level VeryVerbose -Message "$NodeName is accessible via $httpsurl with a guid $deployedinstancespecificguid "
                         }
-                        else{
+                        else {
                             Write-PSFMessage -Level VeryVerbose -Message "Warning: $nodename doesnt have an endpoint. Likely AXSF is down on that node"
                         }
-                       
                     }
-                    
                 }
                 catch {
                     Write-PSFMessage -message "Can't connect to Service Fabric $_" -Level Verbose
@@ -612,8 +598,87 @@ ORDER BY [rh].[restore_date] DESC"
                 $RunBookQueryResults = Invoke-SQL -dataSource $OrchDatabaseServer -database $OrchDatabase -sqlCommand $RunBookQuery 
                 $LastOrchJobId = $($OrchJobQueryResults | select JobId).JobId
                 $LastRunbookTaskId = $($RunBookQueryResults | select RunbookTaskId).RunbookTaskId
-                
             }
+
+            $SQLQueryToGetAlwaysOn = " WITH AGStatus AS(
+                SELECT name as AGName,
+                replica_server_name,
+                AGDatabases.database_name AS Databasename
+                FROM master.sys.availability_groups Groups
+                INNER JOIN master.sys.availability_replicas Replicas ON groups.group_id = Replicas.group_id
+                INNER JOIN sys.availability_databases_cluster AGDatabases ON groups.group_id = AGDatabases.group_id
+                INNER JOIN master.sys.dm_hadr_availability_group_states States ON Groups.group_id = States.group_id
+                )
+                SELECT DISTINCT
+                [Replica_server_name] FROM AGStatus
+                WHERE
+                [database] = '$AXDatabaseName'"
+            try {
+                $SQLQueryToGetAlwaysOnResults = Invoke-SQL -dataSource $AXDatabaseServer -database 'master' -sqlCommand $SQLQueryToGetAlwaysOn
+            }
+            catch {}
+            $listofsqlservers = @()
+            if ($SQLQueryToGetAlwaysOnResults.Count -eq 0) {
+                Write-PSFMessage -Level VeryVerbose -Message "Looks like always on is not set up in the database $AXDatabaseName Source: $AXDatabaseServer "
+                $DatabaseClusteredStatus  = "NonClustered"
+                $listofsqlservers = $AXDatabaseServer
+                $DatabaseClusterServerNames = $listofsqlservers 
+            }
+            else {
+                $DatabaseClusteredStatus  = "Clustered"
+                foreach ($SQLQueryToGetAlwaysOnResult in $($SQLQueryToGetAlwaysOnResults | select replica_server_name)) {
+                    $listofsqlservers += $SQLQueryToGetAlwaysOnResult.Replica_server_name
+                }
+                $DatabaseClusterServerNames = $listofsqlservers 
+            }
+
+            if ($EnvironmentAdditionalConfigXML) {
+                if (!$DatabaseClusterServerNames) {
+                    $DatabaseClusterServerNames = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.SQLDetails.SQLServer | ForEach-Object -Process { New-Object -TypeName psobject -Property `
+                        @{'DatabaseClusterServerNames' = $_.ServerName } }
+                    $DatabaseEncryptionThumbprints = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.SQLDetails.SQLServer | ForEach-Object -Process { New-Object -TypeName psobject -Property `
+                        @{'DatabaseEncryptionCertificates' = $_.DatabaseEncryptionThumbprint } }
+                    $DatabaseEncryptionThumbprints = $DatabaseEncryptionThumbprints.DatabaseEncryptionCertificates
+                    $DatabaseClusterServerNames = $DatabaseClusterServerNames.DatabaseClusterServerNames
+                    $DataEnciphermentCertificate = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.EnvironmentAdditionalConfig.DataEnciphermentCertThumbprint
+                    if ($DatabaseClusterServerNames.Count -gt 1) {
+                        $DatabaseClusteredStatus = 'Clustered'
+                    }
+                    else {
+                        $DatabaseClusteredStatus = 'NonClustered'
+                    }
+                }
+            }
+            $listofsqlcerts = @()
+            foreach ($sqlserver in $DatabaseClusterServerNames){
+                try {
+                    $ProductVersionSQLResults = Invoke-SQL -dataSource $sqlserver -database 'master' -sqlCommand 'SELECT SERVERPROPERTY(''Productversion'') as ''Productversion'' '
+                }
+                catch {}
+                [string]$SQLMajorVersionNumber = $($ProductVersionSQLResults | select Productversion).Productversion
+                $SQLMajorVersionNumber = $SQLMajorVersionNumber.Substring(0, 2)
+                try {
+                    $InstanceNameSQLResults = Invoke-SQL -dataSource $sqlserver -database 'master' -sqlCommand 'SELECT @@SERVICENAME as ''Servicename'' '
+                }
+                catch {}
+                $InstanceName = $($InstanceNameSQLResults | select Productversion).Productversion
+                $SQLVersionandInstance = 'MSSQL' + $SQLMajorVersionNumber + '.' + $InstanceName
+                Write-PSFMessage -Level VeryVerbose -Message "Connecting to Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SQL Server\$SQLVersionandInstance\MSSQLSERVER\SuperSocketNetLib"
+
+                try{
+                    $SQLCert = invoke-command -ScriptBlock {
+                        if (!$SQLVersionandInstance){
+                            $SQLVersionandInstance = $using:SQLVersionandInstance
+                        }
+                        $cert = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SQL Server\$SQLVersionandInstance\MSSQLSERVER\SuperSocketNetLib"
+                        $cert.Certificate.ToUpper()
+                    } -ComputerName $sqlserver
+                }                
+                catch{}
+                $listofsqlcerts += $SQLCert      
+            }
+            $DatabaseEncryptionThumbprints = $listofsqlcerts 
+
 
             if ($CustomModuleName) {
                 $assets = Get-ChildItem -Path "$AgentShareLocation\assets" | Where-object { ($_.Name -ne "chk") -and ($_.Name -ne "topology.xml") } | Sort-Object { $_.CreationTime } -Descending
@@ -829,7 +894,7 @@ ORDER BY [rh].[restore_date] DESC"
                                 Write-PSFMessage -Level Verbose -Message "$value expires at $certexpiration"
                             }
                             else {
-                                if($value -eq 'DatabaseEncryptionCertificate' -or $value -eq ''){
+                                if ($value -eq 'DatabaseEncryptionCertificate' -or $value -eq '') {
 
                                 }
                                 Write-PSFMessage -Level Verbose -Message "Could not find Certificate $cert $value"
@@ -844,7 +909,7 @@ ORDER BY [rh].[restore_date] DESC"
                     $currdate = get-date
                     if ($currdate -gt $certexpiration -and $certexpiration) {
                         Write-PSFMessage -Level Warning -Message "WARNING: Expired Certificate $name with an expiration of $certexpiration"
-                        if ($name -eq "DatabaseEncryptionCertificate" -or $name -eq 'DataEnciphermentCertificate'){
+                        if ($name -eq "DatabaseEncryptionCertificate" -or $name -eq 'DataEnciphermentCertificate') {
                             Write-PSFMessage -Level Warning -Message "Note: Expired Certificate $name is not dynamically pulled so this could be a false negative"
                         }
                     }

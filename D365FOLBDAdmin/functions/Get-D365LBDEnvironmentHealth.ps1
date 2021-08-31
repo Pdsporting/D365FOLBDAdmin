@@ -93,14 +93,14 @@ function Get-D365LBDEnvironmentHealth {
         }
         catch {
             if ($_.Exception -like "*Failed to connect to server *") {
-                Write-Warning -Message "WARNING: Can't Verify if SQL Server $ReportServerServerName is up because can't connect. Check permissions "
+                Write-Warning -Message "Can't Verify if SQL Server $ReportServerServerName is up because can't connect. Check permissions "
                 $CantConnect = 'True'
             }
         }
         if ($CantConnect -eq 'True') {
             $whoami = whoami
             $Properties = @{'Name' = "SSRSSystemDatabasesDatabase"
-                'Details'          = "$whoami Cant connect to the databases. Check permissions"
+                'Details'          = "$whoami can't connect to the databases. Check permissions"
                 'State'            = "Down" 
                 'ExtraInfo'        = ""
                 'Source'           = $ReportServerServerName
@@ -177,6 +177,7 @@ function Get-D365LBDEnvironmentHealth {
 
         
         ##DB AX
+        $CantConnect = 'False'
         if (!$AXDatabaseServer) {
             $AXDatabaseServer = $using:AXDatabaseServer
         }
@@ -197,14 +198,14 @@ function Get-D365LBDEnvironmentHealth {
         }
         catch {
             if ($_.Exception -like "*Failed to connect to server *") {
-                Write-Warning -Message "WARNING: Can't Verify if SQL Server $AXDatabaseServer is up because can't connect. Check permissions "
+                Write-Warning -Message "Can't Verify if SQL Server $AXDatabaseServer is up because can't connect. Check permissions "
                 $CantConnect = 'True'
             }
         }
         if ($CantConnect -eq 'True') {
             $whoami = whoami
             $Properties = @{'Name' = "AXDBSystemDatabasesDatabase"
-                'Details'          = "$whoami Can't connect to the databases. Check permissions"
+                'Details'          = "$whoami can't connect to the databases. Check permissions"
                 'State'            = "Down" 
                 'ExtraInfo'        = ""
                 'Source'           = $AXDatabaseServer
