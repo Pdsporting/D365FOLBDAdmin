@@ -81,58 +81,27 @@ function Get-D365LBDEnvironmentHealth {
         $SystemDatabasesWithIssues = 0
         $SystemDatabasesAccessible = 0
 
-        if ($SQLSSRSServer){
+        if ($SQLSSRSServer) {
             Write-PSFMessage -Level VeryVerbose -Message "Connected to $SQLSSRSServer for SSRS Database and its system dbs $($SQLSSRSServer.Databases)"
         }
-        else{
+        else {
             Write-PSFMessage -Level VeryVerbose -Message "Having issues connecting to $SQLSSRSServer for SSRS Database and its system dbs"
         }
-
-        foreach ($database in $SQLSSRSServer.Databases) {
-            switch ($database) {
-                { @("[model]", "[master]", "[msdb]", "[tempdb]") -contains $_ } {
-                    if ($database.IsAccessible) {
-                        $SystemDatabasesAccessible = $SystemDatabasesAccessible + 1
-                    }
-                    else {
-                        $SystemDatabasesWithIssues = $SystemDatabasesWithIssues + 1
-                    }
-                }
-                ("[DynamicsAxReportServer]", "[ReportServer]") {
-                    switch ($database.IsAccessible) {
-                        "True" { $dbstatus = "Operational" }
-                        "False" { $dbstatus = "Down" }
-                    }
-                    $Properties = @{'Name' = "SSRSDatabase"
-                        'Details'          = $database.name
-                        'State'           = "$dbstatus" 
-                        'Source'           = $ReportServerServerName
-                    }
-                    $Output = New-Object -TypeName psobject -Property $Properties
-                    $OutputList += $Output
-                }
-                ("[DynamicsAxReportServerTempDB]", "[ReportServerTempDB]") {
-                    switch ($database.IsAccessible) {
-                        "True" { $dbstatus = "Operational" }
-                        "False" { $dbstatus = "Down" }
-                    }
-                    $Properties = @{'Name' = "SSRSTempDBDatabase"
-                        'Details'          = $database.name
-                        'State'           = "$dbstatus" 
-                        'ExtraInfo'        = ""
-                        'Source'           = $ReportServerServerName
-                        'Group'            = 'Database'
-                    }
-                    $Output = New-Object -TypeName psobject -Property $Properties
-                    $OutputList += $Output
-                }
-                Default {}
+        try {
+            foreach ($database in $SQLSSRSServer.Databases) {
             }
         }
-        if ($SystemDatabasesWithIssues -eq 0) {
+        catch {
+            if ($_.Exception -like "*Failed to connect to server *") {
+                Write-Warning -Message "WARNING: Can't Verify if SQL Server $ReportServerServerName is up because can't connect. Check permissions "
+                $CantConnect = 'True'
+            }
+        }
+        if ($CantConnect -eq 'True') {
+            $whoami = whoami
             $Properties = @{'Name' = "SSRSSystemDatabasesDatabase"
-                'Details'          = "$SystemDatabasesAccessible databases are accessible"
-                'State'           = "Operational" 
+                'Details'          = "$whoami Cant connect to the databases. Check permissions"
+                'State'            = "Down" 
                 'ExtraInfo'        = ""
                 'Source'           = $ReportServerServerName
                 'Group'            = 'Database'
@@ -141,16 +110,71 @@ function Get-D365LBDEnvironmentHealth {
             $OutputList += $Output
         }
         else {
-            $Properties = @{'Name' = "SSRSSystemDatabasesDatabase"
-                'Details'          = "$SystemDatabasesAccessible databases are accessible. $SystemDatabasesWithIssues are not accessible"
-                'State'           = "Down" 
-                'ExtraInfo'        = ""
-                'Source'           = $ReportServerServerName
-                'Group'            = 'Database'
+            foreach ($database in $SQLSSRSServer.Databases) {
+                switch ($database) {
+                    { @("[model]", "[master]", "[msdb]", "[tempdb]") -contains $_ } {
+                        if ($database.IsAccessible) {
+                            $SystemDatabasesAccessible = $SystemDatabasesAccessible + 1
+                        }
+                        else {
+                            $SystemDatabasesWithIssues = $SystemDatabasesWithIssues + 1
+                        }
+                    }
+                    ("[DynamicsAxReportServer]", "[ReportServer]") {
+                        switch ($database.IsAccessible) {
+                            "True" { $dbstatus = "Operational" }
+                            "False" { $dbstatus = "Down" }
+                        }
+                        $Properties = @{'Name' = "SSRSDatabase"
+                            'Details'          = $database.name
+                            'State'            = "$dbstatus" 
+                            'Source'           = $ReportServerServerName
+                        }
+                        $Output = New-Object -TypeName psobject -Property $Properties
+                        $OutputList += $Output
+                    }
+                    ("[DynamicsAxReportServerTempDB]", "[ReportServerTempDB]") {
+                        switch ($database.IsAccessible) {
+                            "True" { $dbstatus = "Operational" }
+                            "False" { $dbstatus = "Down" }
+                        }
+                        $Properties = @{'Name' = "SSRSTempDBDatabase"
+                            'Details'          = $database.name
+                            'State'            = "$dbstatus" 
+                            'ExtraInfo'        = ""
+                            'Source'           = $ReportServerServerName
+                            'Group'            = 'Database'
+                        }
+                        $Output = New-Object -TypeName psobject -Property $Properties
+                        $OutputList += $Output
+                    }
+                    Default {}
+                }
             }
-            $Output = New-Object -TypeName psobject -Property $Properties
-            $OutputList += $Output
+            if ($SystemDatabasesWithIssues -eq 0) {
+                $Properties = @{'Name' = "SSRSSystemDatabasesDatabase"
+                    'Details'          = "$SystemDatabasesAccessible databases are accessible"
+                    'State'            = "Operational" 
+                    'ExtraInfo'        = ""
+                    'Source'           = $ReportServerServerName
+                    'Group'            = 'Database'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
+            }
+            else {
+                $Properties = @{'Name' = "SSRSSystemDatabasesDatabase"
+                    'Details'          = "$SystemDatabasesAccessible databases are accessible. $SystemDatabasesWithIssues are not accessible"
+                    'State'            = "Down" 
+                    'ExtraInfo'        = ""
+                    'Source'           = $ReportServerServerName
+                    'Group'            = 'Database'
+                }
+                $Output = New-Object -TypeName psobject -Property $Properties
+                $OutputList += $Output
+            }
         }
+
         
         ##DB AX
         if (!$AXDatabaseServer) {
@@ -160,12 +184,36 @@ function Get-D365LBDEnvironmentHealth {
         Write-PSFMessage -Level Verbose -Message "Connecting to $AXDatabaseServer for AXDB Database and its system dbs"
         $SystemDatabasesWithIssues = 0
         $SystemDatabasesAccessible = 0
-        if ($AXDatabaseServerConnection){
+        if ($AXDatabaseServerConnection) {
             Write-PSFMessage -Level VeryVerbose -Message "Connected to $AXDatabaseServerConnection  for AXDB Database and its system dbs $($AXDatabaseServerConnection.Databases)"
         }
-        else{
+        else {
             Write-PSFMessage -Level VeryVerbose -Message "Having issues connecting to $AXDatabaseServerConnection for AXDB Database and its system dbs"
         }
+
+        try {
+            foreach ($database in $AXDatabaseServerConnection.Databases) {
+            }
+        }
+        catch {
+            if ($_.Exception -like "*Failed to connect to server *") {
+                Write-Warning -Message "WARNING: Can't Verify if SQL Server $AXDatabaseServer is up because can't connect. Check permissions "
+                $CantConnect = 'True'
+            }
+        }
+        if ($CantConnect -eq 'True') {
+            $whoami = whoami
+            $Properties = @{'Name' = "AXDBSystemDatabasesDatabase"
+                'Details'          = "$whoami Can't connect to the databases. Check permissions"
+                'State'            = "Down" 
+                'ExtraInfo'        = ""
+                'Source'           = $AXDatabaseServer
+                'Group'            = 'Database'
+            }
+            $Output = New-Object -TypeName psobject -Property $Properties
+            $OutputList += $Output
+        }
+
         foreach ($database in $AXDatabaseServerConnection.Databases) {
             switch ($database) {
                 { @("[model]", "[master]", "[msdb]", "[tempdb]") -contains $_ } {
@@ -183,7 +231,7 @@ function Get-D365LBDEnvironmentHealth {
                     }
                     $Properties = @{'Name' = "AXDatabase"
                         'Details'          = $database.name
-                        'State'           = "$dbstatus" 
+                        'State'            = "$dbstatus" 
                         'ExtraInfo'        = ""
                         'Source'           = $AXDatabaseServer
                         'Group'            = 'Database'
@@ -197,7 +245,7 @@ function Get-D365LBDEnvironmentHealth {
         if ($SystemDatabasesWithIssues -eq 0) {
             $Properties = @{'Name' = "AXDBSystemDatabasesDatabase"
                 'Details'          = "$SystemDatabasesAccessible databases are accessible"
-                'State'           = "Operational" 
+                'State'            = "Operational" 
                 'ExtraInfo'        = ""
                 'Source'           = $AXDatabaseServer
                 'Group'            = 'Database'
@@ -208,7 +256,7 @@ function Get-D365LBDEnvironmentHealth {
         else {
             $Properties = @{'Name' = "AXDBSystemDatabasesDatabase"
                 'Details'          = "$SystemDatabasesAccessible databases are accessible. $SystemDatabasesWithIssues are not accessible"
-                'State'           = "Down" 
+                'State'            = "Down" 
                 'ExtraInfo'        = ""
                 'Source'           = $AXDatabaseServer
                 'Group'            = 'Database'
@@ -254,7 +302,7 @@ function Get-D365LBDEnvironmentHealth {
                             Write-PSFMessage -Message "ERROR: $($HardDrive.DeviceId) on $ApplicationServer has only $freespace percentage" -Level Warning
                             $Properties = @{'Name' = "Hard Disk Space"
                                 'Details'          = $HardDrive.DeviceId
-                                'State'           = "Down" 
+                                'State'            = "Down" 
                                 'ExtraInfo'        = "Free Space Percentage: $freespace"
                                 'Source'           = $ApplicationServer
                             }
@@ -275,7 +323,7 @@ function Get-D365LBDEnvironmentHealth {
                 if ($foundHardDrivewithIssue -eq $false) {
                     $Properties = @{'Name' = "Hard Disk Space"
                         'Details'          = $config.AllAppServerList
-                        'State'           = "Operational" 
+                        'State'            = "Operational" 
                         'ExtraInfo'        = ""
                         'Source'           = $config.AllAppServerList
                         'Group'            = 'OS'
@@ -386,7 +434,7 @@ function Get-D365LBDEnvironmentHealth {
             Write-PSFMessage -Message "All Service Fabric Applications are healthy $HealthyApps / $TotalApplications" -Level VeryVerbose
             $Properties = @{'Name' = "ServiceFabricApplications"
                 'Details'          = "Healthy: $HealthyApps / Total: $TotalApplications"
-                'State'           = "Operational" 
+                'State'            = "Operational" 
                 'ExtraInfo'        = ""
                 'Source'           = $OrchestratorServerName
                 'Group'            = 'ServiceFabric'
@@ -404,7 +452,7 @@ function Get-D365LBDEnvironmentHealth {
             }
             $Properties = @{'Name' = "ServiceFabricApplications"
                 'Details'          = "Healthy: $HealthyApps / Total: $TotalApplications"
-                'State'           = "Down" 
+                'State'            = "Down" 
                 'ExtraInfo'        = "$NotHealthyApps"
                 'Source'           = $OrchestratorServerName
                 'Group'            = 'ServiceFabric'
@@ -431,7 +479,7 @@ function Get-D365LBDEnvironmentHealth {
             }
             $Properties = @{'Name' = "AXSFGUIDEndpoint"
                 'Details'          = "$deployedinstancespecificguid"
-                'State'           = "$Status" 
+                'State'            = "$Status" 
                 'ExtraInfo'        = "$httpsurl"
                 'Source'           = $NodeName 
                 'Group'            = 'ServiceFabric'
@@ -448,7 +496,7 @@ function Get-D365LBDEnvironmentHealth {
             if ($Config.SessionAuthenticationCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "SessionAuthentication"
-                    'State'           = "Down" 
+                    'State'            = "Down" 
                     'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
                     'Source'           = $Config.SessionAuthenticationCertificate
                     'Group'            = 'D365Certificates'
@@ -459,7 +507,7 @@ function Get-D365LBDEnvironmentHealth {
             elseif ($Config.SessionAuthenticationCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "SessionAuthentication"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
                     'Source'           = $Config.SessionAuthenticationCertificate
                     'Group'            = 'D365Certificates'
@@ -471,7 +519,7 @@ function Get-D365LBDEnvironmentHealth {
             else {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "SessionAuthentication"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
                     'Source'           = $Config.SessionAuthenticationCertificate
                     'Group'            = 'D365Certificates'
@@ -489,7 +537,7 @@ function Get-D365LBDEnvironmentHealth {
             if ($Config.SFClientCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "SFClientCertificate"
-                    'State'           = "Down" 
+                    'State'            = "Down" 
                     'ExtraInfo'        = "$($Config.SFClientCertificateExpiresAfter)"
                     'Source'           = $Config.SFClientCertificate
                     'Group'            = 'D365Certificates'
@@ -500,7 +548,7 @@ function Get-D365LBDEnvironmentHealth {
             elseif ($Config.SFClientCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "SessionAuthentication"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.SFClientCertificateExpiresAfter)"
                     'Source'           = $Config.SFClientCertificate
                     'Group'            = 'D365Certificates'
@@ -512,7 +560,7 @@ function Get-D365LBDEnvironmentHealth {
             else {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "SessionAuthentication"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.SFClientCertificateExpiresAfter)"
                     'Source'           = $Config.SFClientCertificate
                     'Group'            = 'D365Certificates'
@@ -531,7 +579,7 @@ function Get-D365LBDEnvironmentHealth {
             if ($Config.SFServerCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "SFServerCertificate"
-                    'State'           = "Down" 
+                    'State'            = "Down" 
                     'ExtraInfo'        = "$($Config.SFServerCertificateExpiresAfter)"
                     'Source'           = $Config.SFServerCertificate
                     'Group'            = 'D365Certificates'
@@ -542,7 +590,7 @@ function Get-D365LBDEnvironmentHealth {
             elseif ($Config.SFServerCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "SFServerCertificate"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.SFServerCertificateExpiresAfter)"
                     'Source'           = $Config.SFServerCertificate
                     'Group'            = 'D365Certificates'
@@ -554,7 +602,7 @@ function Get-D365LBDEnvironmentHealth {
             else {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "SFServerCertificate"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.SFServerCertificateExpiresAfter)"
                     'Source'           = $Config.SFServerCertificate
                     'Group'            = 'D365Certificates'
@@ -572,7 +620,7 @@ function Get-D365LBDEnvironmentHealth {
             if ($Config.DataEncryptionCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "DataEncryptionCertificate"
-                    'State'           = "Down" 
+                    'State'            = "Down" 
                     'ExtraInfo'        = "$($Config.DataEncryptionCertificateExpiresAfter)"
                     'Source'           = $Config.DataEncryptionCertificate
                     'Group'            = 'D365Certificates'
@@ -583,7 +631,7 @@ function Get-D365LBDEnvironmentHealth {
             elseif ($Config.DataEncryptionCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "DataEncryptionCertificate"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.DataEncryptionCertificateExpiresAfter)"
                     'Source'           = $Config.DataEncryptionCertificate
                     'Group'            = 'D365Certificates'
@@ -595,7 +643,7 @@ function Get-D365LBDEnvironmentHealth {
             else {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "DataEncryptionCertificate"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.DataEncryptionCertificateExpiresAfter)"
                     'Source'           = $Config.DataEncryptionCertificate
                     'Group'            = 'D365Certificates'
@@ -611,7 +659,7 @@ function Get-D365LBDEnvironmentHealth {
             if ($Config.DataSigningCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "DataSigningCertificate"
-                    'State'           = "Down" 
+                    'State'            = "Down" 
                     'ExtraInfo'        = "$($Config.DataSigningCertificateExpiresAfter)"
                     'Source'           = $Config.DataSigningCertificate
                     'Group'            = 'D365Certificates'
@@ -622,7 +670,7 @@ function Get-D365LBDEnvironmentHealth {
             elseif ($Config.DataSigningCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "DataSigningCertificate"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.DataSigningCertificateExpiresAfter)"
                     'Source'           = $Config.DataSigningCertificate
                     'Group'            = 'D365Certificates'
@@ -634,7 +682,7 @@ function Get-D365LBDEnvironmentHealth {
             else {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "DataSigningCertificate"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.DataSigningCertificateExpiresAfter)"
                     'Source'           = $Config.DataSigningCertificate
                     'Group'            = 'D365Certificates'
@@ -651,7 +699,7 @@ function Get-D365LBDEnvironmentHealth {
             if ($Config.SessionAuthenticationCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "SessionAuthenticationCertificate"
-                    'State'           = "Down" 
+                    'State'            = "Down" 
                     'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
                     'Source'           = $Config.SessionAuthenticationCertificate
                     'Group'            = 'D365Certificates'
@@ -662,7 +710,7 @@ function Get-D365LBDEnvironmentHealth {
             elseif ($Config.SessionAuthenticationCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "SessionAuthenticationCertificate"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
                     'Source'           = $Config.SessionAuthenticationCertificate
                     'Group'            = 'D365Certificates'
@@ -674,7 +722,7 @@ function Get-D365LBDEnvironmentHealth {
             else {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "SessionAuthenticationCertificate"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.SessionAuthenticationCertificateExpiresAfter)"
                     'Source'           = $Config.SessionAuthenticationCertificate
                     'Group'            = 'D365Certificates'
@@ -691,7 +739,7 @@ function Get-D365LBDEnvironmentHealth {
             if ($Config.FinancialReportingCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "FinancialReportingCertificate"
-                    'State'           = "Down" 
+                    'State'            = "Down" 
                     'ExtraInfo'        = "$($Config.FinancialReportingCertificateExpiresAfter)"
                     'Source'           = $Config.FinancialReportingCertificate
                     'Group'            = 'D365Certificates'
@@ -702,7 +750,7 @@ function Get-D365LBDEnvironmentHealth {
             elseif ($Config.FinancialReportingCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "FinancialReportingCertificate"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.FinancialReportingCertificateExpiresAfter)"
                     'Source'           = $Config.FinancialReportingCertificate
                     'Group'            = 'D365Certificates'
@@ -714,7 +762,7 @@ function Get-D365LBDEnvironmentHealth {
             else {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "FinancialReportingCertificate"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.FinancialReportingCertificateExpiresAfter)"
                     'Source'           = $Config.FinancialReportingCertificate
                     'Group'            = 'D365Certificates'
@@ -730,7 +778,7 @@ function Get-D365LBDEnvironmentHealth {
             if ($Config.ReportingSSRSCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "ReportingSSRSCertificate"
-                    'State'           = "Down" 
+                    'State'            = "Down" 
                     'ExtraInfo'        = "$($Config.ReportingSSRSCertificateExpiresAfter)"
                     'Source'           = $Config.ReportingSSRSCertificate
                     'Group'            = 'D365Certificates'
@@ -741,7 +789,7 @@ function Get-D365LBDEnvironmentHealth {
             elseif ($Config.ReportingSSRSCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "ReportingSSRSCertificate"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.ReportingSSRSCertificateExpiresAfter)"
                     'Source'           = $Config.ReportingSSRSCertificate
                     'Group'            = 'D365Certificates'
@@ -753,7 +801,7 @@ function Get-D365LBDEnvironmentHealth {
             else {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "ReportingSSRSCertificate"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.ReportingSSRSCertificateExpiresAfter)"
                     'Source'           = $Config.ReportingSSRSCertificate
                     'Group'            = 'D365Certificates'
@@ -769,7 +817,7 @@ function Get-D365LBDEnvironmentHealth {
             if ($Config.LocalAgentCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "LocalAgentCertificate"
-                    'State'           = "Down" 
+                    'State'            = "Down" 
                     'ExtraInfo'        = "$($Config.LocalAgentCertificateExpiresAfter)"
                     'Source'           = $Config.LocalAgentCertificate
                     'Group'            = 'D365Certificates'
@@ -780,7 +828,7 @@ function Get-D365LBDEnvironmentHealth {
             elseif ($Config.LocalAgentCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "LocalAgentCertificate"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.LocalAgentCertificateExpiresAfter)"
                     'Source'           = $Config.LocalAgentCertificate
                     'Group'            = 'D365Certificates'
@@ -792,7 +840,7 @@ function Get-D365LBDEnvironmentHealth {
             else {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "LocalAgentCertificate"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.LocalAgentCertificateExpiresAfter)"
                     'Source'           = $Config.LocalAgentCertificate
                     'Group'            = 'D365Certificates'
@@ -808,7 +856,7 @@ function Get-D365LBDEnvironmentHealth {
             if ($Config.DataEnciphermentCertificateExpiresAfter -lt $ErrorDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "DataEnciphermentCertificate"
-                    'State'           = "Down" 
+                    'State'            = "Down" 
                     'ExtraInfo'        = "$($Config.DataEnciphermentCertificateExpiresAfter)"
                     'Source'           = $Config.DataEnciphermentCertificate
                     'Group'            = 'D365Certificates'
@@ -819,7 +867,7 @@ function Get-D365LBDEnvironmentHealth {
             elseif ($Config.DataEnciphermentCertificateExpiresAfter -lt $WarningDateCerts) {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "DataEnciphermentCertificate"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.DataEnciphermentCertificateExpiresAfter)"
                     'Source'           = $Config.DataEnciphermentCertificate
                     'Group'            = 'D365Certificates'
@@ -831,7 +879,7 @@ function Get-D365LBDEnvironmentHealth {
             else {
                 $Properties = @{'Name' = "D365Certificates"
                     'Details'          = "DataEnciphermentCertificate"
-                    'State'           = "Operational" 
+                    'State'            = "Operational" 
                     'ExtraInfo'        = "$($Config.DataEnciphermentCertificateExpiresAfter)"
                     'Source'           = $Config.DataEnciphermentCertificate
                     'Group'            = 'D365Certificates'
