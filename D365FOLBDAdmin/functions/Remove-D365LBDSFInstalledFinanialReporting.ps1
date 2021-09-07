@@ -48,8 +48,8 @@ function Remove-D365LBDSFInstalledFinancialReporting {
                     if (!$connection) {
                         Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
                     }
-                } until ($connection -or ($count -eq $($Config.OrchestratorServerName).Count))
-                if (($count -eq $($Config.OrchestratorServerName).Count) -and (!$connection)) {
+                } until ($connection -or ($count -eq $($Config.OrchestratorServerName).Count) -or ($($Config.OrchestratorServerName).Count) -eq 0)
+                if (($count -eq $($Config.OrchestratorServerNames).Count) -and (!$connection)) {
                     Write-PSFMessage -Level VeryVerbose -Message "Error: Can't connect to Service Fabric"
                 }
             }

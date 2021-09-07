@@ -96,7 +96,6 @@ function Remove-D365LBDSFOldAssets {
                     Write-PSFMessage -Message "Standalone zip in $AssetFolder is VALID" -Level Verbose
                 }
             }
-
         }
         Write-PSFMessage -Level Verbose -Message "Starting Clean on $AssetsFolderinAgentShareLocation"
         $FilesThatAreBeingDeleted = Get-ChildItem $AssetsFolderinAgentShareLocation | Where-Object { $_.Name -ne "chk" -and $_.Name -ne "topology.xml" -and $_.Name -ne "$AlreadyDeployedAssetIDInWPFolder" -and $_.CreateDate -lt $Onedayold -and $_.Name -ne "ControlFile.txt" } | Sort-Object CreationTime -Descending | Select-Object -SkipLast $NumberofAssetsToKeep
@@ -111,7 +110,6 @@ function Remove-D365LBDSFOldAssets {
             "$AssetsFolderinAgentShareLocation - StartTime: $StartTime - EndTime: $EndTime - Execution Time: $($TimeDiff.Minutes) minutes $($TimeDiff.Seconds) seconds - Count of Files: $FileCount " | Out-File $AssetsFolderinAgentShareLocation\ControlFile.txt -append
         }
         Write-PSFMessage -Level VeryVerbose -Message "$($config.LCSEnvironmentName) AgentShare Assets have been cleaned"
-
     }
     END {
     }

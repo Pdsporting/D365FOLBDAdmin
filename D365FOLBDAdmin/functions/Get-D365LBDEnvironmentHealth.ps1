@@ -424,7 +424,7 @@ function Get-D365LBDEnvironmentHealth {
                 if (!$connection) {
                     Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
                 }
-            } until ($connection -or ($count -eq $($Config.OrchestratorServerNames).Count))
+            } until ($connection -or ($count -eq $($Config.OrchestratorServerNames).Count) -or (($($Config.OrchestratorServerNames).Count) -eq 0))
             if (($count -eq $($Config.OrchestratorServerNames).Count) -and (!$connection)) {
                 Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
             }

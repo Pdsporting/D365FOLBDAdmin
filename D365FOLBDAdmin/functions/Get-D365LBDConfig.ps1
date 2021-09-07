@@ -351,7 +351,7 @@
                                 Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
                             }
                             
-                        } until ($connection -or ($count -eq $($OrchestratorServerNames).Count))
+                        } until ($connection -or ($count -eq $($OrchestratorServerNames).Count) -or ($($OrchestratorServerNames).Count) -eq 0)
                     }
                     <#NewConnection logic end#>
                    
