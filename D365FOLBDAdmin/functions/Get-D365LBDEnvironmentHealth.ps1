@@ -56,7 +56,8 @@ function Get-D365LBDEnvironmentHealth {
     BEGIN {
     }
     PROCESS {
-        if (!$Config) {
+        if (!$Config -or $Config.OrchestratorServerNames.Count -eq 0) {
+            Write-PSFMessage -Level VeryVerbose -Message "Config not defined or Config is invalid. Trying to Get new config using $ComputerName"
             if ($CustomModuleName) {
                 $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName
             }
@@ -401,7 +402,7 @@ function Get-D365LBDEnvironmentHealth {
             }
         }##Check HD end
 
-        if (!$Config) {
+        if (!$Config -or $Config.OrchestratorServerNames.Count -eq 0) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName
         }
         [int]$count = 0
@@ -472,7 +473,6 @@ function Get-D365LBDEnvironmentHealth {
             {
                 $deployedinstancespecificguid = $($endpoints.Endpoints | Get-Member | Where-Object { $_.MemberType -eq "NoteProperty" }).Name
                 Write-PSFMessage -Level VeryVerbose -Message "$NodeName is accessible via $httpsurl with a guid $deployedinstancespecificguid"
-
             }
             else{
                 Write-PSFMessage -Level Warning -Message "$NodeName does not have AXService accessible"

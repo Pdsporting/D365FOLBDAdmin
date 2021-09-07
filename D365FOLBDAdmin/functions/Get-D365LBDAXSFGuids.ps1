@@ -28,7 +28,8 @@ function Get-D365LBDAXSFGuids {
     BEGIN {
     }
     PROCESS {
-        if (!$Config) {
+        if (!$Config -or $Config.OrchestratorServerNames.Count -eq 0) {
+            Write-PSFMessage -Level VeryVerbose -Message "Config not defined or Config is invalid. Trying to Get new config using $ComputerName"
             $Config = Get-D365LBDConfig -ComputerName $ComputerName
         }
         [int]$count = 0

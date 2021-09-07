@@ -17,7 +17,7 @@ function Remove-D365LBDSFInstalledFinancialReporting {
     BEGIN {
     }
     PROCESS {
-        if (!$Config) {
+        if (!$Config -or $Config.OrchestratorServerNames.Count -eq 0) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName 
         }
 

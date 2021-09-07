@@ -54,7 +54,7 @@ function Get-D365LBDDependencyHealth {
     BEGIN {
     } 
     PROCESS {
-        if (!$Config) {
+        if (!$Config -or $Config.OrchestratorServerNames.Count -eq 0) {
             if ($CustomModuleName) {
                 $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -highlevelonly
             }

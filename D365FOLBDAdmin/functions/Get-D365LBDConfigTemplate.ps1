@@ -24,6 +24,10 @@ function Get-D365LBDConfigTemplate {
         if (!$Config -and !$infrastructurescriptspath) {
             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
         }
+        if ((!$Config -or $Config.OrchestratorServerNames.Count -eq 0) -and !$infrastructurescriptspath) {
+            Write-PSFMessage -Level VeryVerbose -Message "Config not defined or Config is invalid. Trying to Get new config using $ComputerName"
+            $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
+        }
         $path = Join-Path $infrastructurescriptspath -ChildPath "Configtemplate.xml"
         [xml]$Configtemplatexml = get-content $path
         $Certs = $Configtemplatexml.Config.Certificates.Certificate
