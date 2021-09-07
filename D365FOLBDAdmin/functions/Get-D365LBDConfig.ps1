@@ -612,7 +612,7 @@ ORDER BY [rh].[restore_date] DESC"
                 SELECT DISTINCT
                 [Replica_server_name] FROM AGStatus
                 WHERE
-                [database] = '$AXDatabaseName'"
+                [databasename] = '$AXDatabaseName'"
             try {
                 $SQLQueryToGetAlwaysOnResults = Invoke-SQL -dataSource $AXDatabaseServer -database 'master' -sqlCommand $SQLQueryToGetAlwaysOn
             }
@@ -661,7 +661,7 @@ ORDER BY [rh].[restore_date] DESC"
                     $InstanceNameSQLResults = Invoke-SQL -dataSource $sqlserver -database 'master' -sqlCommand 'SELECT @@SERVICENAME as ''Servicename'' '
                 }
                 catch {}
-                $InstanceName = $($InstanceNameSQLResults | select Productversion).Productversion
+                $InstanceName = $($InstanceNameSQLResults | select Servicename).Servicename
                 $SQLVersionandInstance = 'MSSQL' + $SQLMajorVersionNumber + '.' + $InstanceName
                 Write-PSFMessage -Level VeryVerbose -Message "Connecting to Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SQL Server\$SQLVersionandInstance\MSSQLSERVER\SuperSocketNetLib"
 
