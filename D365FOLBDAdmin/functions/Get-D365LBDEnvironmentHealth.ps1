@@ -468,9 +468,16 @@ function Get-D365LBDEnvironmentHealth {
             $replicainstanceIdofnode = $(get-servicefabricreplica -partition $ServiceFabricPartitionIdForAXSF | Where-Object { $_.NodeName -eq "$NodeName" }).InstanceId
             $ReplicaDetails = Get-Servicefabricdeployedreplicadetail -nodename $nodename -partitionid $ServiceFabricPartitionIdForAXSF -ReplicaOrInstanceId $replicainstanceIdofnode -replicatordetail
             $endpoints = $ReplicaDetails.deployedservicereplicainstance.address | ConvertFrom-Json
-            $deployedinstancespecificguid = $($endpoints.Endpoints | Get-Member | Where-Object { $_.MemberType -eq "NoteProperty" }).Name
+            if ($endpoints.Endpoints )
+            {
+                $deployedinstancespecificguid = $($endpoints.Endpoints | Get-Member | Where-Object { $_.MemberType -eq "NoteProperty" }).Name
+                Write-PSFMessage -Level VeryVerbose -Message "$NodeName is accessible via $httpsurl with a guid $deployedinstancespecificguid"
+
+            }
+            else{
+                Write-PSFMessage -Level Warning -Message "$NodeName does not have AXService accessible"
+            }
             $httpsurl = $endpoints.Endpoints.$deployedinstancespecificguid
-            Write-PSFMessage -Level VeryVerbose -Message "$NodeName is accessible via $httpsurl with a guid $deployedinstancespecificguid"
 
             if ($httpsurl.Length -gt 3) {
                 $Status = "Operational"
