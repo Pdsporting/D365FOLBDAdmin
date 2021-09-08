@@ -3,7 +3,7 @@
 	RootModule = 'D365FOLBDAdmin.psm1'
 	
 	# Version number of this module.
-	ModuleVersion = '1.0.0'
+	ModuleVersion = '2.0.0'
 	
 	# ID used to uniquely identify this module
 	GUID = '7ddad589-c6ec-443f-a365-7b3055e14d12'
