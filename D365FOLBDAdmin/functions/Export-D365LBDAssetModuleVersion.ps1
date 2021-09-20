@@ -120,6 +120,22 @@ function Export-D365LBDAssetModuleVersion {
                     Rename-Item -Path $NewfileWithoutVersionPath -NewName "$CustomModuleName $Version.xml" -Verbose | Out-Null
                     Write-PSFMessage -Message "$CustomModuleName $Version.xml exported" -Level Verbose
                     Write-Output "$Version"
+                    Write-PSFMessage -Message "Finished Prep at: $($StandaloneSetupZip.LastWriteTime)" -Level veryVerbose
+                }
+            }
+        }
+        if ($foundprepped -ne 1) {
+            Write-PSFMessage -Level VeryVerbose -Message "No new version prepped trying to find latest" 
+            $AssetFolders = Get-ChildItem "$AgentShareLocation\assets" | Where-Object { $_.Name -ne "topology.xml" -and $_.Name -ne "chk" } | Sort-Object LastWriteTime -Descending 
+            foreach ($Asset in $AssetFolders) {
+                if ($foundprepped -ne 1) {
+                    $versionlatest = Get-ChildItem "$(Asset.FullName)\$CustomModunleName*.xml"
+                    if ($versionlatest) {
+                        $StandaloneSetupZip = Get-ChildItem "$($SpecificAssetFolder.FullName)\*\*\Packages\*\StandaloneSetup.zip"
+                        Write-PSFMessage -Message "Last Version: $($versionlatest.BaseName) " -Level veryVerbose
+                        Write-PSFMessage -Message "Finished Prep at: $($StandaloneSetupZip.LastWriteTime)" -Level veryVerbose
+                        $foundprepped = 1
+                    }
                 }
             }
         }

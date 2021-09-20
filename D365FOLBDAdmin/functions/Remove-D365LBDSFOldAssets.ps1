@@ -65,8 +65,10 @@ function Remove-D365LBDSFOldAssets {
         $Onedayold = $(get-date).AddDays(-1)
         $AlreadyDeployedAssetIDInWPFolder = $Config.DeploymentAssetIDinWPFolder
         $StartTime = Get-Date
-        Write-PSFMessage -Level Verbose -Message "Checking for invalid assets in $AssetsFolderinAgentShareLocation"
         $AssetFolders = Get-ChildItem $AssetsFolderinAgentShareLocation | Where-Object { $_.Name -ne "chk" -and $_.Name -ne "topology.xml" -and $_.Name -ne "$AlreadyDeployedAssetIDInWPFolder" -and $_.CreateDate -lt $Onedayold -and $_.Name -ne "ControlFile.txt" } 
+        if ($ScanForInvalidZips){
+            Write-PSFMessage -Level Verbose -Message "Checking for invalid assets in $AssetsFolderinAgentShareLocation"
+        }
         foreach ($AssetFolder  in $AssetFolders ) {
             $StandaloneSetupZip = $null
             $StandaloneSetupZip = Get-ChildItem "$($AssetFolder.Fullname)\*\*\Packages\*\StandaloneSetup.zip"
@@ -79,8 +81,8 @@ function Remove-D365LBDSFOldAssets {
                     Get-ChildItem $AssetFolder.Fullname | Remove-Item -Recurse -Force
                     Get-ChildItem $AssetsFolderinAgentShareLocation | Where-object { $_.Name -eq $AssetFolder } | Remove-Item -Recurse -Force
                 }
+                Remove-Job $job
             }
-            Remove-Job $job
             if (!$StandaloneSetupZip) {
                 Write-PSFMessage -Message "$AssetFolder is invalid no StandaloneSetup found - deleting" -Level VeryVerbose
                 Get-ChildItem $AssetFolder.Fullname | Remove-Item -Recurse -Force

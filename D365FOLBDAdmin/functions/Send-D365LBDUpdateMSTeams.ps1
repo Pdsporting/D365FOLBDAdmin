@@ -53,10 +53,14 @@ function Send-D365LBDUpdateMSTeams {
         }
         if (!$MSTeamsURI) {
             if (!$CustomModuleName) {
-                $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
+                if (!$Config) {
+                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
+                } 
             }
             else {
-                $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly 
+                if (!$Config) {
+                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly 
+                }      
             }
             $AgentShareLocation = $config.AgentShareLocation 
             $EnvironmentAdditionalConfig = get-childitem "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
@@ -72,12 +76,24 @@ function Send-D365LBDUpdateMSTeams {
         if (!$MSTeamsURIS) {
             $MSTeamsURIS = $MSTeamsURI
         }
+        if (!$CustomModuleName -and $MessageType -eq "BuildPrepped") {
+            if (!$Config) {
+                $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly 
+            } 
+            $CustomModuleName = $Config.CustomModuleName
+            if (!$CustomModuleName -and !$MSTeamsBuildName) {
+                Write-PSFMessage -Message "ERROR: CustomModuleName NOT DEFINED and MSTeamsBuildName NOT DEFINED." -Level Error
+            }
+            if (!$CustomModuleName -and $MSTeamsBuildName) {
+                $CustomModuleName = "CustomModule"
+            }
+        }
 
         if (($CustomModuleName) -and $MessageType -eq "BuildPrepped" -and ($MSTeamsBuildName)) {
             ## BUILD PREPPED Beginning
             Write-PSFMessage -Level VeryVerbose -Message "MessageType is: BuildPrepped - BuildName has been defined ($MSTeamsBuildName)"
             if (!$EnvironmentName) {
-                if (!$CustomModuleName) {
+                if (!$CustomModuleName -and $CustomModuleName -ne "CustomModule") {
                     $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
                 }
                 else {
@@ -211,6 +227,32 @@ function Send-D365LBDUpdateMSTeams {
                 }
                 else {
                     Write-PSFMessage -Level VeryVerbose -Message "No newly prepped build found" ##add logic to grab latest
+                    $MSTeamsBuildName = $Config.CustomModuleVersion
+                    $LCSEnvironmentName = $EnvironmentName
+                    $clienturl = $Config.clienturl
+                    $LCSEnvironmentURL = $Config.LCSEnvironmentURL
+                    $bodyjson = @"
+{
+                    "@type": "MessageCard",
+                    "@context": "http://schema.org/extensions",
+                    "themeColor": "ff0000",
+                    "title": "$LCSEnvironmentName $status",
+                    "summary": "$LCSEnvironmentName $status",
+                    "sections": [{
+                        "facts": [{
+                            "name": "Environment",
+                            "value": "[$LCSEnvironmentName]($clienturl)"
+                        },{
+                            "name": "Build Version/Name",
+                            "value": "$Prepped"
+                        },{
+                            "name": "LCS",
+                            "value": "[LCS]($LCSEnvironmentURL)"
+                        }],
+                        "markdown": true
+                    }]
+                }            
+"@
                 }
                 ## Build prepped but Environment or Build not defined end
             }
@@ -238,9 +280,14 @@ function Send-D365LBDUpdateMSTeams {
             }
         } ## PLAIN TEXT END
 
+
         if ($MessageType -eq "BuildStart") {
             Write-PSFMessage -Message "MessageType is: BuildStart" -Level VeryVerbose
-            $bodyjson = @"
+            if (!$MSTeamsBuildName) {
+                Write-PSFMessage -Message "Error: MSTEAMSBuildName needs to be defined" -Level VeryVerbose
+            }
+            else {
+                $bodyjson = @"
 {
     "@type": "MessageCard",
     "@context": "http://schema.org/extensions",
@@ -256,11 +303,16 @@ function Send-D365LBDUpdateMSTeams {
     }]
 } 
 "@ 
+            }
         }
 
         if ($MessageType -eq "BuildComplete") {
             Write-PSFMessage -Message "MessageType is: BuildComplete" -Level VeryVerbose
-            $bodyjson = @"
+            if (!$MSTeamsBuildName) {
+                Write-PSFMessage -Message "Error: MSTEAMSBuildName needs to be defined" -Level VeryVerbose
+            }
+            else {
+                $bodyjson = @"
 {
     "@type": "MessageCard",
     "@context": "http://schema.org/extensions",
@@ -276,15 +328,20 @@ function Send-D365LBDUpdateMSTeams {
     }]
 }            
 "@
+            }
         }
 
         if ($MessageType -eq "BuildPrepStarted") {   
             Write-PSFMessage -Message "MessageType is: Build Prep Started" -Level VeryVerbose
             if (!$CustomModuleName) {
-                $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
+                if (!$Config) {    
+                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
+                }
             }
             else {
-                $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly 
+                if (!$Config) {
+                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly 
+                }
             }
             $LCSEnvironmentName = $Config.LCSEnvironmentName
             $clienturl = $Config.clienturl
@@ -318,10 +375,14 @@ function Send-D365LBDUpdateMSTeams {
             Write-PSFMessage -Message "MessageType is: StatusReport" -Level VeryVerbose
 
             if (!$CustomModuleName) {
-                $Config = Get-D365LBDConfig -ComputerName $ComputerName 
+                if (!$Config) { 
+                    $Config = Get-D365LBDConfig -ComputerName $ComputerName 
+                }
             }
             else {
-                $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName
+                if (!$Config) {
+                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName
+                }
             }
             [int]$count = 0
             while (!$connection) {
@@ -421,7 +482,7 @@ function Send-D365LBDUpdateMSTeams {
             $bodyjson = $bodyjson.Replace('],', "$Additionaljson")
         }
         if (!$bodyjson) {
-            Write-PSFMessage -Message "Json is empty!" -Level VeryVerbose
+            Write-PSFMessage -Message "ERROR: JSON is empty!" -Level VeryVerbose
         }
         if ($MSTeamsURIS) {
             foreach ($MSTeamsURI in $MSTeamsURIS) {

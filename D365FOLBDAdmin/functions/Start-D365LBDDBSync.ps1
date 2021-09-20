@@ -6,6 +6,8 @@ function Start-D365LBDDBSync {
    Starts a Database Synchronization on a Dynamics 365 Finance and Operations Server using the "Microsoft.Dynamics.AX.Deployment.Setup.exe" executable
    .EXAMPLE
     Start-D365FOLBDDBSync -config $config -SQLuser 'axdbadmin' -sqluserpassword 'fakepassword123' -verbose
+    .EXAMPLE
+    Start-D365FOLBDDBSync -AXSFSERVER 'axsfserver01' -axdatabaseserver 'db01' -axdatabasename 'axdb' -SQLuser 'axdbadmin' -sqluserpassword 'fakepassword123' -verbose
    .PARAMETER AXSFServer
    Parameter 
    string 

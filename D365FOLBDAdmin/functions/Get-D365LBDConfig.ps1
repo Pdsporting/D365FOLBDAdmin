@@ -200,7 +200,6 @@
             $AgentShareLocation = $downloadfolderLocation.Value
             $AgentShareWPConfigJson = Get-ChildItem "$AgentShareLocation\wp\*\StandaloneSetup-*\config.json" | Sort-Object { $_.CreationTime } -Descending | Select-Object -First 1
 
-
             if ($AgentShareWPConfigJson) {
                 Write-PSFMessage -Message "Verbose: Using AgentShare config at $AgentShareWPConfigJson to get Environment ID, EnvironmentName and TenantID." -Level Verbose
                 $jsonconfig = get-content $AgentShareWPConfigJson
