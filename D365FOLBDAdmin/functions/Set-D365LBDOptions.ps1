@@ -248,6 +248,9 @@ function Set-D365LBDOptions {
             if ($MSTeamsCustomStatus) {
                 $status = "$MSTeamsCustomStatus"
             }
+            if (!$MSTeamsBuildName){
+                    $MSTeamsBuildName = $config.LastFullyPreppedCustomModuleAsset
+            }
             if ($MSTeamsFormmatedJSONofCLIItems) {
                 $bodyjson = @"
                 {

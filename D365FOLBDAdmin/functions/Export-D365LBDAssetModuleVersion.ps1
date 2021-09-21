@@ -129,7 +129,7 @@ function Export-D365LBDAssetModuleVersion {
             $AssetFolders = Get-ChildItem "$AgentShareLocation\assets" | Where-Object { $_.Name -ne "topology.xml" -and $_.Name -ne "chk" } | Sort-Object LastWriteTime -Descending 
             foreach ($Asset in $AssetFolders) {
                 if ($foundprepped -ne 1) {
-                    $versionlatest = Get-ChildItem "$(Asset.FullName)\$CustomModunleName*.xml"
+                    $versionlatest = Get-ChildItem "$($Asset.FullName)\$CustomModuleName*.xml"
                     if ($versionlatest) {
                         $StandaloneSetupZip = Get-ChildItem "$($SpecificAssetFolder.FullName)\*\*\Packages\*\StandaloneSetup.zip"
                         Write-PSFMessage -Message "Last Version: $($versionlatest.BaseName) " -Level veryVerbose

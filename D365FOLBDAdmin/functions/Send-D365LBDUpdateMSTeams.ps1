@@ -24,6 +24,7 @@ function Send-D365LBDUpdateMSTeams {
         [string]$MSTeamsExtraDetails,
         [string]$MSTeamsExtraDetailsTitle,
         [string]$MSTeamsBuildName,
+        [string]$MSTeamsBuildURL,
         [string]$MSTeamsCustomStatus,
         [string]$MessageType,
         [string]$CustomModuleName,
@@ -284,25 +285,47 @@ function Send-D365LBDUpdateMSTeams {
         if ($MessageType -eq "BuildStart") {
             Write-PSFMessage -Message "MessageType is: BuildStart" -Level VeryVerbose
             if (!$MSTeamsBuildName) {
-                Write-PSFMessage -Message "Error: MSTEAMSBuildName needs to be defined" -Level VeryVerbose
+                Write-PSFMessage -Message "Error: MSTEAMSBuildName needs to be defined" -Level Error -ErrorAction Stop
             }
             else {
-                $bodyjson = @"
+                if ($MSTeamsBuildURL){
+                    $bodyjson = @"
 {
-    "@type": "MessageCard",
-    "@context": "http://schema.org/extensions",
-    "themeColor": "ff0000",
-    "title": "$status",
-    "summary": "$status",
-    "sections": [{
-        "facts": [{
-            "name": "Build Version",
-            "value": "$MSTeamsBuildName"
-        }],
-        "markdown": true
-    }]
-} 
-"@ 
+                        "@type": "MessageCard",
+                        "@context": "http://schema.org/extensions",
+                        "themeColor": "ff0000",
+                        "title": "$status",
+                        "summary": "$status",
+                        "sections": [{
+                            "facts": [{
+                                "name": "Build Version",
+                                "value": "[$MSTeamsBuildName]($MSTeamsBuildURL)"
+                            }],
+                            "markdown": true
+                        }]
+                    } 
+"@
+                }
+                else{
+                    $bodyjson = @"
+{
+                        "@type": "MessageCard",
+                        "@context": "http://schema.org/extensions",
+                        "themeColor": "ff0000",
+                        "title": "$status",
+                        "summary": "$status",
+                        "sections": [{
+                            "facts": [{
+                                "name": "Build Version",
+                                "value": "$MSTeamsBuildName"
+                            }],
+                            "markdown": true
+                        }]
+                    } 
+"@
+                }
+
+ 
             }
         }
 
@@ -346,7 +369,11 @@ function Send-D365LBDUpdateMSTeams {
             $LCSEnvironmentName = $Config.LCSEnvironmentName
             $clienturl = $Config.clienturl
             $LCSEnvironmentURL = $Config.LCSEnvironmentURL
+
             
+            if (!$MSTeamsBuildName){
+                Write-PSFMessage -Message "Error: MSTEAMSBuildName needs to be defined" -Level Error -ErrorAction Stop
+            }
             $bodyjson = @"
 {
      "@type": "MessageCard",

@@ -619,12 +619,12 @@ ORDER BY [rh].[restore_date] DESC"
             $listofsqlservers = @()
             if ($SQLQueryToGetAlwaysOnResults.Count -eq 0) {
                 Write-PSFMessage -Level VeryVerbose -Message "Looks like always on is not set up in the database $AXDatabaseName Source: $AXDatabaseServer "
-                $DatabaseClusteredStatus  = "NonClustered"
+                $DatabaseClusteredStatus = "NonClustered"
                 $listofsqlservers = $AXDatabaseServer
                 $DatabaseClusterServerNames = $listofsqlservers 
             }
             else {
-                $DatabaseClusteredStatus  = "Clustered"
+                $DatabaseClusteredStatus = "Clustered"
                 foreach ($SQLQueryToGetAlwaysOnResult in $($SQLQueryToGetAlwaysOnResults | select replica_server_name)) {
                     $listofsqlservers += $SQLQueryToGetAlwaysOnResult.Replica_server_name
                 }
@@ -649,7 +649,7 @@ ORDER BY [rh].[restore_date] DESC"
                 }
             }
             $listofsqlcerts = @()
-            foreach ($sqlserver in $DatabaseClusterServerNames){
+            foreach ($sqlserver in $DatabaseClusterServerNames) {
                 try {
                     $ProductVersionSQLResults = Invoke-SQL -dataSource $sqlserver -database 'master' -sqlCommand 'SELECT SERVERPROPERTY(''Productversion'') as ''Productversion'' '
                 }
@@ -664,16 +664,16 @@ ORDER BY [rh].[restore_date] DESC"
                 $SQLVersionandInstance = 'MSSQL' + $SQLMajorVersionNumber + '.' + $InstanceName
                 Write-PSFMessage -Level VeryVerbose -Message "Connecting to Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SQL Server\$SQLVersionandInstance\MSSQLSERVER\SuperSocketNetLib"
 
-                try{
+                try {
                     $SQLCert = invoke-command -ScriptBlock {
-                        if (!$SQLVersionandInstance){
+                        if (!$SQLVersionandInstance) {
                             $SQLVersionandInstance = $using:SQLVersionandInstance
                         }
                         $cert = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SQL Server\$SQLVersionandInstance\MSSQLSERVER\SuperSocketNetLib"
                         $cert.Certificate.ToUpper()
                     } -ComputerName $sqlserver
                 }                
-                catch{}
+                catch {}
                 $listofsqlcerts += $SQLCert      
             }
             $DatabaseEncryptionThumbprints = $listofsqlcerts 
@@ -751,6 +751,18 @@ ORDER BY [rh].[restore_date] DESC"
                         }
                         $SyncStatusFound = $true
                     }
+                }
+            }
+            $AssetFolders = Get-ChildItem "$AgentShareLocation\assets" | Where-Object { $_.Name -ne "topology.xml" -and $_.Name -ne "chk" } | Sort-Object CreationTime -Descending 
+            $latestfound = 0
+            foreach ($Asset in $AssetFolders) {
+                $versionlatest = Get-ChildItem "$($Asset.FullName)\$CustomModuleName*.xml"
+                if ($versionlatest -and $latestfound -ne 1) {
+                    $StandaloneSetupZip = Get-ChildItem "$($SpecificAssetFolder.FullName)\*\*\Packages\*\StandaloneSetup.zip"
+                    Write-PSFMessage -Message "Last Version: $($versionlatest.BaseName) " -Level veryVerbose
+                    Write-PSFMessage -Message "Finished Prep at: $($StandaloneSetupZip.LastWriteTime)" -Level veryVerbose
+                    $LastFullyPreppedCustomModuleAsset = $versionlatest.BaseName
+                    $latestfound = 1
                 }
             }
             $WPAssetIDTXT = Get-ChildItem $AgentShareLocation\wp\*\AssetID.txt |  Sort-Object LastWriteTime -Descending | Select-Object -First 1
@@ -838,6 +850,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'LCSEnvironmentURL'                          = $LCSEnvironmentURL
                 'SFExplorerURL'                              = $SFExplorerURL
                 'CustomModuleName'                           = $CustomModuleName
+                'LastFullyPreppedCustomModuleAsset'          = $LastFullyPreppedCustomModuleAsset
             }
 
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificates')
