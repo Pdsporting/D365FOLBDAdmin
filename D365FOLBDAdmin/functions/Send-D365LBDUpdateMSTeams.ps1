@@ -30,8 +30,6 @@ function Send-D365LBDUpdateMSTeams {
         [string]$CustomModuleName,
         [string]$EnvironmentName,
         [string]$EnvironmentURL,
-        [string]$LCSProjectId,
-        [string]$LCSEnvironmentID,
         [string]$PlainTextMessage,
         [string]$PlainTextTitle
     )
@@ -39,8 +37,8 @@ function Send-D365LBDUpdateMSTeams {
     }
     PROCESS {
         switch ( $MessageType) {
-            "PreDeployment" { $status = 'PreDeployment Started' }
-            "PostDeployment" { $status = 'Deployment Completed' }
+            "PreDeployment" { Stop-PSFFunction -Message "PreDeployment use Set-D365LBDOptions" }
+            "PostDeployment" {Stop-PSFFunction -Message "PostDeployment use Set-D365LBDOptions" }
             "BuildStart" { $status = 'Build Started' }
             "BuildComplete" { $status = 'Build Completed' }
             "BuildPrepStarted" { $status = 'Build Prep Started' }
@@ -91,20 +89,24 @@ function Send-D365LBDUpdateMSTeams {
         }
 
         if (($CustomModuleName) -and $MessageType -eq "BuildPrepped" -and ($MSTeamsBuildName)) {
-            ## BUILD PREPPED Beginning
+            ## BUILD PREPPED Beginning 
             Write-PSFMessage -Level VeryVerbose -Message "MessageType is: BuildPrepped - BuildName has been defined ($MSTeamsBuildName)"
             if (!$EnvironmentName) {
                 if (!$CustomModuleName -and $CustomModuleName -ne "CustomModule") {
-                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
+                    if (!$Config) {
+                        $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
+                    }
                 }
                 else {
-                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly 
+                    if (!$Config) {
+                        $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly 
+                    }
                 }
                 $LCSEnvironmentName = $Config.LCSEnvironmentName
                 $clienturl = $Config.clienturl
                 $LCSEnvironmentURL = $Config.LCSEnvironmentURL
             }
-            if ($LCSEnvironmentID) {
+            if (!$EnvironmentName) {
                 $bodyjson = @"
 {
      "@type": "MessageCard",
@@ -150,8 +152,11 @@ function Send-D365LBDUpdateMSTeams {
 "@
 
             }
+            $bodyjsonformed = 1
         }
-        if (($CustomModuleName) -and $MessageType -eq "BuildPrepped") {
+        ##
+        if (($CustomModuleName) -and $MessageType -eq "BuildPrepped" -and $bodyjsonformed -ne 1) {
+            Write-PSFMessage -Level VeryVerbose -Message "MessageType is: BuildPrepped - BuildName has NOT been defined"
             if (!$CustomModuleName -and !$Config) {
                 $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
             }
@@ -165,9 +170,7 @@ function Send-D365LBDUpdateMSTeams {
                 if ($Prepped.Count -eq 1) {
                     Write-PSFMessage -Message "Found a prepped build: $Prepped" -Level VeryVerbose
                     $LCSEnvironmentName = $Config.LCSEnvironmentName
-                    $clienturl = $Config.clienturl
-                    $LCSProjectId = $config.LCSProjectID
-                    $LCSEnvironmentID = $Config.LCSEnvironmentID
+                    $clienturl = $Config.clienturl 
                     $LCSEnvironmentURL = $Config.LCSEnvironmentURL
                     $bodyjson = @"
 {
@@ -191,29 +194,29 @@ function Send-D365LBDUpdateMSTeams {
                     }]
                 }            
 "@
+                    $bodyjsonformed = 1
                 }
                 else {
                     foreach ($build in $Prepped) {
                         Write-PSFMessage -Message "Found multiple prepped builds including: $build" -Level VeryVerbose
                     }
                 }
-            }
-            else {
-                if (!$CustomModuleName -and !$Config) {
-                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
+            } ## if preppfound end starting else to find the latest built
+                
+            if ($bodyjsonformed -ne 1) {
+                Write-PSFMessage -Level VeryVerbose -Message "No newly prepped build found" ##add logic to grab latest
+                $MSTeamsBuildName = $Config.CustomModuleVersion
+                if ($EnvironmentName) {
+                    $LCSEnvironmentName = $EnvironmentName
                 }
                 else {
-                    if (!$Config) {
-                        $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly 
-                    }
+                    $LCSEnvironmentName = $config.LCSEnvironmentName
                 }
-
-                if ($MSTeamsBuildName) {
-                    $LCSEnvironmentName = $EnvironmentName
-                    $clienturl = $Config.clienturl
-                    $LCSEnvironmentURL = $Config.LCSEnvironmentURL
-                    
-                    $bodyjson = @"
+                
+                $clienturl = $Config.clienturl
+                $LCSEnvironmentURL = $Config.LCSEnvironmentURL
+                $Prepped = $config.LastFullyPreppedCustomModuleAsset
+                $bodyjson = @"
 {
                     "@type": "MessageCard",
                     "@context": "http://schema.org/extensions",
@@ -235,38 +238,7 @@ function Send-D365LBDUpdateMSTeams {
                     }]
                 }            
 "@
-                }
-                else {
-                    Write-PSFMessage -Level VeryVerbose -Message "No newly prepped build found" ##add logic to grab latest
-                    $MSTeamsBuildName = $Config.CustomModuleVersion
-                    $LCSEnvironmentName = $EnvironmentName
-                    $clienturl = $Config.clienturl
-                    $LCSEnvironmentURL = $Config.LCSEnvironmentURL
-                    $Prepped = $config.LastFullyPreppedCustomModuleAsset
-                    $bodyjson = @"
-{
-                    "@type": "MessageCard",
-                    "@context": "http://schema.org/extensions",
-                    "themeColor": "ff0000",
-                    "title": "$LCSEnvironmentName $status",
-                    "summary": "$LCSEnvironmentName $status",
-                    "sections": [{
-                        "facts": [{
-                            "name": "Environment",
-                            "value": "[$LCSEnvironmentName]($clienturl)"
-                        },{
-                            "name": "Build Version/Name",
-                            "value": "$MSTeamsBuildName"
-                        },{
-                            "name": "LCS",
-                            "value": "[LCS]($LCSEnvironmentURL)"
-                        }],
-                        "markdown": true
-                    }]
-                }            
-"@
-                }
-                ## Build prepped but Environment or Build not defined end
+                          
             }
         } ## end of build prep
         
@@ -299,7 +271,7 @@ function Send-D365LBDUpdateMSTeams {
                 Stop-PSFFunction -Message "Error: MSTEAMSBuildName needs to be defined" -EnableException $true -Cmdlet $PSCmdlet
             }
             else {
-                if ($MSTeamsBuildURL){
+                if ($MSTeamsBuildURL) {
                     $bodyjson = @"
 {
                         "@type": "MessageCard",
@@ -317,7 +289,7 @@ function Send-D365LBDUpdateMSTeams {
                     } 
 "@
                 }
-                else{
+                else {
                     $bodyjson = @"
 {
                         "@type": "MessageCard",
@@ -336,7 +308,6 @@ function Send-D365LBDUpdateMSTeams {
 "@
                 }
 
- 
             }
         }
 
@@ -381,7 +352,7 @@ function Send-D365LBDUpdateMSTeams {
             $clienturl = $Config.clienturl
             $LCSEnvironmentURL = $Config.LCSEnvironmentURL
             
-            if (!$MSTeamsBuildName){
+            if (!$MSTeamsBuildName) {
                 Stop-PSFFunction -Message "Error: MSTEAMSBuildName needs to be defined" -EnableException $true -Cmdlet $PSCmdlet
             }
             $bodyjson = @"
@@ -410,7 +381,6 @@ function Send-D365LBDUpdateMSTeams {
 
         if ($MessageType -eq "StatusReport") {   
             Write-PSFMessage -Message "MessageType is: StatusReport" -Level VeryVerbose
-
             if (!$CustomModuleName) {
                 if (!$Config) { 
                     $Config = Get-D365LBDConfig -ComputerName $ComputerName 
