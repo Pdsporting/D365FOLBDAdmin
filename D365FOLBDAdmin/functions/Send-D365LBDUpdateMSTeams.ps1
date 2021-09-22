@@ -433,16 +433,20 @@ function Send-D365LBDUpdateMSTeams {
             }
 
             $Health = Get-D365LBDEnvironmentHealth -Config $config 
-            if ($Health.Status -contains "Down") {
-                $HealthCheck = "Down"
+            if ($Health.State -contains "Down") {
+                foreach ($issue in $($health | Where-Object {$_.State -eq 'Down'})){
+                    $HealthCheck = "$HealthCheck" + "Down" + "$($issue.ExtraInfo)"
+                }
             }
             else {
                 $HealthCheck = "Operational"
             }
 
             $Dependency = Get-D365LBDDependencyHealth -config $Config
-            if ($Dependency.Status -contains "Down") {
-                $DependencyCheck = "Down"
+            if ($Dependency.State -contains "Down") {
+                foreach ($issue in $($Dependency | Where-Object {$_.State -eq 'Down'})){
+                    $DependencyCheck = "$DependencyCheck" + "Down" + "$($issue.ExtraInfo)"
+                }
             }
             else {
                 $DependencyCheck = "Operational"
