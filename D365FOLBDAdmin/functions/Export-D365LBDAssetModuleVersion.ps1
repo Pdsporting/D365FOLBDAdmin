@@ -131,7 +131,7 @@ function Export-D365LBDAssetModuleVersion {
                 if ($foundprepped -ne 1) {
                     $versionlatest = Get-ChildItem "$($Asset.FullName)\$CustomModuleName*.xml"
                     if ($versionlatest) {
-                        $StandaloneSetupZip = Get-ChildItem "$($SpecificAssetFolder.FullName)\*\*\Packages\*\StandaloneSetup.zip"
+                        $StandaloneSetupZip = Get-ChildItem "$($Asset.FullName)\*\*\Packages\*\StandaloneSetup.zip"
                         Write-PSFMessage -Message "Last Version: $($versionlatest.BaseName) " -Level veryVerbose
                         Write-PSFMessage -Message "Finished Prep at: $($StandaloneSetupZip.LastWriteTime)" -Level veryVerbose
                         $foundprepped = 1

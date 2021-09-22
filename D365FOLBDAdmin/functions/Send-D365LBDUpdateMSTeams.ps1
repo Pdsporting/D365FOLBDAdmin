@@ -83,7 +83,7 @@ function Send-D365LBDUpdateMSTeams {
             } 
             $CustomModuleName = $Config.CustomModuleName
             if (!$CustomModuleName -and !$MSTeamsBuildName) {
-                Write-PSFMessage -Message "ERROR: CustomModuleName NOT DEFINED and MSTeamsBuildName NOT DEFINED." -Level Error
+                Stop-PSFFunction -Message "ERROR: CustomModuleName NOT DEFINED and MSTeamsBuildName NOT DEFINED." -EnableException $true -Cmdlet $PSCmdlet
             }
             if (!$CustomModuleName -and $MSTeamsBuildName) {
                 $CustomModuleName = "CustomModule"
@@ -151,7 +151,7 @@ function Send-D365LBDUpdateMSTeams {
 
             }
         }
-        if (($CustomModuleName) -and $MessageType -eq "BuildPrepped" -and (!$MSTeamsBuildName)) {
+        if (($CustomModuleName) -and $MessageType -eq "BuildPrepped") {
             if (!$CustomModuleName -and !$Config) {
                 $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
             }
@@ -199,10 +199,20 @@ function Send-D365LBDUpdateMSTeams {
                 }
             }
             else {
-                if ($EnvironmentName -and $MSTeamsBuildName) {
+                if (!$CustomModuleName -and !$Config) {
+                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 
+                }
+                else {
+                    if (!$Config) {
+                        $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly 
+                    }
+                }
+
+                if ($MSTeamsBuildName) {
                     $LCSEnvironmentName = $EnvironmentName
                     $clienturl = $Config.clienturl
                     $LCSEnvironmentURL = $Config.LCSEnvironmentURL
+                    
                     $bodyjson = @"
 {
                     "@type": "MessageCard",
@@ -216,7 +226,7 @@ function Send-D365LBDUpdateMSTeams {
                             "value": "[$LCSEnvironmentName]($clienturl)"
                         },{
                             "name": "Build Version/Name",
-                            "value": "$Prepped"
+                            "value": "$MSTeamsBuildName"
                         },{
                             "name": "LCS",
                             "value": "[LCS]($LCSEnvironmentURL)"
@@ -232,6 +242,7 @@ function Send-D365LBDUpdateMSTeams {
                     $LCSEnvironmentName = $EnvironmentName
                     $clienturl = $Config.clienturl
                     $LCSEnvironmentURL = $Config.LCSEnvironmentURL
+                    $Prepped = $config.LastFullyPreppedCustomModuleAsset
                     $bodyjson = @"
 {
                     "@type": "MessageCard",
@@ -245,7 +256,7 @@ function Send-D365LBDUpdateMSTeams {
                             "value": "[$LCSEnvironmentName]($clienturl)"
                         },{
                             "name": "Build Version/Name",
-                            "value": "$Prepped"
+                            "value": "$MSTeamsBuildName"
                         },{
                             "name": "LCS",
                             "value": "[LCS]($LCSEnvironmentURL)"
@@ -285,7 +296,7 @@ function Send-D365LBDUpdateMSTeams {
         if ($MessageType -eq "BuildStart") {
             Write-PSFMessage -Message "MessageType is: BuildStart" -Level VeryVerbose
             if (!$MSTeamsBuildName) {
-                Write-PSFMessage -Message "Error: MSTEAMSBuildName needs to be defined" -Level Error -ErrorAction Stop
+                Stop-PSFFunction -Message "Error: MSTEAMSBuildName needs to be defined" -EnableException $true -Cmdlet $PSCmdlet
             }
             else {
                 if ($MSTeamsBuildURL){
@@ -332,7 +343,7 @@ function Send-D365LBDUpdateMSTeams {
         if ($MessageType -eq "BuildComplete") {
             Write-PSFMessage -Message "MessageType is: BuildComplete" -Level VeryVerbose
             if (!$MSTeamsBuildName) {
-                Write-PSFMessage -Message "Error: MSTEAMSBuildName needs to be defined" -Level VeryVerbose
+                Stop-PSFFunction -Message "Error: MSTEAMSBuildName needs to be defined" -EnableException $true -Cmdlet $PSCmdlet
             }
             else {
                 $bodyjson = @"
@@ -369,10 +380,9 @@ function Send-D365LBDUpdateMSTeams {
             $LCSEnvironmentName = $Config.LCSEnvironmentName
             $clienturl = $Config.clienturl
             $LCSEnvironmentURL = $Config.LCSEnvironmentURL
-
             
             if (!$MSTeamsBuildName){
-                Write-PSFMessage -Message "Error: MSTEAMSBuildName needs to be defined" -Level Error -ErrorAction Stop
+                Stop-PSFFunction -Message "Error: MSTEAMSBuildName needs to be defined" -EnableException $true -Cmdlet $PSCmdlet
             }
             $bodyjson = @"
 {
