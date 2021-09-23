@@ -11,6 +11,12 @@
    .EXAMPLE
     Get-D365LBDConfig -ComputerName "LBDServerName" -verbose
    Will get the Dynamics 365 Config from the LBD server
+   .EXAMPLE
+   $Config = Get-D365LBDConfig -ConfigImportFromFile "C:\XMLExports\EnvironmentConfig.xml"
+   This will import the config
+   .EXAMPLE
+   Get-D365LBDConfig -ConfigExportToFile "C:\XMLExports\EnvironmentConfig.xml" -CustomModuleName 'CUS'
+   This will export the config
    .PARAMETER ComputerName
    optional string 
    The name of the Local Business Data Computer.

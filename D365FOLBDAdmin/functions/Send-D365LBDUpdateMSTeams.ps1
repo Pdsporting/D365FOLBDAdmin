@@ -1,13 +1,32 @@
 function Send-D365LBDUpdateMSTeams {
     <#
    .SYNOPSIS
-  Uses switches to set different deployment options
+  Created to Send D365 updates to MSTeams
   .DESCRIPTION
+Created to Send D365 updates to MSTeams
+  .EXAMPLE
+  Send-D365LBDUpdateMSTeams -messageType "StatusReport" -MSTeamsURI "htts://fakemicrosoft.office.com/webhookb2/98984684987156465-4654/incominginwebhook/ea5s6d4sa6" -config $config
 
   .EXAMPLE
-  Send-D365LBDUpdateMSTeams -messageType "StatusReport" -MSTeamsURI "htts://fakemicrosoft.office.com/webhookb2/98984684987156465-4654/incominginwebhook/ea5s6d4sa6"
+Send-D365LBDUpdateMSTeams -messageType "BuildPrepStarted" -MSTeamsURI "htts://fakemicrosoft.office.com/webhookb2/98984684987156465-4654/incominginwebhook/ea5s6d4sa6" -config $config
 
   .EXAMPLE
+Send-D365LBDUpdateMSTeams -messageType "BuildPrepped" -MSTeamsURI "htts://fakemicrosoft.office.com/webhookb2/98984684987156465-4654/incominginwebhook/ea5s6d4sa6" -config $config -CustomModuleName 'CUS'
+
+  .EXAMPLE
+Send-D365LBDUpdateMSTeams -messageType "BuildStart" -MSTeamsURI "htts://fakemicrosoft.office.com/webhookb2/98984684987156465-4654/incominginwebhook/ea5s6d4sa6" -MSTeamsBuildName '1.1.2021' -CustomModuleName 'CUS'
+
+ .EXAMPLE
+Send-D365LBDUpdateMSTeams -messageType "BuildComplete" -MSTeamsURI "htts://fakemicrosoft.office.com/webhookb2/98984684987156465-4654/incominginwebhook/ea5s6d4sa6" -MSTeamsBuildName '1.1.2021' -CustomModuleName 'CUS'
+
+ .EXAMPLE
+Send-D365LBDUpdateMSTeams -messageType "PlainText" -MSTeamsURI "htts://fakemicrosoft.office.com/webhookb2/98984684987156465-4654/incominginwebhook/ea5s6d4sa6" -PlainTextTitle 'TITLE' -PlainTextMessage 'Message'
+
+ .EXAMPLE
+  Send-D365LBDUpdateMSTeams -messageType "StatusReport" -MSTeamsURI "htts://fakemicrosoft.office.com/webhookb2/98984684987156465-4654/incominginwebhook/ea5s6d4sa6" -config $config -MSTeamsExtraDetailsTitle 'FactTitle' -MSTeamsExtraDetails 'Fact Text' -MSTeamsExtraDetailsURI 'http://google.com'
+
+ .EXAMPLE
+Send-D365LBDUpdateMSTeams -messageType "PlainText" -MSTeamsURI "htts://fakemicrosoft.office.com/webhookb2/98984684987156465-4654/incominginwebhook/ea5s6d4sa6" -PlainTextTitle 'TITLE' -PlainTextMessage 'Message'
 
 
   #>
@@ -38,7 +57,7 @@ function Send-D365LBDUpdateMSTeams {
     PROCESS {
         switch ( $MessageType) {
             "PreDeployment" { Stop-PSFFunction -Message "PreDeployment use Set-D365LBDOptions" }
-            "PostDeployment" {Stop-PSFFunction -Message "PostDeployment use Set-D365LBDOptions" }
+            "PostDeployment" { Stop-PSFFunction -Message "PostDeployment use Set-D365LBDOptions" }
             "BuildStart" { $status = 'Build Started' }
             "BuildComplete" { $status = 'Build Completed' }
             "BuildPrepStarted" { $status = 'Build Prep Started' }
@@ -213,10 +232,36 @@ function Send-D365LBDUpdateMSTeams {
                     $LCSEnvironmentName = $config.LCSEnvironmentName
                 }
                 
+                
                 $clienturl = $Config.clienturl
                 $LCSEnvironmentURL = $Config.LCSEnvironmentURL
                 $Prepped = $config.LastFullyPreppedCustomModuleAsset
-                $bodyjson = @"
+                if (!$MSTeamsBuildName) {
+                    Write-PSFMessage -Message "Can't find Version removing from json"
+ 
+                    $bodyjson = @"
+{
+                                        "@type": "MessageCard",
+                                        "@context": "http://schema.org/extensions",
+                                        "themeColor": "ff0000",
+                                        "title": "$LCSEnvironmentName $status",
+                                        "summary": "$LCSEnvironmentName $status",
+                                        "sections": [{
+                                            "facts": [{
+                                                "name": "Environment",
+                                                "value": "[$LCSEnvironmentName]($clienturl)"
+                                            },{
+                                                "name": "LCS",
+                                                "value": "[LCS]($LCSEnvironmentURL)"
+                                            }],
+                                            "markdown": true
+                                        }]
+                                    }            
+"@
+
+                }
+                else {
+                    $bodyjson = @"
 {
                     "@type": "MessageCard",
                     "@context": "http://schema.org/extensions",
@@ -238,6 +283,7 @@ function Send-D365LBDUpdateMSTeams {
                     }]
                 }            
 "@
+                }
                           
             }
         } ## end of build prep
@@ -434,7 +480,7 @@ function Send-D365LBDUpdateMSTeams {
 
             $Health = Get-D365LBDEnvironmentHealth -Config $config 
             if ($Health.State -contains "Down") {
-                foreach ($issue in $($health | Where-Object {$_.State -eq 'Down'})){
+                foreach ($issue in $($health | Where-Object { $_.State -eq 'Down' })) {
                     $HealthCheck = "$HealthCheck" + "Down" + "$($issue.ExtraInfo)"
                 }
             }
@@ -444,8 +490,8 @@ function Send-D365LBDUpdateMSTeams {
 
             $Dependency = Get-D365LBDDependencyHealth -config $Config
             if ($Dependency.State -contains "Down") {
-                foreach ($issue in $($Dependency | Where-Object {$_.State -eq 'Down'})){
-                    $DependencyCheck = "$DependencyCheck" + "Down" + "$($issue.ExtraInfo)"
+                foreach ($issue in $($Dependency | Where-Object { $_.State -eq 'Down' })) {
+                    $DependencyCheck = "$DependencyCheck" + "Down" + " $($issue.ExtraInfo)"
                 }
             }
             else {

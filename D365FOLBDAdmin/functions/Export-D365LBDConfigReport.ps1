@@ -181,7 +181,9 @@ function Export-D365LBDConfigReport {
             $html += "<td> $($Config.SFClientCertificate)</td>"
         }
         $html += "<td> $($Config.SFClientCertificateExpiresAfter)</td></tr>"
-
+        if ($(!$Config.SFClientCertificateExpiresAfter)) {
+            Write-PSFMessage -Level VeryVerbose -Message "Make sure config was not run only high level if you want expirations"
+        }
         $html += '<tr><td>SF Server</td> '
         if ($Detailed) {
             $html += "<td>$($Config.SFServerCertificate)</td>"
@@ -301,7 +303,7 @@ function Export-D365LBDConfigReport {
             $html += "<h2>Running Queries </h2>"
             $html += "<p></p><table style=""width:100%"" class=""SQLQueries"">  <tr>    <th>Command Type</th>    <th>Command</th>    <th>Elapsed Time</th> <th>Session ID</th> <th>Status</th> </tr>"
             
-             foreach ($SQLResult in $SqlresultsToGetRunningSQL) {
+            foreach ($SQLResult in $SqlresultsToGetRunningSQL) {
     
                 $html += "<tr><td>$($SQLResult.command)</td><td>$($SQLResult.TEXT)</td><td>$($SQLResult.total_elapsed_time)</td><td>$($SQLResult.session_id)</td><td>$($SQLResult.status)</td></tr>"
             }
