@@ -363,7 +363,26 @@ Send-D365LBDUpdateMSTeams -messageType "PlainText" -MSTeamsURI "htts://fakemicro
                 Stop-PSFFunction -Message "Error: MSTEAMSBuildName needs to be defined" -EnableException $true -Cmdlet $PSCmdlet
             }
             else {
-                $bodyjson = @"
+                if ($MSTeamsBuildURL) {
+                    $bodyjson = @"
+{
+                        "@type": "MessageCard",
+                        "@context": "http://schema.org/extensions",
+                        "themeColor": "ff0000",
+                        "title": "$status",
+                        "summary": "$status",
+                        "sections": [{
+                            "facts": [{
+                                "name": "Build Version",
+                                "value": "[$MSTeamsBuildName]($MSTeamsBuildURL)"
+                            }],
+                            "markdown": true
+                        }]
+                    } 
+"@
+                }
+                else {
+                    $bodyjson = @"
 {
     "@type": "MessageCard",
     "@context": "http://schema.org/extensions",
@@ -379,6 +398,7 @@ Send-D365LBDUpdateMSTeams -messageType "PlainText" -MSTeamsURI "htts://fakemicro
     }]
 }            
 "@
+                }
             }
         }
 
