@@ -81,6 +81,7 @@ function Remove-D365LBDSFOldAssets {
                     Get-ChildItem $AssetFolder.Fullname | Remove-Item -Recurse -Force
                     Get-ChildItem $AssetsFolderinAgentShareLocation | Where-object { $_.Name -eq $AssetFolder } | Remove-Item -Recurse -Force
                 }
+                stop-job $job
                 Remove-Job $job
             }
             if (!$StandaloneSetupZip) {

@@ -77,6 +77,7 @@ function Export-D365LBDAssetModuleVersion {
                 if (Wait-Job $job -Timeout $Timeout) { Receive-Job $job }else {
                     Write-PSFMessage -Level VeryVerbose -message "Invalid Zip file $StandaloneSetupZip."
                     $invalidfile = $true
+                    stop-job -id $job
                 }
                 if ($invalidfile -eq $false) {
                     $zip = [System.IO.Compression.ZipFile]::OpenRead($StandaloneSetupZip)
@@ -85,6 +86,7 @@ function Export-D365LBDAssetModuleVersion {
                 else {
                     $count = 0
                 }
+
                 Remove-Job $job -Force
                 
                 if ($count -eq 0) {
