@@ -26,15 +26,15 @@ function Remove-D365LBDSFOldAssets {
     [CmdletBinding()]
     param
     ([Parameter(ValueFromPipeline = $True,
-            ValueFromPipelineByPropertyName = $True,
-            Mandatory = $false,
-            HelpMessage = 'D365FO Local Business Data Server Name',
-            ParameterSetName = 'NoConfig')]
-        [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
-        [psobject]$Config,
-        [int]$NumberofAssetsToKeep,
-        [switch]$ControlFile,
-        [switch]$ScanForInvalidZips
+        ValueFromPipelineByPropertyName = $True,
+        Mandatory = $false,
+        HelpMessage = 'D365FO Local Business Data Server Name',
+        ParameterSetName = 'NoConfig')]
+    [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
+    [psobject]$Config,
+    [int]$NumberofAssetsToKeep,
+    [switch]$ControlFile,
+    [switch]$ScanForInvalidZips
     )
     BEGIN {
     }
@@ -43,18 +43,18 @@ function Remove-D365LBDSFOldAssets {
             Write-PSFMessage -Level VeryVerbose -Message "Config not defined or Config is invalid. Trying to Get new config using $ComputerName"
             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly   
         }
-        if (!$NumberofAssetsToKeep){
+        if (!$NumberofAssetsToKeep) {
             $AgentShareLocation = $Config.AgentShareLocation
             if (test-path $AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml) {
                 Write-PSFMessage -Level Verbose -Message "Found AdditionalEnvironmentDetails config"
                 $EnvironmentAdditionalConfig = get-childitem "$AgentShareLocation\scripts\D365FOLBDAdmin\AdditionalEnvironmentDetails.xml"
                 [xml]$EnvironmentAdditionalConfigXML = get-content  $EnvironmentAdditionalConfig
-                if ($EnvironmentAdditionalConfigXML.D365LBDEnvironment.Automation.CleanupAssets.Enabled -eq "true"){
+                if ($EnvironmentAdditionalConfigXML.D365LBDEnvironment.Automation.CleanupAssets.Enabled -eq "true") {
                     $NumberofAssetsToKeep = [int]$EnvironmentAdditionalConfigXML.D365LBDEnvironment.Automation.CleanupAssets.AssetsToKeep
                 }
             }
         }
-        if (!$NumberofAssetsToKeep){
+        if (!$NumberofAssetsToKeep) {
             Stop-PSFFunction -Message "Error: Number of Assets not defined and Additional Environment Details configured" -EnableException $True -FunctionName $_ 
         }
 
@@ -66,13 +66,13 @@ function Remove-D365LBDSFOldAssets {
         $AlreadyDeployedAssetIDInWPFolder = $Config.DeploymentAssetIDinWPFolder
         $StartTime = Get-Date
         $AssetFolders = Get-ChildItem $AssetsFolderinAgentShareLocation | Where-Object { $_.Name -ne "chk" -and $_.Name -ne "topology.xml" -and $_.Name -ne "$AlreadyDeployedAssetIDInWPFolder" -and $_.CreateDate -lt $Onedayold -and $_.Name -ne "ControlFile.txt" } 
-        if ($ScanForInvalidZips){
+        if ($ScanForInvalidZips) {
             Write-PSFMessage -Level Verbose -Message "Checking for invalid assets in $AssetsFolderinAgentShareLocation"
         }
         foreach ($AssetFolder  in $AssetFolders ) {
             $StandaloneSetupZip = $null
             $StandaloneSetupZip = Get-ChildItem "$($AssetFolder.Fullname)\*\*\Packages\*\StandaloneSetup.zip"
-            if ($ScanForInvalidZips){
+            if ($ScanForInvalidZips) {
                 $job = $null
                 $job = start-job -ScriptBlock { Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead($using:StandaloneSetupZip) }
                 if (Wait-Job $job -Timeout 300) { Receive-Job $job }else {
