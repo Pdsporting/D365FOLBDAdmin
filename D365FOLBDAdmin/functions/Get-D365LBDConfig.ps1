@@ -725,37 +725,50 @@ ORDER BY [rh].[restore_date] DESC"
             if (!$HighLevelOnly) {
                 ##Found which server is getting the latest database sync using winevent end
                 Write-PSFMessage -Level VeryVerbose -Message "Gathering Database Logs from $ServerWithLatestLog"
-                $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -computername $ServerWithLatestLog -maxevents 100  | 
-                ForEach-Object -Process { `
-                        New-Object -TypeName PSObject -Property `
-                    @{'MachineName'        = $ServerWithLatestLog ;
-                        'EventMessage'     = $_.Properties[0].value;
-                        'EventDetails'     = $_.Properties[1].value; 
-                        'Message'          = $_.Message;
-                        'LevelDisplayName' = $_.LevelDisplayName;
-                        'TimeCreated'      = $_.TimeCreated;
-                        'TaskDisplayName'  = $_.TaskDisplayName
-                        'UserId'           = $_.UserId;
-                        'LogName'          = $_.LogName;
-                        'ProcessId'        = $_.ProcessId;
-                        'ThreadId'         = $_.ThreadId;
-                        'Id'               = $_.Id;
-                    }
+                try {
+                    $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -computername $ServerWithLatestLog -maxevents 100
                 }
-                $SyncStatusFound = $false
-                foreach ($event in $events) {
-                    if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.") -or ($event.message -contains "Database Synchronize Failed.")) -and $SyncStatusFound -eq $false) {
-                        if (($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Failed.")) {
-                            Write-PSFMessage -Message "Found a DB Sync failure $event" -Level Verbose
-                            $DBSyncStatus = "Failed"
-                            $DBSyncTimeStamp = $event.TimeCreated
+                catch {}
+                if (!$events) {
+                    Write-PSFMessage -Level Warning -Message "Warning: Having troubles grabbing DatabaseSynchronize from $ServerWithLatestLog "
+                }
+                else {
+                    try {
+                        $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -computername $ServerWithLatestLog -maxevents 100  | 
+                        ForEach-Object -Process { `
+                                New-Object -TypeName PSObject -Property `
+                            @{'MachineName'        = $ServerWithLatestLog ;
+                                'EventMessage'     = $_.Properties[0].value;
+                                'EventDetails'     = $_.Properties[1].value; 
+                                'Message'          = $_.Message;
+                                'LevelDisplayName' = $_.LevelDisplayName;
+                                'TimeCreated'      = $_.TimeCreated;
+                                'TaskDisplayName'  = $_.TaskDisplayName
+                                'UserId'           = $_.UserId;
+                                'LogName'          = $_.LogName;
+                                'ProcessId'        = $_.ProcessId;
+                                'ThreadId'         = $_.ThreadId;
+                                'Id'               = $_.Id;
+                            }
                         }
-                        if ($event.message -contains "Database Synchronize Succeeded.") {
-                            Write-PSFMessage -Message "Found a DB Sync Success $event" -Level Verbose
-                            $DBSyncStatus = "Succeeded"
-                            $DBSyncTimeStamp = $event.TimeCreated
+                    }
+                    catch {}
+
+                    $SyncStatusFound = $false
+                    foreach ($event in $events) {
+                        if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.") -or ($event.message -contains "Database Synchronize Failed.")) -and $SyncStatusFound -eq $false) {
+                            if (($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Failed.")) {
+                                Write-PSFMessage -Message "Found a DB Sync failure $event" -Level Verbose
+                                $DBSyncStatus = "Failed"
+                                $DBSyncTimeStamp = $event.TimeCreated
+                            }
+                            if ($event.message -contains "Database Synchronize Succeeded.") {
+                                Write-PSFMessage -Message "Found a DB Sync Success $event" -Level Verbose
+                                $DBSyncStatus = "Succeeded"
+                                $DBSyncTimeStamp = $event.TimeCreated
+                            }
+                            $SyncStatusFound = $true
                         }
-                        $SyncStatusFound = $true
                     }
                 }
             }
