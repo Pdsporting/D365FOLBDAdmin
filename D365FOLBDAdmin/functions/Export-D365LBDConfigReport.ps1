@@ -102,7 +102,7 @@ function Export-D365LBDConfigReport {
         if ($DependencyCheck.Count -gt 0) {
             $DependencyCheckText = "<p class=""Success""><b>D365 Environment Dependencies Health looks great.</b></p>"
             if ($DependencyCheck.State -contains "Down") {
-                $DependencyCheckText = "<p class=""issue""><b>D365 Health issues:</b></p>"
+                $DependencyCheckText = "<p class=""issue""><b>D365 Dependency Health issues:</b></p>"
                 $DependencyCheckissues = $DependencyCheck | Where-Object { $_.State -eq "Down" }
             }
             $html += "$DependencyCheckText"
