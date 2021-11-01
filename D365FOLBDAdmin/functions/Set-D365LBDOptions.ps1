@@ -154,6 +154,7 @@ function Set-D365LBDOptions {
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
             if ($Sqlresults) {
                 $CLIXML += @{'Turned On Maintenance Mode' = "Success - $SQLQuery" }  
+                Write-PSFMessage -Message "Turned On Maintenance Mode. Note AXSF needs to be restarted (or done as predeployment step) for maintenance mode to be fully on." -Level VeryVerbose
             }
             else {
                 $CLIXML += @{'Turned Off Maintenance Mode' = "Success - $SQLQuery" }  
@@ -172,6 +173,7 @@ function Set-D365LBDOptions {
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
             if ($Sqlresults) {
                 $CLIXML += @{'Turned Off Maintenance Mode' = "Success - $SQLQuery" }  
+                Write-PSFMessage -Message "Turned Off Maintenance Mode. Note AXSF needs to be restarted (or done as predeployment step) for maintenance mode to be fully off." -Level VeryVerbose
             }
             else {
                 $CLIXML += @{'Turned Off Maintenance Mode' = "Failed - $SQLQuery" }  
@@ -188,6 +190,7 @@ function Set-D365LBDOptions {
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery2 
             if ($Sqlresults) {
                 $CLIXML += @{"Enable User $EnableUserid" = "Success - $SQLQuery" }  
+                Write-PSFMessage -Message "$EnableUserid enabled." -Level VeryVerbose
             }
             else {
                 $CLIXML += @{"Enable User $EnableUserid" = "Failed - $SQLQuery" }  

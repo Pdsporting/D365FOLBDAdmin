@@ -37,8 +37,7 @@ function Restart-D365LBDSFAppServers {
         [int]$Timeout = 600,
         [switch]$waittillhealthy,
         [switch]$RebootWholeOS,
-        [switch]$RebootWholeOSIncludingOrch,
-        [int]$TimeToWaitforServiceFabrictoComeup = 30
+        [switch]$RebootWholeOSIncludingOrch
     )
     ##Gather Information from the Dynamics 365 Orchestrator Server Config
     BEGIN {
@@ -59,9 +58,19 @@ function Restart-D365LBDSFAppServers {
                 Write-PSFMessage -Message "-ConnectionEndpoint $($config.SFConnectionEndpoint) -X509Credential -FindType FindByThumbprint -FindValue $($config.SFServerCertificate) -ServerCertThumbprint $($config.SFServerCertificate) -StoreLocation LocalMachine -StoreName My" -Level Verbose
                 $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
                 $count = $count + 1
+                if ($connection){
+                    $ConnectedSFConnectionEndpoint = $config.SFConnectionEndpoint
+                    $ConnectedOrchestratorServerName = $OrchestratorServerName
+
+                }
                 if (!$connection) {
                     $trialEndpoint = "https://$OrchestratorServerName" + ":198000"
                     $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                }
+                if ($connection){
+                    $ConnectedSFConnectionEndpoint = $trialEndpoint 
+                    $ConnectedOrchestratorServerName = $OrchestratorServerName
+                    
                 }
                 if (!$connection) {
                     Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
@@ -100,33 +109,29 @@ function Restart-D365LBDSFAppServers {
                 Restart-ServiceFabricNode -NodeName $AppNode.NodeName -CommandCompletionMode Verify -Timeout 200
             }
         }
-        [int]$count = 0
-        while (!$connection) {
+        [int] $timer = 0
+         
             do {
-                $OrchestratorServerName = $Config.OrchestratorServerNames | Select-Object -First 1 -Skip $count
+                $OrchestratorServerName = $ConnectedOrchestratorServerName
+                $ConnectedSFConnectionEndpoint 
                 Write-PSFMessage -Message "Verbose: Disconnected Connection Reaching out to $OrchestratorServerName to try and connect to the service fabric." -Level Verbose
-                if ($count -eq 0){
-                    if ($waittillhealthy){
-                        Write-PSFMessage -Message "Verbose: Waiting $TimeToWaitforServiceFabrictoComeup seconds for service fabric to be able to be connected to." -Level Verbose
-                        Start-Sleep -Seconds $TimeToWaitforServiceFabrictoComeup -Verbose
-                    }
-                }
+                
                 $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
                 if (!$module) {
                     $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                 }
-                Write-PSFMessage -Message "-ConnectionEndpoint $($config.SFConnectionEndpoint) -X509Credential -FindType FindByThumbprint -FindValue $($config.SFServerCertificate) -ServerCertThumbprint $($config.SFServerCertificate) -StoreLocation LocalMachine -StoreName My" -Level Verbose
-                $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
-                $count = $count + 1
-                if (!$connection) {
-                    $trialEndpoint = "https://$OrchestratorServerName" + ":198000"
-                    $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                Write-PSFMessage -Message "-ConnectionEndpoint $($ConnectedSFConnectionEndpoint) -X509Credential -FindType FindByThumbprint -FindValue $($config.SFServerCertificate) -ServerCertThumbprint $($config.SFServerCertificate) -StoreLocation LocalMachine -StoreName My" -Level Verbose
+                $connectionnew = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectedSFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                
+                if (!$connectionnew) {
+                    
+                    Write-PSFMessage -Message "Verbose: Sleeping 10 seconds to try and reconnect to service fabric at $ConnectedSFConnectionEndpoint." -Level Verbose
+                    Start-Sleep -Seconds 10
+                    $timer = $timer + 10
                 }
-                if (!$connection) {
-                    Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
-                }
-            } until ($connection -or ($count -eq $($Config.OrchestratorServerNames).Count))
-        }
+                
+            } until ($connectionnew -or ($timer -gt $Timeout))
+        
       
         Start-Sleep -Seconds 5
         [int]$timeoutondisablecounter = 0
@@ -160,9 +165,10 @@ function Restart-D365LBDSFAppServers {
                         $health = Get-serviceFabricApplicationHealth -ApplicationName $app.ApplicationName
                         $timer = $timer + 10
                         Start-Sleep -Seconds 10
-                        Write-PSFMessage -Message "Waiting for $($app.ApplicationName) to be healthy" -Level VeryVerbose
+                        Write-PSFMessage -Message "Waiting for $($app.ApplicationName) to be healthy" -Level VeryVerbose```````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
                 
                     } until ($health.aggregatedhealthstate -eq "Ok" -or $timer -gt $Timeout)
+                    Write-PSFMessage -Message "Waiting for $($app.ApplicationName) to be healthy" -Level VeryVerbose
                 }
                 if ($timer -gt $Timeout) {
                     Write-PSFMessage -Message "Warning: Timeout occured $Timeout seconds" -Level Warning
