@@ -86,6 +86,7 @@ function Get-D365LBDTestConfigData {
             'LCSEnvironmentURL'                            = 'https://lcs.dynamics.com/v2/EnvironmentDetailsV3/564185?EnvironmentId=6324123912084123-123d0-1232-11234123'
             'SFExplorerURL'                                = 'https://sf.offandonit.com:19080'
             'CustomModuleName'                             = "MOD"
+            'ADFSIdentifier'                               = 'https://ADFS.website.com/adfs/services/trust'
         }
         ##Sends Custom Object to Pipeline
         [PSCustomObject]$Properties

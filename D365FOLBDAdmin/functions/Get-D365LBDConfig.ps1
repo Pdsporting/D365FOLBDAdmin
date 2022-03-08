@@ -192,6 +192,7 @@
                 $DataSigningCertificate = $($DataAccess.Parameter | Where-Object { $_.Name -eq 'DataSigningCertificateThumbprint' }).value
 
                 $AAD = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -EQ 'Aad' }
+                $ADFSIdentifier = $($AAD.Parameter | Where-Object { $_.Name -eq 'ADFSIdentifier' }).value 
                 $ClientURL = $($AAD.Parameter | Where-Object { $_.Name -eq 'AADValidAudience' }).value + "namespaces/AXSF/"
                 $SFExplorerURL = $($ClientURL.Replace('//ax.', '//sf.')).Replace('/namespaces/AXSF/', ':19080')
 
@@ -377,19 +378,28 @@
                         Write-PSFMessage -Level Warning -Message "Warning: Invalid Node found. Suggest running Update-ServiceFabricD365ClusterConfig to help fix. $invalidnodes"
                     }
 
-                    $ServiceFabricPartitionIdForAXSF = $(get-servicefabricpartition -servicename 'fabric:/AXSF/AXService').PartitionId
-                    foreach ($node in $nodes) {
-                        $nodename = $node.Nodename
-                        $replicainstanceIdofnode = $(get-servicefabricreplica -partition $ServiceFabricPartitionIdForAXSF | Where-Object { $_.NodeName -eq "$NodeName" }).InstanceId
-                        $ReplicaDetails = Get-Servicefabricdeployedreplicadetail -nodename $nodename -partitionid $ServiceFabricPartitionIdForAXSF -ReplicaOrInstanceId $replicainstanceIdofnode -replicatordetail
-                        $endpoints = $ReplicaDetails.deployedservicereplicainstance.address | ConvertFrom-Json
-                        if ($endpoints.Endpoints) {
-                            $deployedinstancespecificguid = $($endpoints.Endpoints | Get-Member | Where-Object { $_.MemberType -eq "NoteProperty" }).Name
-                            $httpsurl = $endpoints.Endpoints.$deployedinstancespecificguid
-                            Write-PSFMessage -Level VeryVerbose -Message "$NodeName is accessible via $httpsurl with a guid $deployedinstancespecificguid "
-                        }
-                        else {
-                            Write-PSFMessage -Level VeryVerbose -Message "Warning: $nodename doesnt have an endpoint. Likely AXSF is down on that node"
+                    try {
+                        $ServiceFabricPartitionIdForAXSF = $(get-servicefabricpartition -servicename 'fabric:/AXSF/AXService' -ErrorAction Stop).PartitionId
+                    }
+                    catch {
+                    }
+                    if (!$ServiceFabricPartitionIdForAXSF) {
+                        Write-PSFMessage -Level VeryVerbose -Message "Warning: AXSF Partition not found cannot gather node details as AXSF is not installed"
+                    }
+                    else {
+                        foreach ($node in $nodes) {
+                            $nodename = $node.Nodename
+                            $replicainstanceIdofnode = $(get-servicefabricreplica -partition $ServiceFabricPartitionIdForAXSF | Where-Object { $_.NodeName -eq "$NodeName" }).InstanceId
+                            $ReplicaDetails = Get-Servicefabricdeployedreplicadetail -nodename $nodename -partitionid $ServiceFabricPartitionIdForAXSF -ReplicaOrInstanceId $replicainstanceIdofnode -replicatordetail
+                            $endpoints = $ReplicaDetails.deployedservicereplicainstance.address | ConvertFrom-Json
+                            if ($endpoints.Endpoints) {
+                                $deployedinstancespecificguid = $($endpoints.Endpoints | Get-Member | Where-Object { $_.MemberType -eq "NoteProperty" }).Name
+                                $httpsurl = $endpoints.Endpoints.$deployedinstancespecificguid
+                                Write-PSFMessage -Level VeryVerbose -Message "$NodeName is accessible via $httpsurl with a guid $deployedinstancespecificguid "
+                            }
+                            else {
+                                Write-PSFMessage -Level VeryVerbose -Message "Warning: $nodename doesnt have an endpoint. Likely AXSF is down on that node"
+                            }
                         }
                     }
                 }
@@ -870,6 +880,7 @@ ORDER BY [rh].[restore_date] DESC"
                 'SFExplorerURL'                              = $SFExplorerURL
                 'CustomModuleName'                           = $CustomModuleName
                 'LastFullyPreppedCustomModuleAsset'          = $LastFullyPreppedCustomModuleAsset
+                'ADFSIdentifier'                             = $ADFSIdentifier
             }
 
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificates')
@@ -964,7 +975,7 @@ ORDER BY [rh].[restore_date] DESC"
                 Remove-PSSession -Session $SFModuleSession  
             }
             [PSCustomObject] $FinalOutput
-        }
+        }1`
     }
     
     END {

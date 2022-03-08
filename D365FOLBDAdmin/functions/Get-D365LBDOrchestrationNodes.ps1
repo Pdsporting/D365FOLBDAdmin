@@ -60,6 +60,9 @@ function Get-D365LBDOrchestrationNodes {
             if (($count -eq $($Config.OrchestratorServerName).Count) -and (!$connection)) {
                 Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
             }
+            if (!$connection){
+                Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
+            }
         }
         $PartitionId = $(Get-ServiceFabricServiceHealth -ServiceName 'fabric:/LocalAgent/OrchestrationService').PartitionHealthStates | Select-Object PartitionId
         $PartitionIDGUID = $PartitionId.PartitionId
