@@ -1,15 +1,13 @@
 function Get-D365LBDADFSSID {
     <#
     .SYNOPSIS
-
+Loads Microsofts Dynamics Dll and gathers the SID based on the combination of Username and ADFS identifier
    .DESCRIPTION
-
+Loads Microsofts Dynamics Dll and gathers the SID based on the combination of Username and ADFS identifier
    .EXAMPLE
-
+Get-D365LBDADFSSID -Usernamewithemail 'fakeemail@offandonit.com' -ADFSIdentifier 'https://FakeADFS.Fakewebsite1231284u913.com/adfs/services/trust' -computername 'axserver01'
    .EXAMPLE
-
-    .EXAMPLE
-
+Get-D365LBDADFSSID -Usernamewithemail 'fakeemail@offandonit.com' -ADFSIdentifier 'https://FakeADFS.Fakewebsite1231284u913.com/adfs/services/trust' -config $config
    .PARAMETER ComputerName
    String
    The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
@@ -30,8 +28,6 @@ function Get-D365LBDADFSSID {
         [string]$ADFSIdentifier
     )
     BEGIN {
-       
-
     } 
     PROCESS {
         if (!$Config) {
@@ -64,7 +60,6 @@ function Get-D365LBDADFSSID {
                 $ADFSSID = [Microsoft.Dynamics.Ax.Security.SidGenerator]::Generate("$UsernamewithEmail", $ADFSIdentifier, 'sha1')
             }
             catch {}
-
         }
         if (!$ADFSSID) {
             $ADFSSID = invoke-command -Session $Session -ScriptBlock { 
@@ -73,7 +68,6 @@ function Get-D365LBDADFSSID {
                 }
                 catch {}
             }
-
         }
         if ($ADFSSID) {
             write-PSFMessage -Level VeryVerbose -Message "SID for $UsernamewithEmail created using $ADFSIdentifier."
@@ -83,7 +77,6 @@ function Get-D365LBDADFSSID {
         else {
             write-PSFMessage -Level Error -Message "SID cannot be generated"
         }
-
     }
     END {
         if ($Session ) {

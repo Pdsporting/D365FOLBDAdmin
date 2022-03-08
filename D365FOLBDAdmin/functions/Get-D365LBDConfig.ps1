@@ -319,7 +319,8 @@
             else {
                 try {
                     Write-PSFMessage -Message "Trying to connect to $ConnectionEndpoint using $ServerCertificate" -Level Verbose
-                    $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
+                   
+                    
                     $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                     $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
                     if ($connection) {
