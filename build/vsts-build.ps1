@@ -104,7 +104,7 @@ if ($AutoVersion)
 	}
 	$newBuildNumber = $remoteVersion.Build + 1
 	[version]$localVersion = (Import-PowerShellDataFile -Path "$($publishDir.FullName)\D365FOLBDAdmin\D365FOLBDAdmin.psd1").ModuleVersion
-	Update-ModuleManifest -Path "$($publishDir.FullName)\D365FOLBDAdmin\D365FOLBDAdmin.psd1" -ModuleVersion "$($localVersion.Major).$($localVersion.Minor).$($newBuildNumber)"
+	Update-ModuleManifest -Path "$($publishDir.FullName)\D365FOLBDAdmin\D365FOLBDAdmin.psd1" -ModuleVersion "$($localVersion.Major).$($localVersion.Minor).$($newBuildNumber).0"
 }
 #endregion Updating the Module Version
 
