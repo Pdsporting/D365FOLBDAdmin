@@ -10,10 +10,12 @@ Get-D365LBDADFSSID -Usernamewithemail 'fakeemail@offandonit.com' -ADFSIdentifier
 Get-D365LBDADFSSID -Usernamewithemail 'fakeemail@offandonit.com' -ADFSIdentifier 'https://FakeADFS.Fakewebsite1231284u913.com/adfs/services/trust' -config $config
    .PARAMETER ComputerName
    String
+
    The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
    .PARAMETER Config
     Custom PSObject
     Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
+    
    #>
     [CmdletBinding()]
     [alias("Get-D365ADFSSID")]

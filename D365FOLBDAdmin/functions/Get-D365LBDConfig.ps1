@@ -461,7 +461,7 @@
                     $AllAppServerList += $ComputerName
                 }
             }
-            
+            $AllAppServerList = $AllAppServerList | select -Unique
             ##
             <# Source: https://stackoverflow.com/questions/8423541/how-do-you-run-a-sql-server-query-from-powershell
 #>
