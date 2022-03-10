@@ -319,13 +319,6 @@
             else {
                 try {
                     Write-PSFMessage -Message "Trying to connect to $ConnectionEndpoint using $ServerCertificate" -Level Verbose
-                   
-                    
-                    $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
-                    $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
-                    if ($connection) {
-                        Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My" -Level VeryVerbose
-                    }
                     <#NewConnection logic start#>
                     $count = 0
                     if (!$connection) {
@@ -972,7 +965,7 @@ ORDER BY [rh].[restore_date] DESC"
             }
             $FinalOutput = $CertificateExpirationHash, $Properties | Merge-Hashtables
             ##Sends Custom Object to Pipeline
-            if ($Session) {
+            if ($SFModuleSession {
                 Remove-PSSession -Session $SFModuleSession  
             }
             [PSCustomObject] $FinalOutput
