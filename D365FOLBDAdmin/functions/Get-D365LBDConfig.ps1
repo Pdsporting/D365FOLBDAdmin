@@ -965,7 +965,7 @@ ORDER BY [rh].[restore_date] DESC"
             }
             $FinalOutput = $CertificateExpirationHash, $Properties | Merge-Hashtables
             ##Sends Custom Object to Pipeline
-            if ($SFModuleSession {
+            if ($SFModuleSession) {
                 Remove-PSSession -Session $SFModuleSession  
             }
             [PSCustomObject] $FinalOutput
