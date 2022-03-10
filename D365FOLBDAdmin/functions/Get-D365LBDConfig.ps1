@@ -976,7 +976,7 @@ ORDER BY [rh].[restore_date] DESC"
                 Remove-PSSession -Session $SFModuleSession  
             }
             [PSCustomObject] $FinalOutput
-        }1`
+        }
     }
     
     END {
