@@ -555,6 +555,13 @@ ORDER BY [rh].[restore_date] DESC"
             }
             else {
                 Write-PSFMessage "$AXDatabaseServer not found so cant get database details" -Level Verbose
+                if (!$AXDatabaseServer){
+                    $AXDatabaseServer = $DatabaseClusterServerNames | select -First 1
+                }
+                
+                if (!$AXDatabaseServer){
+                    $AXDatabaseServer = $OrchdatabaseServer 
+                }
             }
             $SQLQueryToGetOrchestratorDataOrchestratorJob = "select top 1 State, QueuedDateTime, LastProcessedDateTime, EndDateTime,JobId, DeploymentInstanceId from OrchestratorJob order by ScheduledDateTime desc"
             $SQLQueryToGetOrchestratorDataRunBook = "select top 1 RunBookTaskId, Name, Description, State, StartDateTime, EndDateTime, OutputMessage from RunBookTask"

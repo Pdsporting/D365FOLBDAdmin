@@ -96,8 +96,8 @@ function Set-D365LBDOptions {
                 $CLIXML = Import-Clixml "$agentsharelocation\scripts\D365FOLBDAdmin\$filenameprename$LastRunbookTaskId.xml"
             } 
         }
-        if ($OtherTaskName){
-            if (!$OtherTaskStatus){
+        if ($OtherTaskName) {
+            if (!$OtherTaskStatus) {
                 $OtherTaskStatus = "Success"
             }
             $CLIXML += @{"$OtherTaskName" = "$OtherTaskStatus" }  
@@ -189,11 +189,16 @@ function Set-D365LBDOptions {
             $SqlresultsUpdate = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery2 
             if ($Sqlresults) {
-                $CLIXML += @{"Enable User $EnableUserid" = "Success - $SQLQuery" }  
+                if ($PreDeployment -or $PostDeployment) {
+                    $CLIXML += @{"Enable User $EnableUserid" = "Success - $SQLQuery" }  
+                }
                 Write-PSFMessage -Message "$EnableUserid enabled." -Level VeryVerbose
             }
             else {
-                $CLIXML += @{"Enable User $EnableUserid" = "Failed - $SQLQuery" }  
+                if ($PreDeployment -or $PostDeployment) {
+                    $CLIXML += @{"Enable User $EnableUserid" = "Failed - $SQLQuery" } 
+                } 
+                Write-PSFMessage -Message "$EnableUserid enable failed." -Level VeryVerbose
             }
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
         }
@@ -207,10 +212,16 @@ function Set-D365LBDOptions {
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery 
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
             if ($Sqlresults) {
-                $CLIXML += @{'Disable User' = "Success - $SQLQuery" }  
+                if ($PreDeployment -or $PostDeployment) {
+                    $CLIXML += @{'Disable User' = "Success - $SQLQuery" }  
+                }
+                rite-PSFMessage -Message "$EnableUserid disabled." -Level VeryVerbose
             }
             else {
-                $CLIXML += @{'Disable User' = "Failed - $SQLQuery" }  
+                if ($PreDeployment -or $PostDeployment) {
+                    $CLIXML += @{'Disable User' = "Failed - $SQLQuery" }  
+                }
+                Write-PSFMessage -Message "$EnableUserid disable failed." -Level VeryVerbose
             }
         }
 
@@ -251,8 +262,8 @@ function Set-D365LBDOptions {
             if ($MSTeamsCustomStatus) {
                 $status = "$MSTeamsCustomStatus"
             }
-            if (!$MSTeamsBuildName){
-                    $MSTeamsBuildName = $config.LastFullyPreppedCustomModuleAsset
+            if (!$MSTeamsBuildName) {
+                $MSTeamsBuildName = $config.LastFullyPreppedCustomModuleAsset
             }
             if ($MSTeamsFormmatedJSONofCLIItems) {
                 $bodyjson = @"
