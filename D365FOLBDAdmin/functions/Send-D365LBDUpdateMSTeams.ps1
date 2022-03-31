@@ -50,7 +50,8 @@ Send-D365LBDUpdateMSTeams -messageType "PlainText" -MSTeamsURI "htts://fakemicro
         [string]$EnvironmentName,
         [string]$EnvironmentURL,
         [string]$PlainTextMessage,
-        [string]$PlainTextTitle
+        [string]$PlainTextTitle,
+        [switch]$StatusReportIgnorePermissionErrors
     )
     BEGIN {
     }
@@ -499,6 +500,9 @@ Send-D365LBDUpdateMSTeams -messageType "PlainText" -MSTeamsURI "htts://fakemicro
             }
 
             $Health = Get-D365LBDEnvironmentHealth -Config $config 
+            if ($StatusReportIgnorePermissionErrors){
+                $Health = $Health | Where-Object {$_.Details -notlike "*Check Permissions"}
+            }
             if ($Health.State -contains "Down") {
                 foreach ($issue in $($health | Where-Object { $_.State -eq 'Down' })) {
                     $HealthCheck = "$HealthCheck" + "Down" + "$($issue.ExtraInfo)"
