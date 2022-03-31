@@ -68,6 +68,12 @@ function Set-D365LBDOptions {
             $LCSEnvironmentName = $Config.LCSEnvironmentName
             $clienturl = $Config.clienturl
             $LastRunbookTaskId = $Config.LastRunbookTaskId
+            if (!$AXDatabaseServer){
+                $AXDatabaseServer = $config.databaseclusterservernames | select -First 1
+                if (!$AXDatabaseServer){
+                    $AXDatabaseServer = $config.OrchDatabaseServer
+                }
+            }
         }
         if ((Test-Path $agentsharelocation\scripts\D365FOLBDAdmin) -eq $false) {
             
@@ -143,6 +149,9 @@ function Set-D365LBDOptions {
         }
 
         if ($MaintenanceModeOn) {
+            if (!$AXDatabaseServer){
+                Write-PSFMessage -Level Error -Message "Config does not have AX Database Server cant turn on maintenance mode"
+            }
             Write-PSFMessage -Message "Turning On Maintenance Mode" -Level Verbose
             $SQLQuery = "update SQLSYSTEMVARIABLES SET VALUE = 1 Where PARM = 'CONFIGURATIONMODE'"
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
@@ -162,6 +171,9 @@ function Set-D365LBDOptions {
         }
 
         if ($MaintenanceModeOff) {
+            if (!$AXDatabaseServer){
+                Write-PSFMessage -Level Error -Message "Config does not have AX Database Server cant turn off maintenance mode"
+            }
             Write-PSFMessage -Message "Turning Off Maintenance Mode" -Level Verbose
             $SQLQuery = "update SQLSYSTEMVARIABLES SET VALUE = 0 Where PARM = 'CONFIGURATIONMODE'"
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
@@ -182,6 +194,9 @@ function Set-D365LBDOptions {
 
         if ($EnableUserid) {
             ##Trim 8 characters
+            if (!$AXDatabaseServer){
+                Write-PSFMessage -Level Error -Message "Config does not have AX Database Server cant enable user"
+            }
             $EnableUserid = $EnableUserid.SubString(0, 8)
             Write-PSFMessage -Message "Enabling $EnableUserid. Note: User must already exist in system" -Level Verbose
             $SQLQuery = "update userinfo SET Enable = 1 Where id = '$EnableUserid'"
@@ -204,6 +219,9 @@ function Set-D365LBDOptions {
         }
 
         if ($DisableUserid) {
+            if (!$AXDatabaseServer){
+                Write-PSFMessage -Level Error -Message "Config does not have AX Database Server cant disable user"
+            }
             $DisableUserid = $DisableUserid.SubString(0, 8)
             Write-PSFMessage -Message "Disabling $DisableUserid. Note: User must already exist in system" -Level Verbose
             $SQLQuery = "update userinfo SET Enable = 0 Where id = '$DisableUserid'"
@@ -226,6 +244,9 @@ function Set-D365LBDOptions {
         }
 
         if ($SQLQueryToRun) {
+            if (!$AXDatabaseServer){
+                Write-PSFMessage -Level Error -Message "Config does not have AX Database Server cant run SQL command"
+            }
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQueryToRun
             Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
             $CountofSQLScripts = $($CLIXML.GetEnumerator() | Where-Object { $_.Name -like "SQL*" }).Count

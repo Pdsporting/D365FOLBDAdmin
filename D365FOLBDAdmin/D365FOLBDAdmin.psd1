@@ -68,7 +68,7 @@
 		'Remove-D365SFClusterExtraFiles',
 		'Get-D365LBDConfigTemplate',
 		'Restart-D365LBDOrchestratorLastJob',
-		'Remove-D365LBDSFImageStoreFiles','Get-D365LBDAXSFGuids','Remove-D365LBDSFInstalledFinancialReporting','Get-D365LBDADFSSID','Get-AzureDevOpsLastSuccessfulRelease'
+		'Remove-D365LBDSFImageStoreFiles','Get-D365LBDAXSFGuids','Remove-D365LBDSFInstalledFinancialReporting','Get-D365LBDADFSSID','Get-AzureDevOpsLastSuccessfulRelease','Get-D365LCSEnvironmentDetailsProjectPage'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
@@ -100,7 +100,7 @@
 	'Get-D365DependencyHealth','Export-D365ConfigReport',
 	'Get-D365ConfigTemplate',
 	"Restart-D365OrchestratorLastJob",
-	"Remove-D365SFImageStoreFiles",'Get-D365AXSFGuids','Remove-D365SFInstalledFinancialReporting','Get-D365ADFSSID','Get-LastSuccessfulRelease')
+	"Remove-D365SFImageStoreFiles",'Get-D365AXSFGuids','Remove-D365SFInstalledFinancialReporting','Get-D365ADFSSID','Get-LastSuccessfulRelease','Get-LCSEnvironmentDetailsProjectPages')
 	
 	# List of all modules packaged with this module
 	ModuleList = @()

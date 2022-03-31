@@ -437,7 +437,7 @@ function Get-D365LBDEnvironmentHealth {
             $Properties = @{'Name' = "ServiceFabricApplications"
                 'Details'          = "Healthy: $HealthyApps / Total: $TotalApplications"
                 'State'            = "Operational" 
-                'ExtraInfo'        = ""
+                'ExtraInfo'        = "$TotalApplications"
                 'Source'           = $OrchestratorServerName
                 'Group'            = 'ServiceFabric'
             }

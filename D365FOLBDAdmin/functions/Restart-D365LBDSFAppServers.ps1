@@ -171,6 +171,24 @@ function Restart-D365LBDSFAppServers {
                 if ($timer -gt $Timeout) {
                     Write-PSFMessage -Message "Warning: Timeout occured $Timeout seconds" -Level Warning
                 }
+                else {
+                    if ($waittillhealthy) {
+                        $RealHealth = Get-D365LBDEnvironmentHealth -ComputerName $ConnectedOrchestratorServerName | Where-Object { $_.Name -eq "ServiceFabricApplications" }
+                        if ($RealHealth.State -eq "Operational") {
+                            Write-PSFMessage -Level VeryVerbose -Message "All Service Fabric Apps are up"
+                        }
+                        else {
+                            $timer = 0
+                            while ($RealHealth.state -ne "Operational" -and $timer -le $Timeout) {
+                                $timer = $timer + 10
+                                Write-PSFMessage -Level VeryVerbose -Message "Sleeping before next check of health"
+                                Start-Sleep -Seconds 10
+                                $RealHealth = Get-D365LBDEnvironmentHealth -ComputerName $ConnectedOrchestratorServerName | Where-Object { $_.Name -eq "ServiceFabricApplications" }
+                            }
+                        }
+                        Write-PSFMessage -Level VeryVerbose -Message "$RealHealth"
+                    }
+                }
             }
 
         }
