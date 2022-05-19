@@ -555,16 +555,16 @@ ORDER BY [rh].[restore_date] DESC"
             }
             else {
                 Write-PSFMessage "$AXDatabaseServer not found so cant get database details" -Level Verbose
-                if (!$AXDatabaseServer){
+                if (!$AXDatabaseServer) {
                     $AXDatabaseServer = $DatabaseClusterServerNames | select -First 1
                 }
                 
-                if (!$AXDatabaseServer){
+                if (!$AXDatabaseServer) {
                     $AXDatabaseServer = $OrchdatabaseServer 
                 }
             }
             $SQLQueryToGetOrchestratorDataOrchestratorJob = "select top 1 State, QueuedDateTime, LastProcessedDateTime, EndDateTime,JobId, DeploymentInstanceId from OrchestratorJob order by ScheduledDateTime desc"
-            $SQLQueryToGetOrchestratorDataRunBook = "select top 1 RunBookTaskId, Name, Description, State, StartDateTime, EndDateTime, OutputMessage from RunBookTask"
+            $SQLQueryToGetOrchestratorDataRunBook = "select top 1 RunBookTaskId, Name, Description, State, StartDateTime, EndDateTime, OutputMessage from RunBookTask order by StartDateTime desc"
             try {
                 $SqlresultsToGetOrchestratorDataOrchestratorJob = invoke-sql -datasource $OrchdatabaseServer -database $OrchDatabase -sqlcommand $SQLQueryToGetOrchestratorDataOrchestratorJob
             }
@@ -609,11 +609,12 @@ ORDER BY [rh].[restore_date] DESC"
                     5 { $OrchestratorJobRunBookState = 'Unknown Status' }
                 }
                 $OrchJobQuery = 'select top 1 JobId,State from OrchestratorJob order by ScheduledDateTime desc'
-                $RunBookQuery = 'select top 1 RunbookTaskId, State from RunBookTask order by StartDateTime desc'
+                $RunBookQuery = 'select top 1 RunbookTaskId, State,Name from RunBookTask order by StartDateTime desc'
                 $OrchJobQueryResults = Invoke-SQL -dataSource $OrchDatabaseServer -database $OrchDatabase -sqlCommand $OrchJobQuery
                 $RunBookQueryResults = Invoke-SQL -dataSource $OrchDatabaseServer -database $OrchDatabase -sqlCommand $RunBookQuery 
                 $LastOrchJobId = $($OrchJobQueryResults | select JobId).JobId
                 $LastRunbookTaskId = $($RunBookQueryResults | select RunbookTaskId).RunbookTaskId
+                $LastRunbookName = $($RunBookQueryResults | select Name).Name
             }
 
             $SQLQueryToGetAlwaysOn = " WITH AGStatus AS(
@@ -688,15 +689,26 @@ ORDER BY [rh].[restore_date] DESC"
                         }
                         $cert = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SQL Server\$SQLVersionandInstance\MSSQLSERVER\SuperSocketNetLib"
                         $cert.Certificate.ToUpper()
-                    } -ComputerName $sqlserver
+                    } -ComputerName $sqlserver -ErrorAction Stop
                 }                
-                catch {}
+                catch {
+                    $whoami = whoami
+                    Write-PSFMessage -Level Warning -Message "Warning: Can't connect to $SqlServer with account $whoami to gather SQL Cert Encryption details"
+                }
                 $listofsqlcerts += $SQLCert      
             }
             $DatabaseEncryptionThumbprints = $listofsqlcerts 
 
 
             if ($CustomModuleName) {
+                $newassets = Export-D365FOLBDAssetModuleVersion -AgentShare $AgentShareLocation -CustomModuleName $CustomModuleName
+                if ($newassets) {
+                    foreach ($newasset in $newassets) {
+                        Write-PSFMessage -Level VeryVerbose -Message "Found new prepped asset $newasset"
+                    }
+                    $NewPreppedAsset = $newassets | select -First 1
+                }
+                
                 $assets = Get-ChildItem -Path "$AgentShareLocation\assets" | Where-object { ($_.Name -ne "chk") -and ($_.Name -ne "topology.xml") } | Sort-Object { $_.CreationTime } -Descending
                 $versions = @()
                 foreach ($asset in $assets) {
@@ -792,6 +804,8 @@ ORDER BY [rh].[restore_date] DESC"
                     Write-PSFMessage -Message "Last Version: $($versionlatest.BaseName) " -Level veryVerbose
                     Write-PSFMessage -Message "Finished Prep at: $($StandaloneSetupZip.LastWriteTime)" -Level veryVerbose
                     $LastFullyPreppedCustomModuleAsset = $versionlatest.BaseName
+                    $LastFullyPreppedCustomModuleAsset = $LastFullyPreppedCustomModuleAsset -replace "$CustomModeName",""
+                    $LastFullyPreppedCustomModuleAsset = $LastFullyPreppedCustomModuleAsset.trim()
                     $latestfound = 1
                 }
             }
@@ -803,6 +817,7 @@ ORDER BY [rh].[restore_date] DESC"
             try {
                 Write-PSFMessage -Level Verbose -Message "Looking for process AXService $AXSFConfigServerName to get the running folder"
                 $RunningAXCodeFolder = Invoke-Command -ComputerName $AXSFConfigServerName -ScriptBlock { $($process = Get-Process | Where-Object { $_.Name -eq "AXService" }; if ($process) { split-path $($process | Select-Object *).Path -Parent }) }
+                $RunningAXCodeFolderLastWriteTime = $(Invoke-Command -ComputerName $AXSFConfigServerName -ScriptBlock { get-childitem $using:RunningAXCodeFolder -directory | select LastWriteTime -First 1 }).LastWriteTime
             }
             catch {
 
@@ -882,6 +897,9 @@ ORDER BY [rh].[restore_date] DESC"
                 'CustomModuleName'                           = $CustomModuleName
                 'LastFullyPreppedCustomModuleAsset'          = $LastFullyPreppedCustomModuleAsset
                 'ADFSIdentifier'                             = $ADFSIdentifier
+                "FoundNewPreppedAsset"                       = $NewPreppedAsset
+                'RunningAXCodeFolderLastWriteTime'           = $RunningAXCodeFolderLastWriteTime
+                'LastRunbookName'                            = $LastRunbookName
             }
 
             $certlist = ('SFClientCertificate', 'SFServerCertificate', 'DataEncryptionCertificate', 'DataSigningCertificate', 'SessionAuthenticationCertificate', 'SharedAccessSMBCertificate', 'LocalAgentCertificate', 'DataEnciphermentCertificate', 'FinancialReportingCertificate', 'ReportingSSRSCertificate', 'DatabaseEncryptionCertificates')
@@ -917,13 +935,13 @@ ORDER BY [rh].[restore_date] DESC"
                             if ($cert -eq 'DatabaseEncryptionCertificates' -and !$certexpiration) {
                                 try {
                                     foreach ($DatabaseClusterServerName in $DatabaseClusterServerNames) {
-                                        if (!$certexpiration) {
+                                        if (!$certexpiration -and $value) {
                                             $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value -ErrorAction Stop
                                         }
-                                        if (!$certexpiration) {
+                                        if (!$certexpiration -and $value) {
                                             $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\CurrentUser\my | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $DatabaseClusterServerName -ArgumentList $value -ErrorAction Stop
                                         }
-                                        if (!$certexpiration) {
+                                        if (!$certexpiration -and $value) {
                                             $certexpiration = invoke-command -scriptblock { param($value) $(Get-ChildItem Cert:\LocalMachine\Root | Where-Object { $_.Thumbprint -eq "$value" }).NotAfter } -ComputerName $AXSFConfigServerName -ArgumentList $value -ErrorAction Stop
                                         }
                                     }

@@ -46,12 +46,19 @@ function Export-D365LBDAssetModuleVersion {
             $AgentShareLocation = $Config.AgentShareLocation
         }
         if (!$AgentShareLocation) {
-            $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
+            if ($CustomModuleName){
+                Write-PSFMessage -Level VeryVerbose -Message "Connecting to $ComputerName to get config"
+                $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly -custommoduleName $CustomModuleName
+            }
+            
             $AgentShareLocation = $Config.AgentShareLocation
         }
         if (!$CustomModuleName) {
             if ($Config.CustomModuleName) {
                 $CustomModuleName = $Config.CustomModuleName
+                if ($CustomModuleName){
+                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly -custommoduleName $CustomModuleName
+                }
             }
             else {
                 Stop-PSFFunction -Message "Error: Custom Module Name must be defined in parameter or in config." -EnableException $true -FunctionName $_
