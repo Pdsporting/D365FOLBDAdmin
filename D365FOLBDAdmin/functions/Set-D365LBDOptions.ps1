@@ -68,9 +68,9 @@ function Set-D365LBDOptions {
             $LCSEnvironmentName = $Config.LCSEnvironmentName
             $clienturl = $Config.clienturl
             $LastRunbookTaskId = $Config.LastRunbookTaskId
-            if (!$AXDatabaseServer){
+            if (!$AXDatabaseServer) {
                 $AXDatabaseServer = $config.databaseclusterservernames | select -First 1
-                if (!$AXDatabaseServer){
+                if (!$AXDatabaseServer) {
                     $AXDatabaseServer = $config.OrchDatabaseServer
                 }
             }
@@ -149,7 +149,7 @@ function Set-D365LBDOptions {
         }
 
         if ($MaintenanceModeOn) {
-            if (!$AXDatabaseServer){
+            if (!$AXDatabaseServer) {
                 Write-PSFMessage -Level Error -Message "Config does not have AX Database Server cant turn on maintenance mode"
             }
             Write-PSFMessage -Message "Turning On Maintenance Mode" -Level Verbose
@@ -171,7 +171,7 @@ function Set-D365LBDOptions {
         }
 
         if ($MaintenanceModeOff) {
-            if (!$AXDatabaseServer){
+            if (!$AXDatabaseServer) {
                 Write-PSFMessage -Level Error -Message "Config does not have AX Database Server cant turn off maintenance mode"
             }
             Write-PSFMessage -Message "Turning Off Maintenance Mode" -Level Verbose
@@ -194,18 +194,17 @@ function Set-D365LBDOptions {
 
         if ($EnableUserid) {
             ##Trim 8 characters
-            if (!$AXDatabaseServer){
+            if (!$AXDatabaseServer) {
                 Write-PSFMessage -Level Error -Message "Config does not have AX Database Server cant enable user"
             }
-            $EnableUserid = $EnableUserid.SubString(0, 8)
             Write-PSFMessage -Message "Enabling $EnableUserid. Note: User must already exist in system" -Level Verbose
-            $SQLQuery = "update userinfo SET Enable = 1 Where id = '$EnableUserid'"
+            $SQLQuery = "update userinfo SET Enable = 1, RECVERSION = RECVERSION +1 Where id = '$EnableUserid'"
             $SQLQuery2 = "select * from userinfo where enable = 1 and id = '$EnableUserid'"
             $SqlresultsUpdate = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery2 
             if ($Sqlresults) {
                 if ($PreDeployment -or $PostDeployment) {
-                    $CLIXML += @{"Enable User $EnableUserid" = "Success - $SQLQuery" }  
+                    $CLIXML += @{"Enable User $EnableUserid" = "Success - $SQLQuery" }  
                 }
                 Write-PSFMessage -Message "$EnableUserid enabled." -Level VeryVerbose
             }
@@ -215,36 +214,41 @@ function Set-D365LBDOptions {
                 } 
                 Write-PSFMessage -Message "$EnableUserid enable failed." -Level VeryVerbose
             }
-            Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
+            Write-PSFMessage -Message "ID: $($SQLresults.ID) EnableFlag: $($SQLresults.Enable) " -Level VeryVerbose
         }
-
+            
         if ($DisableUserid) {
-            if (!$AXDatabaseServer){
+            if (!$AXDatabaseServer) {
                 Write-PSFMessage -Level Error -Message "Config does not have AX Database Server cant disable user"
             }
-            $DisableUserid = $DisableUserid.SubString(0, 8)
-            Write-PSFMessage -Message "Disabling $DisableUserid. Note: User must already exist in system" -Level Verbose
-            $SQLQuery = "update userinfo SET Enable = 0 Where id = '$DisableUserid'"
-            $SQLQuery2 = "select * from userinfo where enable = 0 and id = '$EnableUserid'"
-            $SqlresultsUpdate = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery 
-            $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery 
-            Write-PSFMessage -Message "$SQLresults" -Level VeryVerbose
-            if ($Sqlresults) {
+            else {
+                Write-PSFMessage -Message "Disabling $DisableUserid. Note: User must already exist in system" -Level Verbose
+                $SQLQuery = "update userinfo SET Enable = 0, RECVERSION = RECVERSION +1 Where id = '$DisableUserid'"
+                $SQLQuery2 = "select * from userinfo where enable = 0 and id = '$DisableUserid'"
+                $SQLQuery3 = "SELECT [USER_] ,[SECURITYROLE],  t2.NAME, t2.AOTNAME  FROM [dbo].[SECURITYUSERROLE]  t1  inner join  [SECURITYROLE] t2 on t1.SECURITYROLE=t2.RECID  where USER_ = '$DisableUserid'"
+                $SqlresultsUpdate = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery 
+                $Sqlresults2 = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery2
+                $Sqlresults3 = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQuery3 
+                Write-PSFMessage -Message "ID: $($SQLresults2.ID) EnableFlag: $($SQLresults2.Enable) " -Level VeryVerbose
+                Write-PSFMessage -Message "User in the following groups" -Level VeryVerbose
+                Write-PSFMessage -Message "$($($Sqlresults3.Name) -join ', ')"
+            }
+            if ($Sqlresults2) {
                 if ($PreDeployment -or $PostDeployment) {
-                    $CLIXML += @{'Disable User' = "Success - $SQLQuery" }  
+                    $CLIXML += @{'Disable User' = "Success - $SQLQuery" }  
                 }
-                rite-PSFMessage -Message "$EnableUserid disabled." -Level VeryVerbose
+                write-PSFMessage -Message "$DisableUserid disabled." -Level VeryVerbose
             }
             else {
                 if ($PreDeployment -or $PostDeployment) {
-                    $CLIXML += @{'Disable User' = "Failed - $SQLQuery" }  
+                    $CLIXML += @{'Disable User' = "Failed - $SQLQuery" }  
                 }
-                Write-PSFMessage -Message "$EnableUserid disable failed." -Level VeryVerbose
+                Write-PSFMessage -Message "$DisableUserid disable failed." -Level VeryVerbose
             }
         }
 
         if ($SQLQueryToRun) {
-            if (!$AXDatabaseServer){
+            if (!$AXDatabaseServer) {
                 Write-PSFMessage -Level Error -Message "Config does not have AX Database Server cant run SQL command"
             }
             $Sqlresults = invoke-sql -datasource $AXDatabaseServer -database $AXDatabaseName -sqlcommand $SQLQueryToRun

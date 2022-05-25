@@ -71,6 +71,7 @@ Send-D365LBDUpdateMSTeams -messageType "PlainText" -MSTeamsURI "htts://fakemicro
             $status = "$MSTeamsCustomStatus"
         }
         if (!$MSTeamsURI) {
+            Write-PSFMessage -Level VeryVerbose -Message "MSTeamsURI not defined attemping to find in config"
             if (!$CustomModuleName) {
                 if (!$Config) {
                     $Config = Get-D365LBDConfig -ComputerName $ComputerName -CustomModuleName $CustomModuleName -HighLevelOnly 

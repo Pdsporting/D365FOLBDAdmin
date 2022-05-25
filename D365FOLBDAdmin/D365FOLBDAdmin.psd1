@@ -67,7 +67,7 @@
 		'Get-D365LBDDependencyHealth',
 		'Remove-D365SFClusterExtraFiles',
 		'Get-D365LBDConfigTemplate',
-		'Restart-D365LBDOrchestratorLastJob',
+		'Restart-D365LBDOrchestratorLastJob','Start-D365LBDDeploymentSleep'
 		'Remove-D365LBDSFImageStoreFiles','Get-D365LBDAXSFGuids','Remove-D365LBDSFInstalledFinancialReporting','Get-D365LBDADFSSID','Get-AzureDevOpsLastSuccessfulRelease','Get-D365LCSEnvironmentDetailsProjectPage','Start-D365LBDSleepForNewAssetPrep'
 		)
 	# Cmdlets to export from this module
@@ -99,7 +99,7 @@
 	'Send-D365UpdateMSTeams',
 	'Get-D365DependencyHealth','Export-D365ConfigReport',
 	'Get-D365ConfigTemplate',
-	"Restart-D365OrchestratorLastJob",
+	"Restart-D365OrchestratorLastJob",'Start-D365DeploymentSleep',
 	"Remove-D365SFImageStoreFiles",'Get-D365AXSFGuids','Remove-D365SFInstalledFinancialReporting','Get-D365ADFSSID','Get-LastSuccessfulRelease','Get-LCSEnvironmentDetailsProjectPages','Start-D365SleepForNewAssetPrep')
 	
 	# List of all modules packaged with this module
