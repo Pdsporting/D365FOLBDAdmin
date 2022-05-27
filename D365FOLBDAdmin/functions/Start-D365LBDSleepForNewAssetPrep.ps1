@@ -11,7 +11,7 @@ function Start-D365LBDSleepForNewAssetPrep {
         [psobject]$Config
 
     )
-
+    $Runtime = 0
     if (!$config) {
         $config = Get-D365Config -ComputerName "$Computername" -CustomModuleName "$CustomModuleName" -HighLevelOnly
     }

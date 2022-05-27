@@ -36,8 +36,7 @@ function Export-D365LBDAssetModuleVersion {
             HelpMessage = 'D365FO Local Business Data Server Name')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [Parameter(ValueFromPipeline = $True)]
-        
-        
+        [psobject]$Config,
         [int]$Timeout = 120
         
     ) BEGIN {
@@ -58,7 +57,11 @@ function Export-D365LBDAssetModuleVersion {
             if ($Config.CustomModuleName) {
                 $CustomModuleName = $Config.CustomModuleName
                 if ($CustomModuleName){
-                    $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly -custommoduleName $CustomModuleName
+                    Write-PSFMessage -Level VeryVerbose -Message "Found Custom Module Name $CustomModuleName in config"
+                    if ($Config.SourceAXSFServer){
+                    $Config = Get-D365LBDConfig -ComputerName $Config.SourceAXSFServer -HighLevelOnly -custommoduleName $CustomModuleName
+                }
+                    $AgentShareLocation = $Config.AgentShareLocation
                 }
             }
             else {
