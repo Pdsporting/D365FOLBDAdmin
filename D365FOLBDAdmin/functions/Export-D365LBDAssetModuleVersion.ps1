@@ -36,7 +36,8 @@ function Export-D365LBDAssetModuleVersion {
             HelpMessage = 'D365FO Local Business Data Server Name')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [Parameter(ValueFromPipeline = $True)]
-        [psobject]$Config,
+        
+        
         [int]$Timeout = 120
         
     ) BEGIN {
@@ -80,8 +81,10 @@ function Export-D365LBDAssetModuleVersion {
                 ##StandAloneSetupZip path to the zip that will be looked into for the module
                 $StandaloneSetupZip = Get-ChildItem $SpecificAssetFolder\*\*\Packages\*\StandaloneSetup.zip
                 $job = $null
-                $job = start-job -ScriptBlock { Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead($using:StandaloneSetupZip) }
-                if (Wait-Job $job -Timeout $Timeout) { Receive-Job $job }else {
+                
+                $job = start-job -ScriptBlock { Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead($using:StandaloneSetupZip) } -ErrorAction SilentlyContinue
+           
+                if (Wait-Job $job -Timeout $Timeout) { Receive-Job $job -ErrorAction SilentlyContinue }else {
                     Write-PSFMessage -Level VeryVerbose -message "Invalid Zip file $StandaloneSetupZip."
                     $invalidfile = $true
                     stop-job $job
@@ -135,7 +138,7 @@ function Export-D365LBDAssetModuleVersion {
         }
         if ($foundprepped -ne 1) {
             Write-PSFMessage -Level VeryVerbose -Message "No new version prepped trying to find latest" 
-            $AssetFolders = Get-ChildItem "$AgentShareLocation\assets" | Where-Object { $_.Name -ne "topology.xml" -and $_.Name -ne "chk" } | Sort-Object LastWriteTime -Descending 
+            $AssetFolders = Get-ChildItem "$AgentShareLocation\assets" | Where-Object { $_.Name -ne "topology.xml" -and $_.Name -ne "chk" } | Sort-Object CreationTime -Descending
             foreach ($Asset in $AssetFolders) {
                 if ($foundprepped -ne 1) {
                     $versionlatest = Get-ChildItem "$($Asset.FullName)\$CustomModuleName*.xml"

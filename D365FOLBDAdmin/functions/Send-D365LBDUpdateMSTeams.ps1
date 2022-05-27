@@ -8,7 +8,7 @@ Created to Send D365 updates to MSTeams
   Send-D365LBDUpdateMSTeams -messageType "StatusReport" -MSTeamsURI "htts://fakemicrosoft.office.com/webhookb2/98984684987156465-4654/incominginwebhook/ea5s6d4sa6" -config $config
 
   .EXAMPLE
-Send-D365LBDUpdateMSTeams -messageType "BuildPrepStarted" -MSTeamsURI "htts://fakemicrosoft.office.com/webhookb2/98984684987156465-4654/incominginwebhook/ea5s6d4sa6" -config $config
+Send-D365LBDUpdateMSTeams -messageType "BuildPrepStarted" -MSTeamsURI "htts://fakemicrosoft.office.com/webhookb2/98984684987156465-4654/incominginwebhook/ea5s6d4sa6" -config $config -build 'FakeBuildNumber'
 
   .EXAMPLE
 Send-D365LBDUpdateMSTeams -messageType "BuildPrepped" -MSTeamsURI "htts://fakemicrosoft.office.com/webhookb2/98984684987156465-4654/incominginwebhook/ea5s6d4sa6" -config $config -CustomModuleName 'CUS'
@@ -51,7 +51,8 @@ Send-D365LBDUpdateMSTeams -messageType "PlainText" -MSTeamsURI "htts://fakemicro
         [string]$EnvironmentURL,
         [string]$PlainTextMessage,
         [string]$PlainTextTitle,
-        [switch]$StatusReportIgnorePermissionErrors
+        [switch]$StatusReportIgnorePermissionErrors,
+        [string]$PlaintTextStatus
     )
     BEGIN {
     }
@@ -64,7 +65,7 @@ Send-D365LBDUpdateMSTeams -messageType "PlainText" -MSTeamsURI "htts://fakemicro
             "BuildPrepStarted" { $status = 'Build Prep Started' }
             "BuildPrepped" { $status = 'Build Prepped' }
             "StatusReport" { $Status = "Status Report" }
-            "PlainText" {}
+            "PlainText" {$Status = $PlaintTextStatus }
             default { Stop-PSFFunction -Message "Message type $MessageType is not supported" }
         }
         if ($MSTeamsCustomStatus) {
@@ -226,14 +227,13 @@ Send-D365LBDUpdateMSTeams -messageType "PlainText" -MSTeamsURI "htts://fakemicro
                 
             if ($bodyjsonformed -ne 1) {
                 Write-PSFMessage -Level VeryVerbose -Message "No newly prepped build found" ##add logic to grab latest
-                $MSTeamsBuildName = $Config.CustomModuleVersion
+                $MSTeamsBuildName = $Config.LastFullyPreppedCustomModuleAsset
                 if ($EnvironmentName) {
                     $LCSEnvironmentName = $EnvironmentName
                 }
                 else {
                     $LCSEnvironmentName = $config.LCSEnvironmentName
-                }
-                
+                }  
                 
                 $clienturl = $Config.clienturl
                 $LCSEnvironmentURL = $Config.LCSEnvironmentURL
@@ -305,10 +305,29 @@ Send-D365LBDUpdateMSTeams -messageType "PlainText" -MSTeamsURI "htts://fakemicro
                 Write-PSFMessage -Level VeryVerbose -Message "Plain Text Message"              
                 $bodyjson = @"
 {
-    "title":"$($("$PlainTextTitle $status").trim())",
+    "title":"$($("D365 Update $status").trim())",
     "text":"$PlainTextMessage"
 }     
 "@
+
+            }
+            if ($MSTeamsExtraDetails) {
+                $bodyjson = @"
+                {
+                                        "@type": "MessageCard",
+                                        "@context": "http://schema.org/extensions",
+                                        "themeColor": "ff0000",
+                                        "title": "$PlainTextTitle $status",
+                                        "summary": "$PlainTextTitle $PlainTextMessage",
+                                        "sections": [{
+                                            "facts": [{
+                                                "name": "$PlainTextTitle",
+                                                "value": "$PlainTextMessage"
+                                            }],
+                                            "markdown": true
+                                        }]
+                                    } 
+"@                
             }
         } ## PLAIN TEXT END
 
@@ -501,8 +520,8 @@ Send-D365LBDUpdateMSTeams -messageType "PlainText" -MSTeamsURI "htts://fakemicro
             }
 
             $Health = Get-D365LBDEnvironmentHealth -Config $config 
-            if ($StatusReportIgnorePermissionErrors){
-                $Health = $Health | Where-Object {$_.Details -notlike "*Check Permissions"}
+            if ($StatusReportIgnorePermissionErrors) {
+                $Health = $Health | Where-Object { $_.Details -notlike "*Check Permissions" }
             }
             if ($Health.State -contains "Down") {
                 foreach ($issue in $($health | Where-Object { $_.State -eq 'Down' })) {
@@ -555,13 +574,24 @@ Send-D365LBDUpdateMSTeams -messageType "PlainText" -MSTeamsURI "htts://fakemicro
 
         if ($MSTeamsExtraDetails) {
             Write-PSFMessage -Level VeryVerbose -Message "Adding extra Details to JSON"
-            $Additionaljson = @"
+            if ($MSTeamsExtraDetailsURI) {    
+                $Additionaljson = @"
     ,{
             "name": "$MSTeamsExtraDetailsTitle",
             "value": "[$MSTeamsExtraDetails]($MSTeamsExtraDetailsURI)"
         }],                  
 "@
-            $bodyjson = $bodyjson.Replace('],', "$Additionaljson")
+                $bodyjson = $bodyjson.Replace('],', "$Additionaljson")
+            }
+            else {
+                $Additionaljson = @"
+        ,{
+                "name": "$MSTeamsExtraDetailsTitle",
+                "value": "$MSTeamsExtraDetails"
+            }],                  
+"@
+                $bodyjson = $bodyjson.Replace('],', "$Additionaljson")
+            }
         }
         if (!$bodyjson) {
             Write-PSFMessage -Message "ERROR: JSON is empty!" -Level VeryVerbose

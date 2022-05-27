@@ -7,7 +7,9 @@ function Start-D365LBDSleepForNewAssetPrep {
             HelpMessage = 'D365FO Local Business Data Server Name')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [Parameter(Mandatory = $true)][string]$CustomModuleName,
-        [int]$TimeOutMinutes = 400
+        [int]$TimeOutMinutes = 400,
+        [psobject]$Config
+
     )
 
     if (!$config) {

@@ -670,10 +670,10 @@ ORDER BY [rh].[restore_date] DESC"
             foreach ($sqlserver in $DatabaseClusterServerNames) {
                 try {
                     $ProductVersionSQLResults = Invoke-SQL -dataSource $sqlserver -database 'master' -sqlCommand 'SELECT SERVERPROPERTY(''Productversion'') as ''Productversion'' '
+                    [string]$SQLMajorVersionNumber = $($ProductVersionSQLResults | select Productversion).Productversion
+                    $SQLMajorVersionNumber = $SQLMajorVersionNumber.Substring(0, 2)
                 }
                 catch {}
-                [string]$SQLMajorVersionNumber = $($ProductVersionSQLResults | select Productversion).Productversion
-                $SQLMajorVersionNumber = $SQLMajorVersionNumber.Substring(0, 2)
                 try {
                     $InstanceNameSQLResults = Invoke-SQL -dataSource $sqlserver -database 'master' -sqlCommand 'SELECT @@SERVICENAME as ''Servicename'' '
                 }
