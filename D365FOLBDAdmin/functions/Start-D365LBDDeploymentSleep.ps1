@@ -6,13 +6,15 @@ function Start-D365LBDDeploymentSleep {
             Mandatory = $false,
             HelpMessage = 'D365FO Local Business Data Server Name')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
-        [Parameter(Mandatory = $true)][psobject]$Config,
+        [Parameter(Mandatory = $true,
+        ValueFromPipeline = $True)][psobject]$Config,
         [int]$TimeOutMinutes = 400
     )
     BEGIN {
     }
     PROCESS {
         $Runtime = 0
+        $count = 0
         Write-PSFMessage -Level VeryVerbose -Message "Recommend always use an exported valid config not a live config"
 
         if (!$connection) {
@@ -53,13 +55,14 @@ function Start-D365LBDDeploymentSleep {
             $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
             if (Compare-Object $logs -DifferenceObject $logscurrent) {
                 foreach ($log in $logs) {
-                    if ($logscurrent -contains $log) {}else {
+                    if ($logscurrent.Eventdetails -contains $log.Eventdetails) {}else {
                         Write-PSFMessage -Level VeryVerbose -Message "$log"
                     }
                 }
             } 
             $Runtime = $Runtime + 1
             $logscurrent = $logs
+            $count = 0
             if (!$logs) {
                 do {
                     $OrchestratorServerName = $config.OrchestratorServerNames | Select-Object -First 1 -Skip $count
@@ -117,7 +120,7 @@ function Start-D365LBDDeploymentSleep {
             $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
             if (Compare-Object $logs -DifferenceObject $logscurrent) {
                 foreach ($log in $logs) {
-                    if ($logscurrent -contains $log) {}else {
+                    if ($logscurrent.Eventdetails -contains $log.Eventdetails) {}else {
                         Write-PSFMessage -Level VeryVerbose -Message "$log"
                     }
                 }
@@ -131,6 +134,7 @@ function Start-D365LBDDeploymentSleep {
             }until ($AXSF -or $Deployment -eq 'Failure')
 
             do {
+                $DBeventscurrent = Get-D365DBEvents -Config $config -NumberofEvents 5
                 Start-Sleep -Seconds 120
                 $Runtime = $Runtime + 2
                 $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
@@ -139,7 +143,7 @@ function Start-D365LBDDeploymentSleep {
                 $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
                 if (Compare-Object $logs -DifferenceObject $logscurrent) {
                     foreach ($log in $logs) {
-                        if ($logscurrent -contains $log) {}else {
+                        if ($logscurrent.Eventdetails -contains $log.Eventdetails) {}else {
                             Write-PSFMessage -Level VeryVerbose -Message "$log"
                         }
                     }
@@ -173,9 +177,9 @@ function Start-D365LBDDeploymentSleep {
                     }
                 }
                 if ($DBSyncStatus) {
-                    Write-Verbose "FOUND DB SYNC STATUS $DBSyncStatus" -Verbose
+                    Write-PSFMessage -Level VeryVerbose -Message "Found Database Sync Status: $DBSyncStatus" 
                     foreach ($event in $DBevents) {
-                        Write-Verbose "$event" -Verbose
+                        Write-PSFMessage -Level VeryVerbose -Message "$event"  
                     }
                 }
                 $DBeventscurrent = $DBevents
