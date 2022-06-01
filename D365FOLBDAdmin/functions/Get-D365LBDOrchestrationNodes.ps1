@@ -48,16 +48,16 @@ function Get-D365LBDOrchestrationNodes {
                     $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                     Import-PSSession -Session $SFModuleSession
                 }
-                $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My  -KeepAliveIntervalInSec 400
                 if (!$connection) {
                     $trialEndpoint = "https://$OrchestratorServerName" + ":198000"
-                    $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                    $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My -KeepAliveIntervalInSec 400
                     if ($connection) {
                         Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My"
                     }
                 }
                 if (!$connection) {
-                    $connection = Connect-ServiceFabricCluster
+                    $connection = Connect-ServiceFabricCluster -KeepAliveIntervalInSec 400
                     if ($connection) {
                         Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster"
                     }

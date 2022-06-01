@@ -463,7 +463,7 @@ function Get-D365LBDDependencyHealth {
                     else {
                         $MSTEAMSURLS = $EnvironmentAdditionalConfigXML.D365LBDEnvironment.Communication.Webhooks.Webhook | Where-Object { $_.type.'#text'.trim() -eq "MSTEAMS" } | select ChannelWebHookURL
                         foreach ($MSTEAMSURL in $MSTEAMSURLS) {
-                            Send-D365LBDUpdateMSTeams -messageType "StatusReport" -MSTeamsURI "htts://fakemicrosoft.office.com/webhookb2/98984684987156465-4654/incominginwebhook/ea5s6d4sa6" -config $Config
+                            Send-D365LBDUpdateMSTeams -messageType "StatusReport" -MSTeamsURI "$MSTEAMSURL" -config $Config
                         }
                     }
                 }
