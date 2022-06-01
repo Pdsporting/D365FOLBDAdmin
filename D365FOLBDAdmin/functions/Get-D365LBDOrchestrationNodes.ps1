@@ -46,6 +46,7 @@ function Get-D365LBDOrchestrationNodes {
                 $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
                 if (!$module) {
                     $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
+                    Import-PSSession -Session $SFModuleSession
                 }
                 $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
                 if (!$connection) {
@@ -74,7 +75,7 @@ function Get-D365LBDOrchestrationNodes {
         if (!$PartitionId) {
             Write-PSFMessage -Level Warning -Message "Warning: Guessing Primary and Secondary due to local agent not found inside of SF"
             foreach ($Orchestrator in $Config.OrchestratorServerNames) {
-                $time = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $orchnodes.PrimaryNodeName).TimeCreated
+                $time = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $Orchestrator).TimeCreated
                 if (!$NewestPrimary) {
                     $NewestPrimary = $Orchestrator
                     $NewestPrimaryTime = $time
