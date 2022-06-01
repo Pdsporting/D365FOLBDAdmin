@@ -50,12 +50,26 @@ function Get-D365LBDOrchestrationLogs {
                 }
                 $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
                 $count = $count + 1
+                
                 if (!$connection) {
-                    Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
+                    $trialEndpoint = "https://$OrchestratorServerName" + ":198000"
+                    $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                    if ($connection) {
+                        Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My"
+                    }
+                }
+                if (!$connection) {
+                    $connection = Connect-ServiceFabricCluster
+                    if ($connection) {
+                        Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster"
+                    }
                 }
             }  until ($connection -or ($count -eq $($Config.OrchestratorServerNames).Count) -or ($($Config.OrchestratorServerNames).Count) -eq 0)
             if (($count -eq $($Config.OrchestratorServerName).Count) -and (!$connection)) {
                 Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
+            }
+            if (!$connection) {
+                Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
             }
         }
         $orchnodes = Get-D365LBDOrchestrationNodes -config $Config

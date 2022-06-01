@@ -50,6 +50,7 @@ function Start-D365LBDDeploymentSleep {
         }
 
         do { 
+            $logscurrent = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
             Start-Sleep -Seconds 60
             Write-PSFMessage -Level VeryVerbose -Message "Waiting for StandaloneSetup to start Runtime: $Runtime" 
             $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2

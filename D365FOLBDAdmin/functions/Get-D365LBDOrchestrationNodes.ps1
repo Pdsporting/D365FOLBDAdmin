@@ -51,6 +51,15 @@ function Get-D365LBDOrchestrationNodes {
                 if (!$connection) {
                     $trialEndpoint = "https://$OrchestratorServerName" + ":198000"
                     $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                    if ($connection) {
+                        Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My"
+                    }
+                }
+                if (!$connection) {
+                    $connection = Connect-ServiceFabricCluster
+                    if ($connection) {
+                        Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster"
+                    }
                 }
                 $count = $count + 1
                 if (!$connection) {
@@ -60,28 +69,66 @@ function Get-D365LBDOrchestrationNodes {
             if (($count -eq $($Config.OrchestratorServerName).Count) -and (!$connection)) {
                 Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
             }
-            if (!$connection){
-                Stop-PSFFunction -Message "Error: Can't connect to Service Fabric"
-            }
         }
         $PartitionId = $(Get-ServiceFabricServiceHealth -ServiceName 'fabric:/LocalAgent/OrchestrationService').PartitionHealthStates | Select-Object PartitionId
-        $PartitionIDGUID = $PartitionId.PartitionId
+        if (!$PartitionId) {
+            Write-PSFMessage -Level Warning -Message "Warning: Guessing Primary and Secondary due to local agent not found inside of SF"
+            foreach ($Orchestrator in $Config.OrchestratorServerNames) {
+                $time = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $orchnodes.PrimaryNodeName).TimeCreated
+                if (!$NewestPrimary) {
+                    $NewestPrimary = $Orchestrator
+                    $NewestPrimaryTime = $time
+                }
+                else {
+                    if ($time -gt $NewestPrimaryTime) {
+                        Write-PSFMessage -Level VeryVerbose -Message "Updating the Primary to $Orchestrator"
+                        $NewestSecondary = $NewestPrimary 
+                        $NewestSecondaryTime = $NewestPrimaryTime
+                        $NewestPrimary = $Orchestrator
+                        $NewestPrimaryTime = $time
+
+                    }
+                    else {
+                        if ($time -gt $NewestSecondaryTime) {
+                            Write-PSFMessage -Level VeryVerbose -Message "Updating the Secondary to $Orchestrator"
+                            $NewestSecondary = $Orchestrator
+                            $NewestSecondaryTime = $time
+                        }
+                    }
+                }
+            }
+            New-Object -TypeName PSObject -Property `
+            @{'PrimaryNodeName'                = $NewestPrimary;
+                'SecondaryNodeName'            = $NewestSecondary;
+                'PrimaryReplicaStatus'         = $NewestPrimaryTime; 
+                'SecondaryReplicaStatus'       = $NewestSecondaryTime;
+                'PrimaryLastinBuildDuration'   = $primary.LastinBuildDuration;
+                'SecondaryLastinBuildDuration' = $secondary.LastinBuildDuration;
+                'PrimaryHealthState'           = $primary.HealthState;
+                'SecondaryHealthState'         = $secondary.HealthState;
+                'PartitionId'                  = $PartitionIDGUID;
+            }
+
+        }
+        else {
+            $PartitionIDGUID = $PartitionId.PartitionId
        
-        Write-PSFMessage -Message "Looking up PartitionID $PartitionIDGUID." -Level Verbose
-        $nodes = Get-ServiceFabricReplica -PartitionId "$PartitionIDGUID"
-        $primary = $nodes | Where-Object { $_.ReplicaRole -eq "Primary" -or $_.ReplicaType -eq "Primary" }
-        $secondary = $nodes | Where-Object { $_.ReplicaRole -eq "ActiveSecondary" -or $_.ReplicaType -eq "ActiveSecondary" } | Select -First 1
-        Write-PSFMessage -Level VeryVerbose -Message "Primary Orchestrator Currently is : $($primary.NodeName) and Secondary Orchestrator: $($secondary.NodeName) "
-        New-Object -TypeName PSObject -Property `
-        @{'PrimaryNodeName'                = $primary.NodeName;
-            'SecondaryNodeName'            = $secondary.NodeName;
-            'PrimaryReplicaStatus'         = $primary.ReplicaStatus; 
-            'SecondaryReplicaStatus'       = $secondary.ReplicaStatus;
-            'PrimaryLastinBuildDuration'   = $primary.LastinBuildDuration;
-            'SecondaryLastinBuildDuration' = $secondary.LastinBuildDuration;
-            'PrimaryHealthState'           = $primary.HealthState;
-            'SecondaryHealthState'         = $secondary.HealthState;
-            'PartitionId'                  = $PartitionIDGUID;
+            Write-PSFMessage -Message "Looking up PartitionID $PartitionIDGUID." -Level Verbose
+            $nodes = Get-ServiceFabricReplica -PartitionId "$PartitionIDGUID"
+            $primary = $nodes | Where-Object { $_.ReplicaRole -eq "Primary" -or $_.ReplicaType -eq "Primary" }
+            $secondary = $nodes | Where-Object { $_.ReplicaRole -eq "ActiveSecondary" -or $_.ReplicaType -eq "ActiveSecondary" } | Select -First 1
+            Write-PSFMessage -Level VeryVerbose -Message "Primary Orchestrator Currently is : $($primary.NodeName) and Secondary Orchestrator: $($secondary.NodeName) "
+            New-Object -TypeName PSObject -Property `
+            @{'PrimaryNodeName'                = $primary.NodeName;
+                'SecondaryNodeName'            = $secondary.NodeName;
+                'PrimaryReplicaStatus'         = $primary.ReplicaStatus; 
+                'SecondaryReplicaStatus'       = $secondary.ReplicaStatus;
+                'PrimaryLastinBuildDuration'   = $primary.LastinBuildDuration;
+                'SecondaryLastinBuildDuration' = $secondary.LastinBuildDuration;
+                'PrimaryHealthState'           = $primary.HealthState;
+                'SecondaryHealthState'         = $secondary.HealthState;
+                'PartitionId'                  = $PartitionIDGUID;
+            }
         }
     }
     END {
