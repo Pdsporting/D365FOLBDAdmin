@@ -66,7 +66,7 @@ function Get-D365LBDDBEvents {
                 Write-PSFMessage -Level Verbose -Message "Server with latest log updated to $ServerWithLatestLog with a date time of $LatestEventinLog"
             }
         }
-        Write-PSFMessage -Level VeryVerbose -Message "Gathering from $ServerWithLatestLog"
+        Write-PSFMessage -Level VeryVerbose -Message "Gathering database sync events from $ServerWithLatestLog"
         $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents $NumberofEvents -computername $ServerWithLatestLog | 
         ForEach-Object -Process { `
                 New-Object -TypeName PSObject -Property `

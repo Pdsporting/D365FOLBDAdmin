@@ -7,7 +7,7 @@ function Start-D365LBDDeploymentSleep {
             HelpMessage = 'D365FO Local Business Data Server Name')]
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [Parameter(Mandatory = $true,
-        ValueFromPipeline = $True)][psobject]$Config,
+            ValueFromPipeline = $True)][psobject]$Config,
         [int]$TimeOutMinutes = 400
     )
     BEGIN {
@@ -54,7 +54,7 @@ function Start-D365LBDDeploymentSleep {
             Start-Sleep -Seconds 60
             Write-PSFMessage -Level VeryVerbose -Message "Waiting for StandaloneSetup to start Runtime: $Runtime" 
             $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
-            if (Compare-Object $logs -DifferenceObject $logscurrent) {
+            if (Compare-Object $logs -DifferenceObject $logscurrent -Property Eventdetails) {
                 foreach ($log in $logs) {
                     if ($logscurrent.Eventdetails -contains $log.Eventdetails) {}else {
                         Write-PSFMessage -Level VeryVerbose -Message "$log"
@@ -119,80 +119,83 @@ function Start-D365LBDDeploymentSleep {
             }
 
             $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
-            if (Compare-Object $logs -DifferenceObject $logscurrent) {
+            if (Compare-Object $logs -DifferenceObject $logscurrent -Property Eventdetails) {
                 foreach ($log in $logs) {
                     if ($logscurrent.Eventdetails -contains $log.Eventdetails) {}else {
                         Write-PSFMessage -Level VeryVerbose -Message "$log"
                     }
                 }
             }
-                $logscurrent = $logs
-                $FoundError = $logs | Where-Object { $_.EventMessage -like "status of job*Error" }
-                if ($FoundError) {
-                    $Deployment = "Failure"
-                }
-
-            }until ($AXSF -or $Deployment -eq 'Failure')
-
-            do {
-                $DBeventscurrent = Get-D365DBEvents -Config $config -NumberofEvents 5
-                Start-Sleep -Seconds 120
-                $Runtime = $Runtime + 2
-                $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
-                $FoundSuccess = $logs | Where-Object { $_.EventMessage -like "status of job*Success" }
-                $FoundError = $logs | Where-Object { $_.EventMessage -like "status of job*Error" }
-                $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
-                if (Compare-Object $logs -DifferenceObject $logscurrent) {
-                    foreach ($log in $logs) {
-                        if ($logscurrent.Eventdetails -contains $log.Eventdetails) {}else {
-                            Write-PSFMessage -Level VeryVerbose -Message "$log"
-                        }
-                    }
-                }
-                $logscurrent = $logs
-                if ($FoundSuccess) {
-                    $Deployment = "Success"
-                }
-                if ($FoundError) {
-                    $Deployment = "Failure"
-                }
-                $DBevents = Get-D365DBEvents -Config $config -NumberofEvents 5
-                if (Compare-Object $DBevents -DifferenceObject $DBeventscurrent) {
-                    foreach ($event in $DBevents) {
-                        if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.") -or ($event.message -contains "Database Synchronize Failed.")) -and $SyncStatusFound -eq $false) {
-                            if (($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Failed.")) {
-                                Write-PSFMessage -Message "Found a DB Sync failure $event" -Level Verbose
-                                $DBSyncStatus = "Failed"
-                                $DBSyncTimeStamp = $event.TimeCreated
-                            }
-                            if ($event.message -contains "Database Synchronize Succeeded.") {
-                                Write-PSFMessage -Message "Found a DB Sync Success $event" -Level Verbose
-                                $DBSyncStatus = "Succeeded"
-                                $DBSyncTimeStamp = $event.TimeCreated
-                            }
-                            $SyncStatusFound = $true
-                        }
-                        if ($DBeventscurrent -contains $event) {}else {
-                            Write-PSFMessage -Level VeryVerbose -Message "DBSyncLog $Event"
-                        }
-                    }
-                }
-                if ($DBSyncStatus) {
-                    Write-PSFMessage -Level VeryVerbose -Message "Found Database Sync Status: $DBSyncStatus" 
-                    foreach ($event in $DBevents) {
-                        Write-PSFMessage -Level VeryVerbose -Message "$event"  
-                    }
-                }
-                $DBeventscurrent = $DBevents
-            }
-            until($Deployment -eq "Success" -or $Deployment -eq "Failure")
-
-            Write-Verbose "$Deployment" -Verbose
-            if ($Deployment -eq "Failure") {
-                Stop-PSFFunction -Message "Error: The Deployment failed. Stopping" -EnableException $true -Cmdlet $PSCmdlet
+            $logscurrent = $logs
+            $FoundError = $logs | Where-Object { $_.EventMessage -like "status of job*Error" }
+            if ($FoundError) {
+                $Deployment = "Failure"
             }
 
+        }until ($AXSF -or $Deployment -eq 'Failure' -or $Runtime -gt $TimeOutMinutes)
+        if ($Runtime -gt $TimeOutMinutes -or $Deployment -eq 'Failure') {
+            Stop-PSFFunction -Message "Error: The Deployment failed. Stopping" -EnableException $true -Cmdlet $PSCmdlet
         }
-        END {
+
+        do {
+            $DBeventscurrent = Get-D365DBEvents -Config $config -NumberofEvents 5
+            Start-Sleep -Seconds 120
+            $Runtime = $Runtime + 2
+            $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
+            $FoundSuccess = $logs | Where-Object { $_.EventMessage -like "status of job*Success" }
+            $FoundError = $logs | Where-Object { $_.EventMessage -like "status of job*Error" }
+            $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
+            if (Compare-Object $logs -DifferenceObject $logscurrent -Property Eventdetails) {
+                foreach ($log in $logs) {
+                    if ($logscurrent.Eventdetails -contains $log.Eventdetails) {}else {
+                        Write-PSFMessage -Level VeryVerbose -Message "$log"
+                    }
+                }
+            }
+            $logscurrent = $logs
+            if ($FoundSuccess) {
+                $Deployment = "Success"
+            }
+            if ($FoundError) {
+                $Deployment = "Failure"
+            }
+            $DBevents = Get-D365DBEvents -Config $config -NumberofEvents 5
+            if (Compare-Object $DBevents -DifferenceObject $DBeventscurrent -Property EventMessage ) {
+                foreach ($event in $DBevents) {
+                    if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.") -or ($event.message -contains "Database Synchronize Failed.")) -and $SyncStatusFound -eq $false) {
+                        if (($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Failed.")) {
+                            Write-PSFMessage -Message "Found a DB Sync failure $event" -Level Verbose
+                            $DBSyncStatus = "Failed"
+                            $DBSyncTimeStamp = $event.TimeCreated
+                        }
+                        if ($event.message -contains "Database Synchronize Succeeded.") {
+                            Write-PSFMessage -Message "Found a DB Sync Success $event" -Level Verbose
+                            $DBSyncStatus = "Succeeded"
+                            $DBSyncTimeStamp = $event.TimeCreated
+                        }
+                        $SyncStatusFound = $true
+                    }
+                    if ($DBeventscurrent -contains $event) {}else {
+                        Write-PSFMessage -Level VeryVerbose -Message "DBSyncLog $Event"
+                    }
+                }
+            }
+            if ($DBSyncStatus) {
+                Write-PSFMessage -Level VeryVerbose -Message "Found Database Sync Status: $DBSyncStatus" 
+                foreach ($event in $DBevents) {
+                    Write-PSFMessage -Level VeryVerbose -Message "$event"  
+                }
+            }
+            $DBeventscurrent = $DBevents
         }
+        until($Deployment -eq "Success" -or $Deployment -eq "Failure")
+
+        Write-Verbose "$Deployment" -Verbose
+        if ($Deployment -eq "Failure") {
+            Stop-PSFFunction -Message "Error: The Deployment failed. Stopping" -EnableException $true -Cmdlet $PSCmdlet
+        }
+
     }
+    END {
+    }
+}
