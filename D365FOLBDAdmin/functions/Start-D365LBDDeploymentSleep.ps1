@@ -87,19 +87,19 @@ Start-D365LBDDeploymentSleep -config $config
                     if (!$module) {
                         $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
                     }
-                    $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                    $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My -KeepAliveIntervalInSec 400
                     if ($connection) {
                         Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster -ConnectionEndpoint $config.ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My"
                     }
                     if (!$connection) {
                         $trialEndpoint = "https://$OrchestratorServerName" + ":198000"
-                        $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My
+                        $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My -KeepAliveIntervalInSec 400
                         if ($connection) {
                             Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My"
                         }
                     }
                     if (!$connection) {
-                        $connection = Connect-ServiceFabricCluster
+                        $connection = Connect-ServiceFabricCluster -KeepAliveIntervalInSec 400
                         if ($connection) {
                             Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster"
                         }
@@ -127,7 +127,7 @@ Start-D365LBDDeploymentSleep -config $config
             Write-PSFMessage -Message "Waiting for AXSF to be created. Runtime: $Runtime"  -Level VeryVerbose
             $apps = $(get-servicefabricclusterhealth | Select-Object ApplicationHealthStates).ApplicationHealthStates
             Write-PSFMessage -Level VeryVerbose -Message "Apps Current status $apps" 
-            if ($!$apps){
+            if (!$apps){
                 Write-PSFMessage -Level VeryVerbose -Message "Lost connection reconnecting to SF"
                 do {
                     $OrchestratorServerName = $Config.OrchestratorServerNames | Select-Object -First 1 -Skip $count
