@@ -1,4 +1,19 @@
 function Start-D365LBDDeploymentSleep {
+        <#
+    .SYNOPSIS
+Watches the deployment of a D365 LBD package
+   .DESCRIPTION
+Watches the deployment of a D365 LBD package. Recommend to use with exported config
+   .EXAMPLE
+   $config = Get-D365Config -ConfigImportFromFile "C:\environment\environment.xml"
+Start-D365LBDDeploymentSleep -config $config 
+   .EXAMPLE
+
+   .PARAMETER Config
+    Custom PSObject
+    Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module
+    
+   #>
     [alias("Start-D365DeploymentSleep")]
     [CmdletBinding()]
     param([Parameter(ValueFromPipeline = $True,
@@ -112,6 +127,36 @@ function Start-D365LBDDeploymentSleep {
             Write-PSFMessage -Message "Waiting for AXSF to be created. Runtime: $Runtime"  -Level VeryVerbose
             $apps = $(get-servicefabricclusterhealth | Select-Object ApplicationHealthStates).ApplicationHealthStates
             Write-PSFMessage -Level VeryVerbose -Message "Apps Current status $apps" 
+            if ($!$apps){
+                Write-PSFMessage -Level VeryVerbose -Message "Lost connection reconnecting to SF"
+                do {
+                    $OrchestratorServerName = $Config.OrchestratorServerNames | Select-Object -First 1 -Skip $count
+                    Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName to try and connect to the service fabric" -Level Verbose
+                    $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
+                    if (!$module) {
+                        $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
+                        Import-PSSession -Session $SFModuleSession
+                    }
+                    $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My  -KeepAliveIntervalInSec 400
+                    if (!$connection) {
+                        $trialEndpoint = "https://$OrchestratorServerName" + ":198000"
+                        $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My -KeepAliveIntervalInSec 400
+                        if ($connection) {
+                            Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster -ConnectionEndpoint $trialEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My"
+                        }
+                    }
+                    if (!$connection) {
+                        $connection = Connect-ServiceFabricCluster -KeepAliveIntervalInSec 400
+                        if ($connection) {
+                            Write-PSFMessage -Message "Connected to Service Fabric Via: Connect-ServiceFabricCluster"
+                        }
+                    }
+                    $count = $count + 1
+                    if (!$connection) {
+                        Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
+                    }
+                }  until ($connection -or ($count -eq $($Config.OrchestratorServerNames).Count) -or ($($Config.OrchestratorServerNames).Count) -eq 0)
+            }
           
             $AXSF = $apps | Where-Object { $_.ApplicationName -eq 'fabric:/AXSF' }
             if ($AXSF) {
