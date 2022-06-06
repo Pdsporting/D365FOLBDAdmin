@@ -33,68 +33,102 @@ function Get-D365LBDDBEvents {
         [PSFComputer]$ComputerName = "$env:COMPUTERNAME",
         [int]$NumberofEvents = 20,
         [Parameter(ValueFromPipeline = $True)]
-        [psobject]$Config
+        [psobject]$Config,
+        [string]$OnlyThisDBServer
     )
     BEGIN {
     } 
     PROCESS {
-        if (!$Config -or $Config.OrchestratorServerNames.Count -eq 0) {
-            Write-PSFMessage -Level VeryVerbose -Message "Config not defined or Config is invalid. Trying to Get new config using $ComputerName"
-            $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
+        if ($OnlyThisDBServer) {
+            $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents $NumberofEvents -computername $OnlyThisDBServer | 
+            ForEach-Object -Process { `
+                    New-Object -TypeName PSObject -Property `
+                @{'MachineName'        = $OnlyThisDBServer ;
+                    'EventMessage'     = $_.Properties[0].value;
+                    'EventDetails'     = $_.Properties[1].value; 
+                    'Message'          = $_.Message;
+                    'LevelDisplayName' = $_.LevelDisplayName;
+                    'TimeCreated'      = $_.TimeCreated;
+                    'TaskDisplayName'  = $_.TaskDisplayName
+                    'UserId'           = $_.UserId;
+                    'LogName'          = $_.LogName;
+                    'ProcessId'        = $_.ProcessId;
+                    'ThreadId'         = $_.ThreadId;
+                    'Id'               = $_.Id;
+                }
+                $SyncStatusFound = $false
+                foreach ($event in $events) {
+                    if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.")) -and $SyncStatusFound -eq $false) {
+                        if ($event.message -contains "Table synchronization failed.") {
+                            Write-PSFMessage -Message "Found a DB Sync Failure $($event.ServerWithLatestLog) ($($event.TimeCreated)" -Level Verbose
+                        }
+                        if ($event.message -contains "Database Synchronize Succeeded.") {
+                            Write-PSFMessage -Message "Found a DB Sync Success $($event.ServerWithLatestLog) ($($event.TimeCreated)" -Level Verbose
+                        }
+                        $SyncStatusFound = $true
+                    }
+                }        
+            }
         }
+        else {
+            if (!$Config -or $Config.OrchestratorServerNames.Count -eq 0) {
+                Write-PSFMessage -Level VeryVerbose -Message "Config not defined or Config is invalid. Trying to Get new config using $ComputerName"
+                $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
+            }
     
-        Foreach ($AXSFServerName in $config.AXSFServerNames) {
-            try {
-                Write-PSFMessage -Level Verbose -Message "Reaching out to $AXSFServerName to look for DB logs"
-                $LatestEventinLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents 1 -computername $AXSFServerName -ErrorAction Stop).TimeCreated
-            }
-            catch {
-                Write-PSFMessage -Level VeryVerbose -Message "$AXSFServerName $_"
-                if ($_.Exception.Message -eq "No events were found that match the specified selection criteria") {
-                    $LatestEventinLog = $null
+            Foreach ($AXSFServerName in $config.AXSFServerNames) {
+                try {
+                    Write-PSFMessage -Level Verbose -Message "Reaching out to $AXSFServerName to look for DB logs"
+                    $LatestEventinLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents 1 -computername $AXSFServerName -ErrorAction Stop).TimeCreated
                 }
-                if ($_.Exception.Message -eq "The RPC Server is unavailable") {
-                    {           
-                        Write-PSFMessage -Level Verbose -Message "The RPC Server is Unavailable trying WinRM"       
-                        $LatestEventinLog = Invoke-Command -ComputerName $AXSFServerName -ScriptBlock { $(Get-EventLog -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents 1 -computername $AXSFServerName).TimeCreated }
+                catch {
+                    Write-PSFMessage -Level VeryVerbose -Message "$AXSFServerName $_"
+                    if ($_.Exception.Message -eq "No events were found that match the specified selection criteria") {
+                        $LatestEventinLog = $null
+                    }
+                    if ($_.Exception.Message -eq "The RPC Server is unavailable") {
+                        {           
+                            Write-PSFMessage -Level Verbose -Message "The RPC Server is Unavailable trying WinRM"       
+                            $LatestEventinLog = Invoke-Command -ComputerName $AXSFServerName -ScriptBlock { $(Get-EventLog -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents 1 -computername $AXSFServerName).TimeCreated }
+                        }
                     }
                 }
-            }
-            if (($LatestEventinLog -gt $LatestEventinAllLogs) -or (!$LatestEventinAllLogs)) {
-                $LatestEventinAllLogs = $LatestEventinLog
-                $ServerWithLatestLog = $AXSFServerName 
-                Write-PSFMessage -Level Verbose -Message "Server with latest log updated to $ServerWithLatestLog with a date time of $LatestEventinLog"
-            }
-        }
-        Write-PSFMessage -Level VeryVerbose -Message "Gathering database sync events from $ServerWithLatestLog"
-        $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents $NumberofEvents -computername $ServerWithLatestLog | 
-        ForEach-Object -Process { `
-                New-Object -TypeName PSObject -Property `
-            @{'MachineName'        = $ServerWithLatestLog ;
-                'EventMessage'     = $_.Properties[0].value;
-                'EventDetails'     = $_.Properties[1].value; 
-                'Message'          = $_.Message;
-                'LevelDisplayName' = $_.LevelDisplayName;
-                'TimeCreated'      = $_.TimeCreated;
-                'TaskDisplayName'  = $_.TaskDisplayName
-                'UserId'           = $_.UserId;
-                'LogName'          = $_.LogName;
-                'ProcessId'        = $_.ProcessId;
-                'ThreadId'         = $_.ThreadId;
-                'Id'               = $_.Id;
-            }
-            $SyncStatusFound = $false
-            foreach ($event in $events) {
-                if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.")) -and $SyncStatusFound -eq $false) {
-                    if ($event.message -contains "Table synchronization failed.") {
-                        Write-PSFMessage -Message "Found a DB Sync Failure $($event.ServerWithLatestLog) ($($event.TimeCreated)" -Level Verbose
-                    }
-                    if ($event.message -contains "Database Synchronize Succeeded.") {
-                        Write-PSFMessage -Message "Found a DB Sync Success $($event.ServerWithLatestLog) ($($event.TimeCreated)" -Level Verbose
-                    }
-                    $SyncStatusFound = $true
+                if (($LatestEventinLog -gt $LatestEventinAllLogs) -or (!$LatestEventinAllLogs)) {
+                    $LatestEventinAllLogs = $LatestEventinLog
+                    $ServerWithLatestLog = $AXSFServerName 
+                    Write-PSFMessage -Level Verbose -Message "Server with latest log updated to $ServerWithLatestLog with a date time of $LatestEventinLog"
                 }
-            }        
+            }
+            Write-PSFMessage -Level VeryVerbose -Message "Gathering database sync events from $ServerWithLatestLog"
+            $events = Get-WinEvent -LogName Microsoft-Dynamics-AX-DatabaseSynchronize/Operational -maxevents $NumberofEvents -computername $ServerWithLatestLog | 
+            ForEach-Object -Process { `
+                    New-Object -TypeName PSObject -Property `
+                @{'MachineName'        = $ServerWithLatestLog ;
+                    'EventMessage'     = $_.Properties[0].value;
+                    'EventDetails'     = $_.Properties[1].value; 
+                    'Message'          = $_.Message;
+                    'LevelDisplayName' = $_.LevelDisplayName;
+                    'TimeCreated'      = $_.TimeCreated;
+                    'TaskDisplayName'  = $_.TaskDisplayName
+                    'UserId'           = $_.UserId;
+                    'LogName'          = $_.LogName;
+                    'ProcessId'        = $_.ProcessId;
+                    'ThreadId'         = $_.ThreadId;
+                    'Id'               = $_.Id;
+                }
+                $SyncStatusFound = $false
+                foreach ($event in $events) {
+                    if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.")) -and $SyncStatusFound -eq $false) {
+                        if ($event.message -contains "Table synchronization failed.") {
+                            Write-PSFMessage -Message "Found a DB Sync Failure $($event.ServerWithLatestLog) ($($event.TimeCreated)" -Level Verbose
+                        }
+                        if ($event.message -contains "Database Synchronize Succeeded.") {
+                            Write-PSFMessage -Message "Found a DB Sync Success $($event.ServerWithLatestLog) ($($event.TimeCreated)" -Level Verbose
+                        }
+                        $SyncStatusFound = $true
+                    }
+                }        
+            }
         }
         $events
     }

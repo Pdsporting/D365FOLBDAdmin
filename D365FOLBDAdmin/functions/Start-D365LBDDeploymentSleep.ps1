@@ -204,8 +204,14 @@ Start-D365LBDDeploymentSleep -config $config
             if ($FoundError) {
                 $Deployment = "Failure"
             }
+            if ($FoundRecentDBSync -eq "Yes"){
+                $DBevents = Get-D365DBEvents -OnlyThisDBServer $newconfig.DBSyncServerWithLatestLog -NumberofEvents 5
+            }else{
             $DBevents = Get-D365DBEvents -Config $config -NumberofEvents 5
+        }
             if (Compare-Object $DBevents -DifferenceObject $DBeventscurrent -Property EventMessage ) {
+                $RightNow = Get-Date
+                $15MinsAgo = $RightNow.AddMinutes(-15)
                 foreach ($event in $DBevents) {
                     if ((($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Succeeded.") -or ($event.message -contains "Database Synchronize Failed.")) -and $SyncStatusFound -eq $false) {
                         if (($event.message -contains "Table synchronization failed.") -or ($event.message -contains "Database Synchronize Failed.")) {
@@ -222,6 +228,16 @@ Start-D365LBDDeploymentSleep -config $config
                     }
                     if ($DBeventscurrent -contains $event) {}else {
                         Write-PSFMessage -Level VeryVerbose -Message "DBSyncLog $Event"
+                    }
+                    if ($event.TimeCreated -gt $15MinsAgo){
+                        $FoundRecentDBSync = "Yes"
+                        if (!$newconfig){
+                            Write-PSFMessage -Level VeryVerbose -Message "Found a recent Database event getting a fresh config"
+                            $newconfig = get-d365config -ComputerName $config.SourceAXSFServer -highlevelonly
+                        }
+                    }
+                    else{
+                        $FoundRecentDBSync = "nos"
                     }
                 }
             }
