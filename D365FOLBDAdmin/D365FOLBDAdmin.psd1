@@ -65,7 +65,7 @@
 		'Remove-D365LBDSFLogs',
 		'Send-D365LBDUpdateMSTeams',
 		'Get-D365LBDDependencyHealth',
-		'Remove-D365SFClusterExtraFiles',
+		'Remove-D365SFClusterExtraFiles','Get-D365LBDSFErrorDetails',
 		'Get-D365LBDConfigTemplate',
 		'Restart-D365LBDOrchestratorLastJob','Start-D365LBDDeploymentSleep'
 		'Remove-D365LBDSFImageStoreFiles','Get-D365LBDAXSFGuids','Remove-D365LBDSFInstalledFinancialReporting','Get-D365LBDADFSSID','Get-AzureDevOpsLastSuccessfulRelease','Get-D365LCSEnvironmentDetailsProjectPage','Start-D365LBDSleepForNewAssetPrep'
@@ -86,7 +86,7 @@
 	"Get-D365TestConfigData",
 	"Import-D365LBDCertificates"
 	"New-D365AXSFNode",
-	"Remove-D365StuckApps",
+	"Remove-D365StuckApps",'Get-D365SFErrorDetails',
 	"Remove-D365SFOldAssets",
 	"Start-D365DBSync",
 	"Start-D365FOLBDDBSync",

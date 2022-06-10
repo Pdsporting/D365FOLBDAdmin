@@ -46,7 +46,6 @@ function Get-D365LBDOrchestrationNodes {
                 $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
                 if (!$module) {
                     $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
-                    Import-PSSession -Session $SFModuleSession
                 }
                 $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My  -KeepAliveIntervalInSec 400
                 if (!$connection) {

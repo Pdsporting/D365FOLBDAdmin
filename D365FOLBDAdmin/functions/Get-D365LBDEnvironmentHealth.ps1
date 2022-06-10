@@ -448,14 +448,16 @@ function Get-D365LBDEnvironmentHealth {
             $NotHealthyApps = Get-ServiceFabricApplication | Where-Object { $_.HealthState -ne "OK" }
             Write-PSFMessage -Message "Warning: Not all Service Fabric Applications are healthy $HealthyApps / $TotalApplications " -Level VeryVerbose
             Write-PSFMessage -Message "Issue App:" -Level VeryVerbose
+            $HealthIssueString = ''
             foreach ($NotHealthyApp in $NotHealthyApps) {
                 $HealthReport = Get-ServiceFabricApplicationHealth -ApplicationName $NotHealthyApp.ApplicationName
                 Write-PSFMessage -Message "$HealthReport" -Level VeryVerbose
+                $HealthIssueString = $HealthIssueString + "$($NotHealthyApp.ApplicationName) : " + "$($HealthReport.UnhealthyEvaluations)"
             }
             $Properties = @{'Name' = "ServiceFabricApplications"
                 'Details'          = "Healthy: $HealthyApps / Total: $TotalApplications"
                 'State'            = "Down" 
-                'ExtraInfo'        = "$NotHealthyApps"
+                'ExtraInfo'        = "$HealthIssueString"
                 'Source'           = $OrchestratorServerName
                 'Group'            = 'ServiceFabric'
             }

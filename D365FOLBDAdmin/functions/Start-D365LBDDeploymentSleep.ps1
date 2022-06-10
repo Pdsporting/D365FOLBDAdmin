@@ -65,10 +65,10 @@ Start-D365LBDDeploymentSleep -config $config
         }
 
         do { 
-            $logscurrent = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
+            $logscurrent = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 4
             Start-Sleep -Seconds 60
             Write-PSFMessage -Level VeryVerbose -Message "Waiting for StandaloneSetup to start Runtime: $Runtime" 
-            $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
+            $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 4
             if (Compare-Object $logs -DifferenceObject $logscurrent -Property Eventdetails) {
                 foreach ($log in $logs) {
                     if ($logscurrent.Eventdetails -contains $log.Eventdetails) {}else {
@@ -109,7 +109,6 @@ Start-D365LBDDeploymentSleep -config $config
                         Write-PSFMessage -Message "Count of servers tried $count" -Level Verbose
                     }
                 } until ($connection -or ($count -eq $($config.OrchestratorServerNames).Count) -or ($($config.OrchestratorServerNames).Count) -eq 0)
-
             }
 
             $atStandaloneSetupexecution = $logs | Where-Object { $_.eventmessage -like "*StandaloneSetup*" }
@@ -118,9 +117,10 @@ Start-D365LBDDeploymentSleep -config $config
         until($atStandaloneSetupexecution -or $Runtime -gt $TimeOutMinutes) 
 
         if ($Runtime -gt $TimeOutMinutes) {
+            return "Failed"
             Stop-PSFFunction -Message "Error: Failed did not complete within $TimeOutMinutes minutes"  -EnableException $true -Cmdlet $PSCmdlet
         }
-        $logscurrent = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
+        $logscurrent = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 4
         do {
             Start-Sleep -Seconds 60
             $Runtime = $Runtime + 1
@@ -163,10 +163,22 @@ Start-D365LBDDeploymentSleep -config $config
                 Write-PSFMessage -message "Found AXSF Running" -Level veryVerbose
             }
 
-            $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
+            $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 4
             if (Compare-Object $logs -DifferenceObject $logscurrent -Property Eventdetails) {
                 foreach ($log in $logs) {
                     if ($logscurrent.Eventdetails -contains $log.Eventdetails) {}else {
+                        if ($log.EventMessage -like "Execution of custom powershell script*"){
+                            Write-PSFMessage -Level VeryVerbose -Message "$log"
+                            $time = $(get-date).AddMinutes(-15)
+                            $customscriptlogs = get-childitem  "$($config.AgentShareLocation)\scripts\logs" | Where-Object {$_.CreationTime -gt $time}
+                            foreach ($customscriptlog in $customscriptlogs){
+                                Write-PSFMessage -Level VeryVerbose -Message "BEGIN Log: $($CustomscriptLog.Name)"
+                                $customlogcontent = Get-Content $customscriptlog.FullName
+                                Write-PSFMessage -Level VeryVerbose -Message "$customlogcontent"
+                                Write-PSFMessage -Level VeryVerbose -Message "END Log: $($CustomscriptLog.Name)"
+
+                            }
+                        }
                         Write-PSFMessage -Level VeryVerbose -Message "$log"
                     }
                 }
@@ -179,6 +191,7 @@ Start-D365LBDDeploymentSleep -config $config
 
         }until ($AXSF -or $Deployment -eq 'Failure' -or $Runtime -gt $TimeOutMinutes)
         if ($Runtime -gt $TimeOutMinutes -or $Deployment -eq 'Failure') {
+            return "Failed"
             Stop-PSFFunction -Message "Error: The Deployment failed. Stopping" -EnableException $true -Cmdlet $PSCmdlet
         }
 
@@ -186,10 +199,10 @@ Start-D365LBDDeploymentSleep -config $config
             $DBeventscurrent = Get-D365DBEvents -Config $config -NumberofEvents 5
             Start-Sleep -Seconds 120
             $Runtime = $Runtime + 2
-            $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
+            $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 4
             $FoundSuccess = $logs | Where-Object { $_.EventMessage -like "status of job*Success" }
             $FoundError = $logs | Where-Object { $_.EventMessage -like "status of job*Error" }
-            $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 2
+            $logs = Get-D365LBDOrchestrationLogs -Config $config -NumberofEvents 4
             if (Compare-Object $logs -DifferenceObject $logscurrent -Property Eventdetails) {
                 foreach ($log in $logs) {
                     if ($logscurrent.Eventdetails -contains $log.Eventdetails) {}else {
@@ -253,7 +266,12 @@ Start-D365LBDDeploymentSleep -config $config
 
         Write-Verbose "$Deployment" -Verbose
         if ($Deployment -eq "Failure") {
+            return "Failed"
             Stop-PSFFunction -Message "Error: The Deployment failed. Stopping" -EnableException $true -Cmdlet $PSCmdlet
+        }
+        else{
+            Write-PSFMessage -Level VeryVerbose -Message "Deployment status = Success"
+            return "Success"
         }
 
     }

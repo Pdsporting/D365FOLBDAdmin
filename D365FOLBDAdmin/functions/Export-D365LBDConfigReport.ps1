@@ -308,6 +308,14 @@ function Export-D365LBDConfigReport {
                 $html += "<tr><td>$($SQLResult.command)</td><td>$($SQLResult.TEXT)</td><td>$($SQLResult.total_elapsed_time)</td><td>$($SQLResult.session_id)</td><td>$($SQLResult.status)</td></tr>"
             }
             $html += "</table>"
+            $SFissues = Get-D365LBDSFErrorDetails -Config $Config
+
+            if ($SFissues){
+                "<h2>Errors found in Service Fabric use Get-D365LBDSFErrorDetails</h2>"
+            }
+            else{
+                $html += "<h2>No Errors found in Service Fabric</h2>"
+            }
 
             $html += "<h2>Last Orchestrator Events: </h2>"
             $orchevents = Get-D365OrchestrationLogs -config $Config -NumberofEvents 10
@@ -327,6 +335,7 @@ function Export-D365LBDConfigReport {
                 $html += "<tr><td>$($dbevent.MachineName)</td><td>$($dbevent.Message)</td><td>$($dbevent.TimeCreated)</td><td>$($dbevent.EventMessage)</td><td>$($dbevent.EventDetails)</td></tr>"
             }
             $html += "</table>"
+
 
         }
         $html += "</body></html>"
