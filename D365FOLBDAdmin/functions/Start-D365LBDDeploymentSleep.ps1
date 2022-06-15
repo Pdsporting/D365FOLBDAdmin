@@ -74,7 +74,21 @@ Start-D365LBDDeploymentSleep -config $config
                     if ($logscurrent.Eventdetails -contains $log.Eventdetails) {}else {
                         Write-PSFMessage -Level VeryVerbose -Message "$log"
                     }
+                    if ($log.EventMessage -like "Execution of custom powershell script*"){
+                        Write-PSFMessage -Level VeryVerbose -Message "$log"
+                        $time = $(get-date).AddMinutes(-15)
+                        $customscriptlogs = get-childitem  "$($config.AgentShareLocation)\scripts\logs" | Where-Object {$_.CreationTime -gt $time}
+                        foreach ($customscriptlog in $customscriptlogs){
+                            Write-PSFMessage -Level VeryVerbose -Message "BEGIN Log: $($CustomscriptLog.Name)"
+                            $customlogcontent = Get-Content $customscriptlog.FullName
+                            Write-PSFMessage -Level VeryVerbose -Message "$customlogcontent"
+                            Write-PSFMessage -Level VeryVerbose -Message "END Log: $($CustomscriptLog.Name)"
+
+                        }
+                    }
+                    #Write-PSFMessage -Level VeryVerbose -Message "$log"
                 }
+                
             } 
             $Runtime = $Runtime + 1
             $logscurrent = $logs
@@ -135,7 +149,7 @@ Start-D365LBDDeploymentSleep -config $config
                     $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
                     if (!$module) {
                         $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
-                        Import-PSSession -Session $SFModuleSession
+                       ## Import-PSSession -Session $SFModuleSession
                     }
                     $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $config.SFConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $config.SFServerCertificate -ServerCertThumbprint $config.SFServerCertificate -StoreLocation LocalMachine -StoreName My  -KeepAliveIntervalInSec 400
                     if (!$connection) {
