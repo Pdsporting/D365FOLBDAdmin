@@ -46,7 +46,7 @@ function Export-D365LBDAssetModuleVersion {
             $AgentShareLocation = $Config.AgentShareLocation
         }
         if (!$AgentShareLocation) {
-            if ($CustomModuleName){
+            if ($CustomModuleName) {
                 Write-PSFMessage -Level VeryVerbose -Message "Connecting to $ComputerName to get config"
                 $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly -custommoduleName $CustomModuleName
             }
@@ -56,11 +56,11 @@ function Export-D365LBDAssetModuleVersion {
         if (!$CustomModuleName) {
             if ($Config.CustomModuleName) {
                 $CustomModuleName = $Config.CustomModuleName
-                if ($CustomModuleName){
+                if ($CustomModuleName) {
                     Write-PSFMessage -Level VeryVerbose -Message "Found Custom Module Name $CustomModuleName in config"
-                    if ($Config.SourceAXSFServer){
-                    $Config = Get-D365LBDConfig -ComputerName $Config.SourceAXSFServer -HighLevelOnly -custommoduleName $CustomModuleName
-                }
+                    if ($Config.SourceAXSFServer) {
+                        $Config = Get-D365LBDConfig -ComputerName $Config.SourceAXSFServer -HighLevelOnly -custommoduleName $CustomModuleName
+                    }
                     $AgentShareLocation = $Config.AgentShareLocation
                 }
             }
@@ -93,8 +93,10 @@ function Export-D365LBDAssetModuleVersion {
                     stop-job $job
                 }
                 if ($invalidfile -eq $false) {
-                    $zip = [System.IO.Compression.ZipFile]::OpenRead($StandaloneSetupZip)
-                    $count = $($zip.Entries | Where-Object { $_.FullName -like $Filter }).Count
+                    if ($StandaloneSetupZip) {
+                        $zip = [System.IO.Compression.ZipFile]::OpenRead($StandaloneSetupZip)
+                        $count = $($zip.Entries | Where-Object { $_.FullName -like $Filter }).Count
+                    }
                 }
                 else {
                     $count = 0
@@ -120,22 +122,29 @@ function Export-D365LBDAssetModuleVersion {
                         Write-PSFMessage -Message "$_" -Level VeryVerbose
                     }
                     finally {
-                        $zip.Dispose()
+                        if ($zip) {
+                            $zip.Dispose()
+                        }
                     }
                     ##Closes Zip
-                    $NewfileWithoutVersionPath = $SpecificAssetFolder + "\$CustomModuleName.xml"
-                    Write-PSFMessage -Message "$SpecificAssetFolder\$FileName exported" -Level Verbose
-
-                    $NewfileWithoutVersion = Get-ChildItem "$NewfileWithoutVersionPath"
-                    if (!$NewfileWithoutVersion) {
-                        Write-PSFMessage -Message "Error Module not found" -ErrorAction Continue
+                    if ($StandaloneSetupZip) {
+                        Write-PSFMessage -Level Warning -Message "Warning StandAloneZip is invalid $SpecificAssetFolder"
                     }
-                    [xml]$xml = Get-Content "$NewfileWithoutVersion"
-                    $Version = $xml.MetadataModelInstallationInfo.Version
-                    Rename-Item -Path $NewfileWithoutVersionPath -NewName "$CustomModuleName $Version.xml" -Verbose | Out-Null
-                    Write-PSFMessage -Message "$CustomModuleName $Version.xml exported" -Level Verbose
-                    Write-Output "$Version"
-                    Write-PSFMessage -Message "Finished Prep at: $($StandaloneSetupZip.LastWriteTime)" -Level veryVerbose
+                    else {
+                        $NewfileWithoutVersionPath = $SpecificAssetFolder + "\$CustomModuleName.xml"
+                        Write-PSFMessage -Message "$SpecificAssetFolder\$FileName exported" -Level Verbose
+
+                        $NewfileWithoutVersion = Get-ChildItem "$NewfileWithoutVersionPath"
+                        if (!$NewfileWithoutVersion) {
+                            Write-PSFMessage -Message "Error Module not found" -ErrorAction Continue
+                        }
+                        [xml]$xml = Get-Content "$NewfileWithoutVersion"
+                        $Version = $xml.MetadataModelInstallationInfo.Version
+                        Rename-Item -Path $NewfileWithoutVersionPath -NewName "$CustomModuleName $Version.xml" -Verbose | Out-Null
+                        Write-PSFMessage -Message "$CustomModuleName $Version.xml exported" -Level Verbose
+                        Write-Output "$Version"
+                        Write-PSFMessage -Message "Finished Prep at: $($StandaloneSetupZip.LastWriteTime)" -Level veryVerbose
+                    }
                 }
             }
         }

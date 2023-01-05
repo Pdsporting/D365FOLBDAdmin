@@ -327,7 +327,7 @@
                             Write-PSFMessage -Message "Verbose: Reaching out to $OrchestratorServerName to try and connect to the service fabric" -Level Verbose
                             $SFModuleSession = New-PSSession -ComputerName $OrchestratorServerName
                             if (!$module) {
-                                $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 
+                                $module = Import-Module -Name ServiceFabric -PSSession $SFModuleSession 4>5
                             }
                             $connection = Connect-ServiceFabricCluster -ConnectionEndpoint $ConnectionEndpoint -X509Credential -FindType FindByThumbprint -FindValue $ServerCertificate -ServerCertThumbprint $ServerCertificate -StoreLocation LocalMachine -StoreName My
                             if ($connection) {
@@ -683,6 +683,7 @@ ORDER BY [rh].[restore_date] DESC"
                 Write-PSFMessage -Level VeryVerbose -Message "Connecting to Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SQL Server\$SQLVersionandInstance\MSSQLSERVER\SuperSocketNetLib"
 
                 try {
+                    $SQLCert = $null
                     $SQLCert = invoke-command -ScriptBlock {
                         if (!$SQLVersionandInstance) {
                             $SQLVersionandInstance = $using:SQLVersionandInstance

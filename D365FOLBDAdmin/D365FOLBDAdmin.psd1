@@ -3,7 +3,7 @@
 	RootModule = 'D365FOLBDAdmin.psm1'
 	
 	# Version number of this module.
-	ModuleVersion = '2.1.15.0'
+	ModuleVersion = '2.1.16.0'
 	
 	# ID used to uniquely identify this module
 	GUID = '7ddad589-c6ec-443f-a365-7b3055e14d12'
@@ -47,7 +47,7 @@
 		'Get-D365LBDOrchestrationNodes',
 		'Remove-D365LBDStuckApps',
 		'Export-D365LBDCertificates',
-		'Import-D365LBDCertificates',
+		'Import-D365LBDDBCertificate',
 		'Get-D365LBDCertsFromConfig',
 		'Export-D365Certificates',
 		'Get-D365LBDTestConfigData',
@@ -66,9 +66,9 @@
 		'Send-D365LBDUpdateMSTeams',
 		'Get-D365LBDDependencyHealth',
 		'Remove-D365SFClusterExtraFiles','Get-D365LBDSFErrorDetails',
-		'Get-D365LBDConfigTemplate',
-		'Restart-D365LBDOrchestratorLastJob','Start-D365LBDDeploymentSleep'
-		'Remove-D365LBDSFImageStoreFiles','Get-D365LBDAXSFGuids','Remove-D365LBDSFInstalledFinancialReporting','Get-D365LBDADFSSID','Get-AzureDevOpsLastSuccessfulRelease','Get-D365LCSEnvironmentDetailsProjectPage','Start-D365LBDSleepForNewAssetPrep'
+		'Get-D365LBDConfigTemplate','Test-D365ConfigCertExpiration'
+		'Restart-D365LBDOrchestratorLastJob','Start-D365LBDDeploymentSleep',
+		'Remove-D365LBDSFImageStoreFiles','Get-D365LBDAXSFGuids','Remove-D365LBDSFInstalledFinancialReporting','Get-D365LBDADFSSID','Get-AzureDevOpsLastSuccessfulRelease','Get-D365LCSEnvironmentDetailsProjectPage','Start-D365LBDSleepForNewAssetPrep','New-D365MSSQLSelfCert'
 		)
 	# Cmdlets to export from this module
 	CmdletsToExport = ''
@@ -77,7 +77,7 @@
 	VariablesToExport = ''
 	
 	# Aliases to export from this module
-	AliasesToExport = @("Export-D365AssetModuleVersion",
+	AliasesToExport = @("Export-D365AssetModuleVersion","New-MSSQLSelfCert",
 	"Export-D365FOLBDAssetModuleVersion", 
 	"Get-D365CertsFromConfig",
 	"Get-D365Config",

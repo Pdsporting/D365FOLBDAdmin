@@ -28,7 +28,8 @@ function Export-D365LBDCertificates {
         [string]$CertThumbprint,
         [Parameter(Mandatory = $true)]
         [string]$ExportLocation,
-        [string]$Username
+        [string]$Username,
+        [string]$CertPassword
     )
     BEGIN {
     }
@@ -45,12 +46,24 @@ function Export-D365LBDCertificates {
         }
         try {
             Write-PSFMessage -Message "Trying to pull  $CertThumbprint from LocalMachine My " -Level Verbose
-            Get-ChildItem "Cert:\localmachine\my" | Where-Object { $_.Thumbprint -eq $CertThumbprint } | ForEach-Object -Process { Export-PfxCertificate -Cert $_ -FilePath $("$ExportLocation\" + $_.FriendlyName + ".pfx") -ProtectTo "$Username" }
+            if ($CertPassword){
+                $CertSecurePass = ConvertTo-SecureString -String $using:CertPassword -AsPlainText -Force
+                Get-ChildItem "Cert:\localmachine\my" | Where-Object { $_.Thumbprint -eq $CertThumbprint } | ForEach-Object -Process { Export-PfxCertificate -Cert $_ -FilePath $("$ExportLocation\" + $_.FriendlyName + ".pfx") -Password $CertSecurePass }
+            }else{
+                Get-ChildItem "Cert:\localmachine\my" | Where-Object { $_.Thumbprint -eq $CertThumbprint } | ForEach-Object -Process { Export-PfxCertificate -Cert $_ -FilePath $("$ExportLocation\" + $_.FriendlyName + ".pfx") -ProtectTo "$Username" }
+            }
+            
         }
         catch {
             try {
-                Write-PSFMessage -Message "Trying to pull  $CertThumbprint from CurrentUser My " -Level Verbose
-                Get-ChildItem "Cert:\CurrentUser\my" | Where-Object { $_.Thumbprint -eq $CertThumbprint } | ForEach-Object -Process { Export-PfxCertificate -Cert $_ -FilePath $("$ExportLocation\" + $_.FriendlyName + ".pfx") -ProtectTo "$Username" }
+                Write-PSFMessage -Message "Trying to pull $CertThumbprint from CurrentUser My " -Level Verbose
+                if ($CertPassword){
+                    $CertSecurePass = ConvertTo-SecureString -String $using:CertPassword -AsPlainText -Force
+                    Get-ChildItem "Cert:\CurrentUser\my" | Where-Object { $_.Thumbprint -eq $CertThumbprint } | ForEach-Object -Process { Export-PfxCertificate -Cert $_ -FilePath $("$ExportLocation\" + $_.FriendlyName + ".pfx") -Password $CertSecurePass }
+                }
+                else{
+                    Get-ChildItem "Cert:\CurrentUser\my" | Where-Object { $_.Thumbprint -eq $CertThumbprint } | ForEach-Object -Process { Export-PfxCertificate -Cert $_ -FilePath $("$ExportLocation\" + $_.FriendlyName + ".pfx") -ProtectTo "$Username" }
+                }
             }
             catch {
                 Write-PSFMessage -Level Verbose "Can't Export Certificate"
