@@ -73,7 +73,7 @@ function Get-D365LBDOrchestrationLogs {
             }
         }
         $orchnodes = Get-D365LBDOrchestrationNodes -config $Config
-        Write-PSFMessage -Level Verbose -Message "$orchnodes"
+       # Write-PSFMessage -Level Verbose -Message "$orchnodes"
     
         $LatestEventInLog = $(Get-WinEvent -LogName Microsoft-Dynamics-AX-LocalAgent/Operational -MaxEvents 1 -ComputerName $orchnodes.PrimaryNodeName).TimeCreated
         if ($NumberofEvents -eq 1) {

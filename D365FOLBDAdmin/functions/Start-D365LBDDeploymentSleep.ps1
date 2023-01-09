@@ -85,8 +85,7 @@ Watches the deployment of a D365 LBD package. Recommend to use with exported con
                         }
                     }
                     #Write-PSFMessage -Level VeryVerbose -Message "$log"
-                }
-                
+                }     
             } 
             $Runtime = $Runtime + 1
             $logscurrent = $logs
@@ -122,9 +121,7 @@ Watches the deployment of a D365 LBD package. Recommend to use with exported con
                     }
                 } until ($connection -or ($count -eq $($config.OrchestratorServerNames).Count) -or ($($config.OrchestratorServerNames).Count) -eq 0)
             }
-
             $atStandaloneSetupexecution = $logs | Where-Object { $_.eventmessage -like "*StandaloneSetup*" }
-
         }
         until($atStandaloneSetupexecution -or $Runtime -gt $TimeOutMinutes) 
 
@@ -188,7 +185,6 @@ Watches the deployment of a D365 LBD package. Recommend to use with exported con
                                 $customlogcontent = Get-Content $customscriptlog.FullName
                                 Write-PSFMessage -Level VeryVerbose -Message "$customlogcontent"
                                 Write-PSFMessage -Level VeryVerbose -Message "END Log: $($CustomscriptLog.Name)"
-
                             }
                         }
                         Write-PSFMessage -Level VeryVerbose -Message "$log"
@@ -285,7 +281,6 @@ Watches the deployment of a D365 LBD package. Recommend to use with exported con
             Write-PSFMessage -Level VeryVerbose -Message "Deployment status = Success"
             return "Success"
         }
-
     }
     END {
     }
