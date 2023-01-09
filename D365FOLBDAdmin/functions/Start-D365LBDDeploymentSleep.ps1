@@ -1,14 +1,12 @@
 function Start-D365LBDDeploymentSleep {
-        <#
+<#
     .SYNOPSIS
 Watches the deployment of a D365 LBD package
    .DESCRIPTION
 Watches the deployment of a D365 LBD package. Recommend to use with exported config
    .EXAMPLE
    $config = Get-D365Config -ConfigImportFromFile "C:\environment\environment.xml"
-Start-D365LBDDeploymentSleep -config $config 
-   .EXAMPLE
-
+    Start-D365LBDDeploymentSleep -config $config 
    .PARAMETER Config
     Custom PSObject
     Config Object created by either the Get-D365LBDConfig or Get-D365TestConfigData function inside this module

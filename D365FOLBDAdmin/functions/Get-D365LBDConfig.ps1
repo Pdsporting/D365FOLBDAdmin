@@ -118,8 +118,7 @@
             $fabricfolder = get-childitem "\\$OrchestratorServerName\C$\ProgramData\SF\*\Fabric" | Sort-Object { $_.LastWriteTime }  -Descending | Select-Object -First 1
             if ($(Test-Path "$fabricfolder\clusterManifest.current.xml") -eq $True) {
                 Write-PSFMessage -Message "Gathering Current Manifest from $ComputerName as it exists"
-                $ClusterManifestXMLFile = get-childitem "$fabricfolder\clusterManifest.current.xml"
-                
+                $ClusterManifestXMLFile = get-childitem "$fabricfolder\clusterManifest.current.xml"   
             }
             [xml]$xml = get-content $ClusterManifestXMLFile
             Write-PSFMessage -Message "Reading $ClusterManifestXMLFile" -Level Verbose ##
@@ -201,7 +200,6 @@
 
                 $SMBStorage = $xml.ServicePackage.DigestedConfigPackage.ConfigOverride.Settings.Section | Where-Object { $_.Name -EQ 'SmbStorage' }
                 $SharedAccessSMBCertificate = $($SMBStorage.Parameter | Where-Object { $_.Name -eq 'SharedAccessThumbprint' }).value
-       
             }
 
             $AgentShareLocation = $downloadfolderLocation.Value
@@ -700,7 +698,6 @@ ORDER BY [rh].[restore_date] DESC"
             }
             $DatabaseEncryptionThumbprints = $listofsqlcerts 
 
-
             if ($CustomModuleName) {
                 $newassets = Export-D365FOLBDAssetModuleVersion -AgentShare $AgentShareLocation -CustomModuleName $CustomModuleName
                 if ($newassets) {
@@ -821,7 +818,6 @@ ORDER BY [rh].[restore_date] DESC"
                 $RunningAXCodeFolderLastWriteTime = $(Invoke-Command -ComputerName $AXSFConfigServerName -ScriptBlock { get-childitem $using:RunningAXCodeFolder -directory | select LastWriteTime -First 1 }).LastWriteTime
             }
             catch {
-
             }
             $WPFolder = join-path $AgentShareLocation "wp\$LCSEnvironmentName"
             $SetupJson = Get-ChildItem "$WPFolder\StandaloneSetup-*\setupmodules.json" | Select-Object -First 1

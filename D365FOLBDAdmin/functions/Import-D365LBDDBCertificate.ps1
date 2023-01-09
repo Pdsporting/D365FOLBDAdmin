@@ -5,12 +5,12 @@ function Import-D365LBDDBCertificate {
   .DESCRIPTION
  Imports PFX File into all Application Servers Trusted Root. Created to import database certificates
   .EXAMPLE
-  Import-D365Certificates
-
+   Import-D365Certificates -pfxLocation "C:\Certs\FakeThumbprint.pfx" -CertPassword 'StrongFakePass123' -Config $Config
   .EXAMPLE
-   Import-D365Certificates
-
-
+   $Certs = New-D365MSSQLSelfCert -config $Config -CertPass 'StrongFakePass123'
+   foreach ($cert in $Certs){
+    Import-D365Certificates -pfxLocation $cert.FullName -CertPassword 'StrongFakePass123' -Config $Config -DeletePFXAfter
+   }
   #>
     [alias("Import-D365DBCertificate")]
     [CmdletBinding()]
@@ -21,7 +21,8 @@ function Import-D365LBDDBCertificate {
         [Parameter(Mandatory = $true)]
         [string]$CertPassword,
         [Parameter(ValueFromPipeline = $True)]
-        [psobject]$Config
+        [psobject]$Config,
+        [switch]$DeletePFXAfter
     )
     BEGIN {
     }
@@ -32,9 +33,10 @@ function Import-D365LBDDBCertificate {
         }
 
         $CertFile = Get-ChildItem $PFXLocation
-        foreach ($Server in $Config.AllAppServerList | Select ComputerName){
+        foreach ($Server in $Config.AllAppServerList | Select ComputerName) {
             $ServerName = $Server.ComputerName
-            if (!(test-path -PathType Container "\\$ServerName\c$\certs")){
+            Write-PSFMessage -Level Verbose -Message "Trying to import into $ServerName"
+            if (!(test-path -PathType Container "\\$ServerName\c$\certs")) {
                 mkdir "\\$ServerName\c$\certs"
             }
             Copy-Item $PFXLocation -Destination \\$ServerName\c$\certs\$($CertFile.Name)
@@ -42,18 +44,21 @@ function Import-D365LBDDBCertificate {
             Invoke-Command -ScriptBlock {
                 $LocalFile = Get-ChildItem "C:\Certs\$($using:CertFile.Name)"
                 $CertSecurePass = ConvertTo-SecureString -String $using:CertPassword -AsPlainText -Force
-                try{
+                try {
                     Import-PfxCertificate -FilePath $LocalFile.FullName -Password $CertSecurePass -CertStoreLocation Cert:\LocalMachine\Root
                     Write-Verbose "Imported Certificate into $env:ComputerName" -Verbose
                 }
-                catch{
+                catch {
                     Write-Warning -Message "Could not import into $env:ComputerName"
                     Write-Warning -Message "$_"
                 }
-                finally{
-                    Get-ChildItem $LocalFile.FullName |Remove-Item -Force
+                finally {
+                    if ($using:DeletePFXAfter) {
+                        Get-ChildItem $LocalFile.FullName | Remove-Item -Force
+                    }
+                    
                 }
-            }
+            } -ComputerName $ServerName
         }
     }
     END {

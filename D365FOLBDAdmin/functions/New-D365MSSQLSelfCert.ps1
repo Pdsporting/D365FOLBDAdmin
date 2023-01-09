@@ -1,15 +1,11 @@
 function New-D365MSSQLSelfCert {
     <#
     .SYNOPSIS
-
+    Creates new self signed certificates on each MS SQL database server and exports the PFX file
    .DESCRIPTION
- 
-   .EXAMPLE
-
-   .EXAMPLE
-
+    Creates new self signed certificates on each MS SQL database server and exports the PFX file
     .EXAMPLE 
-
+    $Certs = New-D365MSSQLSelfCert -config $Config -CertPassword 'StrongFakePass123'
    .PARAMETER ComputerName
    String
    The name of the D365 LBD Server to grab the environment details; needed if a config is not specified and will default to local machine.
@@ -107,7 +103,7 @@ function New-D365MSSQLSelfCert {
                 $NewCertInside = New-SelfSignedCertificate -Subject "$ComputerName.$Domain" -DnsName "$ListenerName.$Domain", $Listener, $ComputerName -Provider 'Microsoft Enhanced RSA and AES Cryptographic Provider'
 
                 if (!(test-path -PathType Container "C:\certs")) {
-                    mkdir "C:\certs"
+                    $certdir = mkdir "C:\certs"
                 }
                 $Thumbprint = $NewCertInside.Thumbprint
                 $CertSecurePass = ConvertTo-SecureString -String $using:CertPassword -AsPlainText -Force
@@ -116,7 +112,7 @@ function New-D365MSSQLSelfCert {
                 $CertInsideLocalStore
             } -ComputerName $SQLServer
             if (!(test-path -PathType Container "C:\certs")) {
-                mkdir "C:\certs"
+                $certdir = mkdir "C:\certs"
             }
             [string]$NewCertThumbprint = $($NewCert.Thumbprint)
             $NewCertThumbprint = $NewCertThumbprint.Trim()
