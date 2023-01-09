@@ -134,16 +134,21 @@ function Export-D365LBDAssetModuleVersion {
                         $NewfileWithoutVersionPath = $SpecificAssetFolder + "\$CustomModuleName.xml"
                         Write-PSFMessage -Message "$SpecificAssetFolder\$FileName exported" -Level Verbose
 
-                        $NewfileWithoutVersion = Get-ChildItem "$NewfileWithoutVersionPath"
-                        if (!$NewfileWithoutVersion) {
-                            Write-PSFMessage -Message "Error Module not found" -ErrorAction Continue
+                        try {
+                            $NewfileWithoutVersion = Get-ChildItem "$NewfileWithoutVersionPath" -ErrorAction Stop
                         }
-                        [xml]$xml = Get-Content "$NewfileWithoutVersion"
-                        $Version = $xml.MetadataModelInstallationInfo.Version
-                        Rename-Item -Path $NewfileWithoutVersionPath -NewName "$CustomModuleName $Version.xml" -Verbose | Out-Null
-                        Write-PSFMessage -Message "$CustomModuleName $Version.xml exported" -Level Verbose
-                        Write-Output "$Version"
-                        Write-PSFMessage -Message "Finished Prep at: $($StandaloneSetupZip.LastWriteTime)" -Level veryVerbose
+                        catch {}
+                        if (!$NewfileWithoutVersion) {
+                            Write-PSFMessage -Message "Error Module not found in Standalone Zip $StandaloneSetupZip" -Level Verbose
+                        }
+                        else {
+                            [xml]$xml = Get-Content "$NewfileWithoutVersion"
+                            $Version = $xml.MetadataModelInstallationInfo.Version
+                            Rename-Item -Path $NewfileWithoutVersionPath -NewName "$CustomModuleName $Version.xml" -Verbose | Out-Null
+                            Write-PSFMessage -Message "$CustomModuleName $Version.xml exported" -Level Verbose
+                            Write-Output "$Version"
+                            Write-PSFMessage -Message "Finished Prep at: $($StandaloneSetupZip.LastWriteTime)" -Level veryVerbose
+                        }
                     }
                 }
             }
