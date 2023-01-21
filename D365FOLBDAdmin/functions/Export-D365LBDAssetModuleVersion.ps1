@@ -86,7 +86,9 @@ function Export-D365LBDAssetModuleVersion {
                 $job = $null
                 
                 $job = start-job -ScriptBlock { Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead($using:StandaloneSetupZip) } -ErrorAction SilentlyContinue
-           
+           if (!$Timeout){
+            $Timeout = 500
+           }
                 if (Wait-Job $job -Timeout $Timeout) { Receive-Job $job -ErrorAction SilentlyContinue }else {
                     Write-PSFMessage -Level VeryVerbose -message "Invalid Zip file $StandaloneSetupZip."
                     $invalidfile = $true
@@ -127,7 +129,7 @@ function Export-D365LBDAssetModuleVersion {
                         }
                     }
                     ##Closes Zip
-                    if ($StandaloneSetupZip) {
+                    if (!$StandaloneSetupZip) {
                         Write-PSFMessage -Level Warning -Message "Warning StandAloneZip is invalid $SpecificAssetFolder"
                     }
                     else {
