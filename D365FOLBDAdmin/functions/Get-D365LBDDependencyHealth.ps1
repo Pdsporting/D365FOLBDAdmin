@@ -102,33 +102,45 @@ function Get-D365LBDDependencyHealth {
                 $properties = $childnodes | Get-Member -MemberType Property
                 $propertiestocheck = $properties.Name
                 [int]$countofproperties = $propertiestocheck.count
-                $results = Invoke-RestMethod -Uri $_.uri -UseBasicParsing
-                if ($countofproperties -eq 0 -or $countofproperties -eq 1 ) {
-                    ##only one or 0 child items start
-                    $diff = Compare-Object $results -DifferenceObject $($childnodes.'#text'.Trim())
-                    if ($diff) {
-                        Write-PSFMessage -message "Found differences $diff" -Level VeryVerbose
-                        $Output = New-Object -TypeName PSObject -Property `
-                        @{'Source'      = $env:COMPUTERNAME ;
-                            'Name'      = $_.uri ;
-                            'State'     = "Down";
-                            'ExtraInfo' = $Note
-                            'Group'     = 'Web Service/Page Web Advanced'
-                        }
-                        $OutputList += $Output
+                try { $results = Invoke-RestMethod -Uri $_.uri -UseBasicParsing -ErrorAction Stop }
+                catch {
+                    $Output = New-Object -TypeName PSObject -Property `
+                    @{'Source'      = $env:COMPUTERNAME ;
+                        'Name'      = $_.uri ;
+                        'State'     = "Down";
+                        'ExtraInfo' = $Note
+                        'Group'     = 'Web Service/Page Web Advanced'
                     }
-                    else {
-                        ##no differences found so success
-                        $Output = New-Object -TypeName PSObject -Property `
-                        @{'Source'      = $env:COMPUTERNAME ;
-                            'Name'      = $_.uri ;
-                            'State'     = "Operational";
-                            'ExtraInfo' = $Note
-                            'Group'     = 'Web Service/Page Web Advanced'
+                    $OutputList += $Output 
+                }
+                if ($results) {
+                    if ($countofproperties -eq 0 -or $countofproperties -eq 1 ) {
+                        ##only one or 0 child items start
+                        $diff = Compare-Object $results -DifferenceObject $($childnodes.'#text'.Trim())
+                        if ($diff) {
+                            Write-PSFMessage -message "Found differences $diff" -Level VeryVerbose
+                            $Output = New-Object -TypeName PSObject -Property `
+                            @{'Source'      = $env:COMPUTERNAME ;
+                                'Name'      = $_.uri ;
+                                'State'     = "Down";
+                                'ExtraInfo' = $Note
+                                'Group'     = 'Web Service/Page Web Advanced'
+                            }
+                            $OutputList += $Output
                         }
-                        $OutputList += $Output
-                    }  ##only one or 0 child items end
-                }##multiple items to check start 
+                        else {
+                            ##no differences found so success
+                            $Output = New-Object -TypeName PSObject -Property `
+                            @{'Source'      = $env:COMPUTERNAME ;
+                                'Name'      = $_.uri ;
+                                'State'     = "Operational";
+                                'ExtraInfo' = $Note
+                                'Group'     = 'Web Service/Page Web Advanced'
+                            }
+                            $OutputList += $Output
+                        }  ##only one or 0 child items end
+                    }##multiple items to check start 
+                }
                 else {
                     foreach ($property in $propertiestocheck) {
                         $diff = compare-object $results.data.$property -DifferenceObject $childnodes.$property.trim()

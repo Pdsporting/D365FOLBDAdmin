@@ -26,7 +26,8 @@ function Start-D365LBDSleepForNewAssetPrep {
         Write-PSFMessage -Level VeryVerbose "Looking for new build new prep every minute. Runtime: $runtime" -Verbose
         Start-Sleep -Seconds 60
         $Runtime = $Runtime + 1
-        $newversion = Export-D365AssetModuleVersion -CustomModuleName $CustomModuleName -Config $config
+        try{$newversion = Export-D365AssetModuleVersion -CustomModuleName $CustomModuleName -Config $config}
+        catch{}
     }
     until($newversion -or $Runtime -gt $TimeOutMinutes)
   
