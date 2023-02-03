@@ -83,7 +83,7 @@ function Get-D365LBDEnvironmentHealth {
         $SystemDatabasesAccessible = 0
 
         if ($SQLSSRSServer) {
-            Write-PSFMessage -Level VeryVerbose -Message "Connected to $SQLSSRSServer for SSRS Database and its system dbs $($SQLSSRSServer.Databases)"
+            Write-PSFMessage -Level VeryVerbose -Message "Connected to $SQLSSRSServer for SSRS Database and its system dbs"
         }
         else {
             Write-PSFMessage -Level VeryVerbose -Message "Having issues connecting to $SQLSSRSServer for SSRS Database and its system dbs"

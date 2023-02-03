@@ -382,15 +382,17 @@
                         foreach ($node in $nodes) {
                             $nodename = $node.Nodename
                             $replicainstanceIdofnode = $(get-servicefabricreplica -partition $ServiceFabricPartitionIdForAXSF | Where-Object { $_.NodeName -eq "$NodeName" }).InstanceId
-                            $ReplicaDetails = Get-Servicefabricdeployedreplicadetail -nodename $nodename -partitionid $ServiceFabricPartitionIdForAXSF -ReplicaOrInstanceId $replicainstanceIdofnode -replicatordetail
-                            $endpoints = $ReplicaDetails.deployedservicereplicainstance.address | ConvertFrom-Json
+                            if ($replicainstanceIdofnode){
+                                $ReplicaDetails = Get-Servicefabricdeployedreplicadetail -nodename $nodename -partitionid $ServiceFabricPartitionIdForAXSF -ReplicaOrInstanceId $replicainstanceIdofnode -replicatordetail
+                                $endpoints = $ReplicaDetails.deployedservicereplicainstance.address | ConvertFrom-Json
+                            }     
                             if ($endpoints.Endpoints) {
                                 $deployedinstancespecificguid = $($endpoints.Endpoints | Get-Member | Where-Object { $_.MemberType -eq "NoteProperty" }).Name
                                 $httpsurl = $endpoints.Endpoints.$deployedinstancespecificguid
                                 Write-PSFMessage -Level VeryVerbose -Message "$NodeName is accessible via $httpsurl with a guid $deployedinstancespecificguid "
                             }
                             else {
-                                Write-PSFMessage -Level VeryVerbose -Message "Warning: $nodename doesnt have an endpoint. Likely AXSF is down on that node"
+                                Write-PSFMessage -Level Warning -Message "Warning: $nodename doesnt have an endpoint. Likely AXSF is down on that node"
                             }
                         }
                     }
