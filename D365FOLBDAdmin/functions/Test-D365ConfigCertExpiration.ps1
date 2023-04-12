@@ -51,7 +51,7 @@ function Test-D365ConfigCertExpiration {
                     $HashTableofSpecificCert = [PSCustomObject]@{
                         Thumbprint = $Thumbprint
                         CertName = $CertName
-                        ExpirationDate = $Config.Name
+                        ExpirationDate = $Config.$Name
                     }
                     $ArrayOfExpiredCerts=  $ArrayOfExpiredCerts + $HashTableofSpecificCert
                     if ($MSTeamsURI) {

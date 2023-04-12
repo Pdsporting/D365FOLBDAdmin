@@ -556,7 +556,7 @@ ORDER BY [rh].[restore_date] DESC"
             else {
                 Write-PSFMessage "$AXDatabaseServer not found so cant get database details" -Level Verbose
                 if (!$AXDatabaseServer) {
-                    $AXDatabaseServer = $DatabaseClusterServerNames | select -First 1
+                    $AXDatabaseServer = $DatabaseClusterServerNames | Select-Object -First 1
                 }
                 
                 if (!$AXDatabaseServer) {
