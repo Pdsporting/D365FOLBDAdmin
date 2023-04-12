@@ -65,21 +65,26 @@ function Get-D365LBDSFErrorDetails {
         }
         $TotalApplications = (Get-ServiceFabricApplication).Count
         $HealthyApps = (Get-ServiceFabricApplication | Where-Object { $_.HealthState -eq "OK" }).Count
-        if ($TotalApplications -eq $HealthyApps){
+        if ($TotalApplications -eq $HealthyApps) {
             Write-PSFMessage -Message "All deployed applications are healthy $TotalApplications / $HealthyApps " -Level Verbose
         }
-        else{
+        else {
             $NotHealthyApps = Get-ServiceFabricApplication | Where-Object { $_.HealthState -ne "OK" }
-            foreach ($NotHealthyApp in $NotHealthyApps){
-                Write-PSFMessage -Level VeryVerbose -Message "$NotHealthyApp"
+            foreach ($NotHealthyApp in $NotHealthyApps) {
+                Write-PSFMessage -Level VeryVerbose -Message "$NotHealthyApp.ApplicationName"
+                $AppHealth = Get-ServiceFabricApplicationHealth -ApplicationName $NotHealthyApp.ApplicationName
+                $AppUnHealthEvents = $AppHealth.UnhealthyEvaluations
+                foreach ($AppUnHealthEvent in $AppUnHealthEvents) {
+                    $AppUnHealthEvent
+                }
                 $ServiceswithIssues = Get-ServiceFabricService -ApplicationName $NotHealthyApp.ApplicationName
-                foreach ($ServiceswithIssue in $ServiceswithIssues){
+                foreach ($ServiceswithIssue in $ServiceswithIssues) {
                     $ServicePartition = Get-ServiceFabricPartition -ServiceName $ServiceswithIssue.ServiceName
-                    $ServiceReplicaList = Get-ServiceFabricReplicaHealth -PartitionId $ServicePartition.PartitionId
-                    foreach ($ServiceReplica in $ServiceReplicaList){
+                    $ServiceReplicaList = Get-ServiceFabricReplica -PartitionId $ServicePartition.PartitionId
+                    foreach ($ServiceReplica in $ServiceReplicaList) {
                         $HealthEvents = Get-ServiceFabricReplicaHealth -partitionid $ServiceReplica.PartitionId -ReplicaOrInstanceId $ServiceReplica[0].id
                         $unhealthyevents = $HealthEvents.UnhealthyEvaluations
-                        foreach ($unhealthyevent in $unhealthyevents){
+                        foreach ($unhealthyevent in $unhealthyevents) {
                             $unhealthyevent
                         }
                     }

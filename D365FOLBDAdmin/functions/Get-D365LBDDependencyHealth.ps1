@@ -75,7 +75,10 @@ function Get-D365LBDDependencyHealth {
             $Note = $_.Note
             if ($_.Type.'#text'.Trim() -eq 'Basic') {
                 ##Basic WebURL Start
-                $results = Invoke-WebRequest -Uri $_.uri -UseBasicParsing
+                try {
+                    $results = Invoke-WebRequest -Uri $_.uri -UseBasicParsing
+                }
+                catch {}
                 if ($results.statusCode -eq 200 -or $results.statusCode -eq 203 -or $results.statusCode -eq 204 ) {
                     $Output = New-Object -TypeName PSObject -Property `
                     @{'Source'      = $env:COMPUTERNAME ;

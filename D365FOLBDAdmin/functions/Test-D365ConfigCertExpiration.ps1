@@ -33,9 +33,11 @@ function Test-D365ConfigCertExpiration {
             Write-PSFMessage -Level VeryVerbose -Message "Config not defined or Config is invalid. Trying to Get new config using $ComputerName"
             $Config = Get-D365LBDConfig -ComputerName $ComputerName -HighLevelOnly
         }
+        $ArrayOfExpiredCerts = @()
         $CertsToCheck = $Config | Get-Member | Where-Object { $_ -like "*Expires*" }
         $CurrDate = Get-Date
         $CurrDate = $CurrDate.AddDays($DaysConsideredExpired)
+        $AlertExpiringOlderBefore = $CurrDate 
         foreach ($Name in $CertsToCheck.Name) {
             if (!$Config.$Name) {
                 Write-PSFMessage -Level Warning -Message "$Name is missing in the config"
@@ -45,24 +47,40 @@ function Test-D365ConfigCertExpiration {
                     $CertName = $Name -replace 'ExpiresAfter', ''
                     $Thumbprint = $Config.$CertName
                     $FoundExpired = "Yes"
-                    Write-PSFMessage -Level Important -Message "Cert $Name is expired for config $($Config.LCSEnvironmentName) expiration at $($Config.$Name). Thumbprint $Thumbprint"
-
-                    if ($MSTeamsURI) {
-                        Send-D365LBDUpdateMSTeams -messageType "PlainText" -MSTeamsURI $MSTeamsURI -PlainTextTitle "$CertName expired" -PlainTextMessage "$Thumbprint" -MSTeamsExtraDetails "$($Config.$name)" -MSTeamsExtraDetailsURI "$($Config.ClientURL)" -MSTeamsExtraDetailsTitle "Expired"
+                    Write-PSFMessage -Level Important -Message "Cert $CertName is expired/expiring for config $($Config.LCSEnvironmentName) expiration at $($Config.$Name). Thumbprint $Thumbprint"
+                    $HashTableofSpecificCert = [PSCustomObject]@{
+                        Thumbprint = $Thumbprint
+                        CertName = $CertName
+                        ExpirationDate = $Config.Name
                     }
-                    if ($To) {
-                        if ($Credential) {
-                            Send-MailMessage -SmtpServer $SMTP -To $To -Body "<a href'$($config.ClientURL)'>$($config.LCSEnvironmentName)</a> has an expired certificate. <br /> $CertName <br /> <b>Thumbprint</b> $Thumbprint <br /> <b>Expires:</b> $($Config.$Name) <br />" -From $From -Subject "D365 Cert Expired" -BodyAsHtml -Credential $Credential
-                        }
-                        else {
-                            Send-MailMessage -SmtpServer $SMTP -To $To -Body "<a href'$($config.ClientURL)'>$($config.LCSEnvironmentName)</a> has an expired certificate. <br /> $CertName <br /> <b>Thumbprint</b> $Thumbprint <br /> <b>Expires:</b> $($Config.$Name) <br />" -From $From -Subject "D365 Cert Expired" -BodyAsHtml
-                        }
+                    $ArrayOfExpiredCerts=  $ArrayOfExpiredCerts + $HashTableofSpecificCert
+                    if ($MSTeamsURI) {
+                        Send-D365LBDUpdateMSTeams -messageType "PlainText" -MSTeamsURI $MSTeamsURI -PlainTextTitle "$CertName expiring/expired" -PlainTextMessage "$Thumbprint" -MSTeamsExtraDetails "$($Config.$name)" -MSTeamsExtraDetailsURI "$($Config.ClientURL)" -MSTeamsExtraDetailsTitle "Leniency Days $DaysConsideredExpired "
                     }
                 }
             }
         }
         if (!$FoundExpired) {
             Write-PSFMessage -Level VeryVerbose -Message "Config does not contain any invalid certificates"
+        }
+        else{
+            if ($To) {
+                if ($ArrayOfExpiredCerts.Count -gt 0){
+                    Write-PSFMessage -Level VeryVerbose -Message "Attemping to Send email"
+                    $body = "List of Certs Expiring before $AlertExpiringOlderBefore : <br /> <ul>"
+                    foreach ($ExpiredCert in $ArrayOfExpiredCerts){
+                        $body += "<li> $($ExpiredCert.CertName) - $($ExpiredCert.Thumbprint) - Expiration:  $($ExpiredCert.ExpirationDate) </li>"
+                    }
+                    $body += "</ul>"
+                }
+
+                if ($Credential) {
+                    Send-MailMessage -SmtpServer $SMTP -To $To -Body "<a href'$($config.ClientURL)'>$($config.LCSEnvironmentName)</a> has an expired/expiring certificate (Days Considered Expired/Expiring $DaysConsideredExpired). <br /> $Body" -From $From -Subject "D365 $($config.LCSEnvironmentName) Cert Expired/Expiring" -BodyAsHtml -Credential $Credential
+                }
+                else {
+                    Send-MailMessage -SmtpServer $SMTP -To $To -Body "<a href'$($config.ClientURL)'>$($config.LCSEnvironmentName)</a> has an expired/expiring certificate (Days Considered Expired/Expiring $DaysConsideredExpired). <br /> $Body" -From $From -Subject "D365 $($config.LCSEnvironmentName) Cert Expired/Expiring" -BodyAsHtml
+                }
+            }
         }
     }
     END {
